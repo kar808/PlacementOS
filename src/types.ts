@@ -125,6 +125,7 @@ export interface MockInterviewChatHistoryItem {
   hesitationDuration?: number;
   wordsPerMinute?: number;
   totalFillerCount?: number;
+  audioUrl?: string;
 }
 
 export interface MockInterviewSession {
@@ -154,6 +155,7 @@ export interface PastInterviewSession {
     score: number;
     suggestedStarAnswer: string;
     type: string;
+    audioUrl?: string;
     metrics: {
       technicalDepth: number;
       communicationClarity: number;

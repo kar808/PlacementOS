@@ -869,6 +869,52 @@ Evaluate and return:
 });
 
 // ------------------------------------------------------------------------
+// API ENDPOINT 7.5: Clarify & Rephrase Interview Question
+// ------------------------------------------------------------------------
+app.post("/api/placement/interview/clarify", async (req, res) => {
+  try {
+    const { question, type, expectedFocus } = req.body;
+    const ai = getAI();
+
+    const prompt = `You are a helpful, empathetic Mock Interview Coach.
+The user is struggling to understand the following interview question during their simulation:
+QUESTION: "${question}"
+TYPE: "${type}"
+EXPECTED MARKERS: "${expectedFocus}"
+
+Your goal is to:
+1. Rephrase the question into a simpler, more approachable, and conversational version that is easier to grasp immediately, while keeping its core technical or behavioral intent identical.
+2. Break down what the interviewer is actually asking for into 2 or 3 highly friendly, actionable hints (e.g. "Try starting with a project where you had a database bottleneck...").
+3. Make sure not to give away a complete answer, but guide the user on how to structure their thoughts (such as reminding them of the STAR method).
+
+Return the clarified question and helpful tips in a clean JSON format.`;
+
+    const response = await generateWithFallback(ai, {
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          required: ["clarifiedQuestion", "helpfulHints"],
+          properties: {
+            clarifiedQuestion: { type: Type.STRING },
+            helpfulHints: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          }
+        }
+      }
+    });
+
+    const text = response.text || "{}";
+    res.json(JSON.parse(text));
+  } catch (error) {
+    handleApiError(res, error);
+  }
+});
+
+// ------------------------------------------------------------------------
 // API ENDPOINT 8: Offer & Negotiation Advisor
 // ------------------------------------------------------------------------
 app.post("/api/placement/negotiate", async (req, res) => {

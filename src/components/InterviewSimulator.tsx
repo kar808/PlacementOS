@@ -3,7 +3,8 @@ import { MockInterviewQuestion, StudentProfile, MockInterviewSession, PastInterv
 import { 
   MessageSquare, Play, Send, RefreshCw, Star, ArrowRight, 
   CheckCircle2, ChevronDown, ChevronUp, Brain, Mic, MicOff, 
-  AlertTriangle, Sparkles, Activity, History, Award, BookOpen 
+  AlertTriangle, Sparkles, Activity, History, Award, BookOpen,
+  Volume2, HelpCircle, Clock, Headphones, Pause, PlayCircle
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -11,7 +12,13 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar
+  Radar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
 } from "recharts";
 
 interface InterviewSimulatorProps {
@@ -39,8 +46,26 @@ export default function InterviewSimulator({
 }: InterviewSimulatorProps) {
   const [selectedRole, setSelectedRole] = useState(profile.targetRoles[0] || "");
   const [userAnswerInput, setUserAnswerInput] = useState("");
-  const [activeSubTab, setActiveSubTab] = useState<"practice" | "history">("practice");
+  const [activeSubTab, setActiveSubTab] = useState<"practice" | "trends" | "audio-review" | "history">("practice");
   const [expandedPastSessionId, setExpandedPastSessionId] = useState<string | null>(null);
+
+  // Active question countdown timer
+  const [timeLeft, setTimeLeft] = useState(120);
+  const [isTimerActive, setIsTimerActive] = useState(true);
+
+  // Audio Review Checklist selected state (to let users toggle self-reflection criteria per audio)
+  const [reflectionChecked, setReflectionChecked] = useState<Record<string, Record<string, boolean>>>({});
+  const [selectedAudioKey, setSelectedAudioKey] = useState<string | null>(null);
+
+  // Audio Recording states and refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [lastRecordedAudio, setLastRecordedAudio] = useState<string | null>(null);
+
+  // AI Question Clarification states
+  const [clarificationData, setClarificationData] = useState<{ clarifiedQuestion: string; helpfulHints: string[] } | null>(null);
+  const [isClarifying, setIsClarifying] = useState(false);
+  const [clarifyError, setClarifyError] = useState<string | null>(null);
 
   // Web Speech API and live analytics states
   const [isListening, setIsListening] = useState(false);
@@ -91,12 +116,39 @@ export default function InterviewSimulator({
     setWordsPerMinute(0);
     speechStartTimeRef.current = null;
     lastSpeechTimestampRef.current = null;
+    setClarificationData(null);
+    setClarifyError(null);
+    setLastRecordedAudio(null);
+    setTimeLeft(120);
+    setIsTimerActive(true);
   }, [session.currentQuestionIndex]);
+
+  // Countdown timer ticking interval
+  useEffect(() => {
+    let interval: any = null;
+    if (isTimerActive && session.status === "ongoing" && !isQuestionAnswered) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerActive, session.status, isQuestionAnswered]);
 
   // Sync state analysis when text inputs are manually updated too
   const handleInputChange = (val: string) => {
     setUserAnswerInput(val);
     analyzeSpeechDynamics(val);
+    if (!isTimerActive && val.trim()) {
+      setIsTimerActive(true); // Auto-resume timer if they type
+    }
   };
 
   const analyzeSpeechDynamics = (text: string) => {
@@ -166,8 +218,16 @@ export default function InterviewSimulator({
           console.warn("Error stopping recognition:", e);
         }
       }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (e) {
+          console.error("Error stopping media recorder:", e);
+        }
+      }
       setIsListening(false);
     } else {
+      setIsTimerActive(true); // Auto-resume countdown timer if they speak!
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (!SpeechRecognition) {
         setSpeechError("Speech recognition is not supported in this browser. Please use Chrome, Safari, or Edge.");
@@ -214,6 +274,9 @@ export default function InterviewSimulator({
         rec.onerror = (err: any) => {
           console.error("Speech recognition error:", err);
           setIsListening(false);
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            try { mediaRecorderRef.current.stop(); } catch (e) {}
+          }
           if (err.error === "not-allowed") {
             setSpeechError("Microphone access is blocked or not allowed. Please click 'Allow' on your browser's prompt or grant microphone permissions in your browser's settings.");
           } else if (err.error === "no-speech") {
@@ -229,11 +292,58 @@ export default function InterviewSimulator({
 
         rec.onend = () => {
           setIsListening(false);
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            try { mediaRecorderRef.current.stop(); } catch (e) {}
+          }
         };
 
         baseTranscriptRef.current = userAnswerInput;
         speechStartTimeRef.current = Date.now();
         lastSpeechTimestampRef.current = Date.now();
+
+        // Initialize MediaRecorder alongside SpeechRecognition
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+              let recorderOptions = {};
+              try {
+                if (MediaRecorder.isTypeSupported('audio/webm')) {
+                  recorderOptions = { mimeType: 'audio/webm' };
+                } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                  recorderOptions = { mimeType: 'audio/ogg' };
+                }
+              } catch (e) {}
+
+              const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+              mediaRecorderRef.current = mediaRecorder;
+              audioChunksRef.current = [];
+
+              mediaRecorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                  audioChunksRef.current.push(e.data);
+                }
+              };
+
+              mediaRecorder.onstop = () => {
+                const mimeType = mediaRecorder.mimeType || 'audio/webm';
+                const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = () => {
+                  const base64Audio = reader.result as string;
+                  setLastRecordedAudio(base64Audio);
+                };
+                // Stop all tracks in stream to release microphone icon
+                stream.getTracks().forEach(t => t.stop());
+              };
+
+              mediaRecorder.start();
+            })
+            .catch(err => {
+              console.error("Audio recording permission or device error:", err);
+            });
+        }
+
         rec.start();
         recognitionRef.current = rec;
         setIsListening(true);
@@ -252,8 +362,11 @@ export default function InterviewSimulator({
 
   const handleNextQuestion = () => {
     if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
+      try { recognitionRef.current.stop(); } catch (e) {}
       setIsListening(false);
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try { mediaRecorderRef.current.stop(); } catch (e) {}
     }
     onNextQuestion();
   };
@@ -262,8 +375,13 @@ export default function InterviewSimulator({
     e.preventDefault();
     if (!userAnswerInput.trim()) return;
 
-    if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
+    if (isListening) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        try { mediaRecorderRef.current.stop(); } catch (e) {}
+      }
       setIsListening(false);
     }
 
@@ -280,6 +398,7 @@ export default function InterviewSimulator({
         hesitationDuration,
         wordsPerMinute,
         totalFillerCount: (Object.values(fillerCounts) as number[]).reduce((a, b) => a + b, 0),
+        audioUrl: lastRecordedAudio || undefined,
       }
     );
     setUserAnswerInput("");
@@ -296,6 +415,39 @@ export default function InterviewSimulator({
     setSentimentLabel("Constructive");
     setHesitationDuration(0);
     setWordsPerMinute(0);
+  };
+
+  const handleClarifyQuestion = async () => {
+    const currentQuestion = session.questions[session.currentQuestionIndex];
+    if (!currentQuestion) return;
+    setIsClarifying(true);
+    setClarifyError(null);
+    setIsTimerActive(false); // Pause the countdown timer!
+    try {
+      const response = await fetch("/api/placement/interview/clarify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: currentQuestion.question,
+          type: currentQuestion.type,
+          expectedFocus: currentQuestion.expectedFocus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to contact the AI Coach for clarification.");
+      }
+
+      const data = await response.json();
+      setClarificationData(data);
+    } catch (err: any) {
+      console.error("Clarification error:", err);
+      setClarifyError(err.message || "An unknown error occurred.");
+    } finally {
+      setIsClarifying(false);
+    }
   };
 
   const getQuestionTypeLabel = (type: string) => {
@@ -348,14 +500,27 @@ export default function InterviewSimulator({
   const activeRadarData = getActiveRadarData();
   const historicalRadarData = getHistoricalRadarData();
 
+  // Extract all historical answers with recorded audio files for review
+  const recordedAnswers = (history || []).flatMap((past) => 
+    (past.questionsAndAnswers || [])
+      .filter((qa) => qa.audioUrl)
+      .map((qa, index) => ({
+        ...qa,
+        sessionRole: past.role,
+        sessionTimestamp: past.timestamp,
+        sessionId: past.id,
+        index,
+      }))
+  );
+
   return (
     <div className="space-y-6">
       {/* Tab Switcher - Only visible when not in an ongoing active interview */}
       {session.status !== "ongoing" && (
-        <div className="flex border-b border-white/10 pb-1 gap-2">
+        <div className="flex border-b border-white/10 pb-1 gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveSubTab("practice")}
-            className={`px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all relative ${
+            className={`px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all relative shrink-0 ${
               activeSubTab === "practice" 
                 ? "text-emerald-400 border-b-2 border-emerald-400" 
                 : "text-white/40 hover:text-white/60"
@@ -364,8 +529,28 @@ export default function InterviewSimulator({
             <MessageSquare className="w-3.5 h-3.5" /> Practice Simulator
           </button>
           <button
+            onClick={() => setActiveSubTab("trends")}
+            className={`px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all relative shrink-0 ${
+              activeSubTab === "trends" 
+                ? "text-emerald-400 border-b-2 border-emerald-400" 
+                : "text-white/40 hover:text-white/60"
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" /> Performance Trends
+          </button>
+          <button
+            onClick={() => setActiveSubTab("audio-review")}
+            className={`px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all relative shrink-0 ${
+              activeSubTab === "audio-review" 
+                ? "text-emerald-400 border-b-2 border-emerald-400" 
+                : "text-white/40 hover:text-white/60"
+            }`}
+          >
+            <Headphones className="w-3.5 h-3.5" /> Audio Review ({recordedAnswers.length})
+          </button>
+          <button
             onClick={() => setActiveSubTab("history")}
-            className={`px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all relative ${
+            className={`px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all relative shrink-0 ${
               activeSubTab === "history" 
                 ? "text-emerald-400 border-b-2 border-emerald-400" 
                 : "text-white/40 hover:text-white/60"
@@ -437,16 +622,39 @@ export default function InterviewSimulator({
               {/* Question and Input Column */}
               <div className="lg:col-span-2 space-y-6">
                 <div className="bg-[#111] border border-white/10 rounded-xl p-6 shadow-lg space-y-6">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getQuestionTypeLabel(currentQuestion.type)}`}>
+                  <div className="flex justify-between items-center border-b border-white/10 pb-3 gap-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shrink-0 ${getQuestionTypeLabel(currentQuestion.type)}`}>
                         {currentQuestion.type} ROUND
                       </span>
-                      <span className="text-xs text-white/40 font-semibold font-mono">
+                      <span className="text-xs text-white/40 font-semibold font-mono shrink-0 hidden sm:inline">
                         Question {session.currentQuestionIndex + 1} of {session.questions.length}
                       </span>
                     </div>
-                    <button onClick={onResetInterview} className="text-xs text-rose-400 hover:text-rose-300 font-bold font-mono cursor-pointer bg-transparent border-none">
+
+                    {/* Countdown Timer with Pause/Play Controls */}
+                    {!isQuestionAnswered && (
+                      <div className="flex items-center gap-2 px-2.5 py-1 bg-black/40 border border-white/10 rounded-lg text-xs font-mono font-bold text-white shrink-0">
+                        <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>
+                          {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsTimerActive((prev) => !prev)}
+                          className="p-0.5 hover:bg-white/5 rounded text-white/60 hover:text-white transition-all cursor-pointer border-none bg-transparent flex items-center justify-center"
+                          title={isTimerActive ? "Pause Timer" : "Resume Timer"}
+                        >
+                          {isTimerActive ? (
+                            <Pause className="w-3 h-3 text-amber-400" />
+                          ) : (
+                            <Play className="w-3 h-3 text-emerald-400" />
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    <button onClick={onResetInterview} className="text-xs text-rose-400 hover:text-rose-300 font-bold font-mono cursor-pointer bg-transparent border-none shrink-0">
                       Exit Mock
                     </button>
                   </div>
@@ -458,7 +666,7 @@ export default function InterviewSimulator({
                       <div className="w-8 h-8 bg-white/5 border border-white/10 text-emerald-400 rounded-lg flex items-center justify-center font-bold font-mono text-xs shrink-0">
                         HR
                       </div>
-                      <div className="bg-black/20 border border-white/5 rounded-xl p-4 max-w-[85%]">
+                      <div className="bg-black/20 border border-white/5 rounded-xl p-4 max-w-[85%] space-y-3 w-full">
                         <p className="text-sm text-white/90 font-semibold leading-relaxed">
                           "{currentQuestion.question}"
                         </p>
@@ -468,6 +676,51 @@ export default function InterviewSimulator({
                             <strong className="text-emerald-400 font-bold uppercase tracking-wider text-[9px] mr-1">Recruiter Tip:</strong> They are looking for: {currentQuestion.expectedFocus}
                           </span>
                         </div>
+
+                        {/* Clarification Button & AI Response */}
+                        {!isQuestionAnswered && (
+                          <div className="border-t border-white/5 pt-3 mt-3 space-y-3">
+                            {!clarificationData ? (
+                              <button
+                                type="button"
+                                onClick={handleClarifyQuestion}
+                                disabled={isClarifying}
+                                className="px-3 py-1.5 bg-[#38bdf8]/10 hover:bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/20 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                              >
+                                {isClarifying ? (
+                                  <>
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Simplifying Question...
+                                  </>
+                                ) : (
+                                  <>
+                                    <HelpCircle className="w-3.5 h-3.5" /> Ask for Clarification
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <div className="bg-[#38bdf8]/5 border border-[#38bdf8]/10 rounded-lg p-3 space-y-2 text-xs">
+                                <span className="text-[9px] font-black font-mono text-[#38bdf8] uppercase tracking-widest flex items-center gap-1">
+                                  <Sparkles className="w-3.5 h-3.5" /> AI Coach Clarification
+                                </span>
+                                <div className="text-white/80 leading-relaxed font-semibold">
+                                  <strong className="text-white">Simplified:</strong> "{clarificationData.clarifiedQuestion}"
+                                </div>
+                                <div className="space-y-1 mt-2">
+                                  <span className="text-[9px] font-black font-mono text-white/40 uppercase">Actionable Hints:</span>
+                                  <ul className="list-disc pl-4 space-y-1 text-white/60 font-semibold">
+                                    {clarificationData.helpfulHints.map((hint, idx) => (
+                                      <li key={idx}>{hint}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+                            )}
+
+                            {clarifyError && (
+                              <p className="text-[10px] text-rose-400 font-semibold font-mono">{clarifyError}</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -665,10 +918,15 @@ export default function InterviewSimulator({
                       {/* Manual / Transcribed drafting canvas */}
                       <form onSubmit={handleSubmitAnswer} className="space-y-4">
                         <div>
-                          <label className="block text-xs font-semibold text-white/40 uppercase tracking-widest font-mono text-[9px] mb-1.5 flex items-center justify-between">
+                          <label className="block text-xs font-semibold text-white/40 uppercase tracking-widest font-mono text-[9px] mb-1.5 flex items-center justify-between gap-2 overflow-x-auto">
                             <span>Answer Draft</span>
+                            {timeLeft === 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[8px] font-black font-mono rounded-full uppercase tracking-wider animate-pulse shrink-0">
+                                <AlertTriangle className="w-2.5 h-2.5" /> Recommended 2-min exceeded
+                              </span>
+                            )}
                             {isListening && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[8px] font-black font-mono rounded-full animate-pulse uppercase tracking-wider">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[8px] font-black font-mono rounded-full animate-pulse uppercase tracking-wider shrink-0">
                                 <span className="w-1 h-1 rounded-full bg-rose-500 animate-ping mr-0.5" />
                                 Active Mic: Recording Transcripts...
                               </span>
@@ -966,16 +1224,26 @@ export default function InterviewSimulator({
 
                         {/* Per-question spoken diagnostics */}
                         {ans && (ans.wordsPerMinute !== undefined || ans.hesitationDuration !== undefined) && (
-                          <div className="flex flex-wrap gap-4 py-2 px-3 bg-white/[0.01] border border-white/5 rounded-lg text-[10px] font-mono text-white/40">
-                            <div>
-                              <span className="font-bold text-white/60 uppercase">Speaking speed:</span> {ans.wordsPerMinute || 0} WPM
+                          <div className="flex flex-col gap-2 py-2 px-3 bg-white/[0.01] border border-white/5 rounded-lg text-[10px] font-mono text-white/40">
+                            <div className="flex flex-wrap gap-4">
+                              <div>
+                                <span className="font-bold text-white/60 uppercase">Speaking speed:</span> {ans.wordsPerMinute || 0} WPM
+                              </div>
+                              <div>
+                                <span className="font-bold text-white/60 uppercase">Conversational hesitations:</span> {ans.hesitationDuration || 0}s
+                              </div>
+                              <div>
+                                <span className="font-bold text-white/60 uppercase">Filler word count:</span> {ans.totalFillerCount || 0} words
+                              </div>
                             </div>
-                            <div>
-                              <span className="font-bold text-white/60 uppercase">Conversational hesitations:</span> {ans.hesitationDuration || 0}s
-                            </div>
-                            <div>
-                              <span className="font-bold text-white/60 uppercase">Filler word count:</span> {ans.totalFillerCount || 0} words
-                            </div>
+                            {ans.audioUrl && (
+                              <div className="flex items-center gap-2 mt-1 py-1 px-2 bg-emerald-500/5 border border-emerald-500/10 rounded w-fit">
+                                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1 shrink-0">
+                                  <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> Play Recorded Audio:
+                                </span>
+                                <audio src={ans.audioUrl} controls className="h-6 max-w-[200px]" />
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -1004,6 +1272,410 @@ export default function InterviewSimulator({
           )}
         </div>
       )}
+
+      {/* SUB-TAB: PERFORMANCE TRENDS VIEW */}
+      {activeSubTab === "trends" && session.status !== "ongoing" && (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-emerald-400" /> Long-Term Performance Trends
+              </h3>
+              <p className="text-white/50 text-xs mt-1 font-semibold leading-relaxed">
+                Track how your Confidence Score and Spoken Fluency have evolved over your last 10 mock interview sessions.
+              </p>
+            </div>
+          </div>
+
+          {history.length < 2 ? (
+            <div className="bg-[#111] border border-white/10 p-12 rounded-xl text-center space-y-4 max-w-md mx-auto my-12 shadow-md">
+              <Activity className="w-10 h-10 text-emerald-400/60 mx-auto animate-pulse" />
+              <div className="space-y-1">
+                <h4 className="font-extrabold text-white text-sm">Waiting for More Sessions</h4>
+                <p className="text-xs text-white/50 leading-relaxed font-semibold">
+                  Complete at least 2 mock interview sessions to unlock beautiful interactive line chart trends and growth analysis!
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setActiveSubTab("practice");
+                  onResetInterview();
+                }}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black rounded-lg transition-all cursor-pointer"
+              >
+                Launch Your First Role
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Overall Statistics Dashboard */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {(() => {
+                  const last10 = history.slice(-10);
+                  const avgConfidence = Math.round(last10.reduce((sum, item) => sum + (item.metrics.confidence || 0), 0) / last10.length);
+                  const avgFluency = Math.round(last10.reduce((sum, item) => sum + (item.metrics.communicationClarity || 0), 0) / last10.length);
+                  const improvementConfidence = last10.length > 1 
+                    ? (last10[last10.length - 1].metrics.confidence || 0) - (last10[0].metrics.confidence || 0)
+                    : 0;
+
+                  return (
+                    <>
+                      <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                        <span className="text-[9px] text-white/40 uppercase font-black font-mono tracking-wider">Avg Confidence Score</span>
+                        <div className="text-2xl font-black font-mono text-emerald-400">{avgConfidence}%</div>
+                        <span className="text-[10px] text-white/50 block font-semibold">Last 10 sessions average</span>
+                      </div>
+                      <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                        <span className="text-[9px] text-white/40 uppercase font-black font-mono tracking-wider">Avg Fluency Score</span>
+                        <div className="text-2xl font-black font-mono text-sky-400">{avgFluency}%</div>
+                        <span className="text-[10px] text-white/50 block font-semibold">Communication clarity average</span>
+                      </div>
+                      <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                        <span className="text-[9px] text-white/40 uppercase font-black font-mono tracking-wider">Confidence Growth</span>
+                        <div className={`text-2xl font-black font-mono ${improvementConfidence >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                          {improvementConfidence >= 0 ? `+${improvementConfidence}%` : `${improvementConfidence}%`}
+                        </div>
+                        <span className="text-[10px] text-white/50 block font-semibold">Latest round vs earliest round</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Chart Container */}
+              <div className="bg-[#111] border border-white/10 rounded-xl p-6 shadow-lg space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
+                  <div>
+                    <h4 className="text-xs font-black text-white font-mono uppercase tracking-wider">Long-Term Growth Tracking</h4>
+                    <p className="text-[10px] text-white/50 font-semibold mt-0.5">Confidence Score and Fluency metrics over the last 10 rounds</p>
+                  </div>
+                  <div className="flex items-center gap-4 text-[10px] font-mono">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-3 h-1 bg-emerald-400 rounded"></span>
+                      <span className="text-white/60 font-semibold">Confidence Score</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-3 h-1 bg-sky-400 rounded"></span>
+                      <span className="text-white/60 font-semibold">Fluency (Communication)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full h-80 pt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={history.slice(-10).map((past, index) => ({
+                        name: `Round ${index + 1}`,
+                        date: new Date(past.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                        role: past.role,
+                        "Confidence Score": past.metrics.confidence,
+                        "Fluency": past.metrics.communicationClarity,
+                      }))}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" />
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#4b5563" 
+                        tick={{ fill: "#9ca3af", fontSize: 9, fontFamily: "monospace" }} 
+                      />
+                      <YAxis 
+                        domain={[0, 100]} 
+                        stroke="#4b5563" 
+                        tick={{ fill: "#9ca3af", fontSize: 9, fontFamily: "monospace" }} 
+                      />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: "#111", borderColor: "rgba(255,255,255,0.1)", borderRadius: "8px" }}
+                        labelStyle={{ color: "#9ca3af", fontFamily: "monospace", fontSize: "10px", fontWeight: "bold" }}
+                        itemStyle={{ fontSize: "11px", fontWeight: "600" }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="Confidence Score"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        activeDot={{ r: 6 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="Fluency"
+                        stroke="#38bdf8"
+                        strokeWidth={3}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SUB-TAB: AUDIO REVIEW & SELF-REFLECTION ENGINE */}
+      {activeSubTab === "audio-review" && session.status !== "ongoing" && (() => {
+        const selectedReviewKey = selectedAudioKey || (recordedAnswers.length > 0 ? `${recordedAnswers[0].sessionId}-${recordedAnswers[0].index}` : "");
+        const selectedReviewQA = recordedAnswers.find((qa) => `${qa.sessionId}-${qa.index}` === selectedReviewKey);
+
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#111] border border-white/10 rounded-xl p-5 shadow-lg">
+              <div className="space-y-1 text-left">
+                <h3 className="text-sm font-black text-white font-mono uppercase tracking-widest flex items-center gap-2">
+                  <Headphones className="w-4 h-4 text-emerald-400" /> Spoken Audio Review Engine
+                </h3>
+                <p className="text-xs text-white/50 leading-relaxed font-semibold">
+                  Play back your speech recordings from past interviews to evaluate tone, pacing, filler words, and narrative structure.
+                </p>
+              </div>
+              <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold shrink-0">
+                Total Recordings: {recordedAnswers.length}
+              </div>
+            </div>
+
+            {recordedAnswers.length === 0 ? (
+              <div className="bg-[#111] border border-white/10 p-12 rounded-xl text-center space-y-4 max-w-md mx-auto my-12 shadow-md">
+                <Headphones className="w-10 h-10 text-emerald-400/60 mx-auto" />
+                <div className="space-y-1">
+                  <h4 className="font-extrabold text-white text-sm">No Audio Recordings Found</h4>
+                  <p className="text-xs text-white/50 leading-relaxed font-semibold">
+                    You haven't saved any voice answers yet. To record your voice during a mock session, click 'Start Speaking' and allow mic access before submitting!
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveSubTab("practice");
+                    onResetInterview();
+                  }}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black rounded-lg transition-all cursor-pointer"
+                >
+                  Start Practice Session
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column: List of recordings */}
+                <div className="lg:col-span-1 space-y-4 max-h-[700px] overflow-y-auto pr-1">
+                  <div className="text-[10px] font-black text-white/40 uppercase tracking-widest font-mono mb-1 text-left">
+                    Recorded Answer History
+                  </div>
+                  {recordedAnswers.map((qa, idx) => {
+                    const key = `${qa.sessionId}-${qa.index}`;
+                    return (
+                      <div
+                        key={key}
+                        onClick={() => {
+                          setSelectedAudioKey(key);
+                        }}
+                        className={`p-4 border rounded-xl transition-all cursor-pointer text-left space-y-3 ${
+                          selectedReviewKey === key
+                            ? "bg-emerald-500/5 border-emerald-400 shadow-md"
+                            : "bg-[#111] border-white/10 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">
+                            QA #{idx + 1}
+                          </span>
+                          <span className="text-[9px] text-white/40 font-mono font-bold">
+                            {new Date(qa.sessionTimestamp).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-white/50 font-mono font-semibold uppercase tracking-wider block">
+                            Role: {qa.sessionRole}
+                          </span>
+                          <p className="text-xs font-extrabold text-white line-clamp-2 leading-snug">
+                            {qa.question}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold">
+                          <PlayCircle className="w-3.5 h-3.5" />
+                          <span>Click to listen & reflect</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right Column: Audio Player & Detailed Self-Reflection Panel */}
+                <div className="lg:col-span-2">
+                  {selectedReviewQA ? (
+                    <div className="bg-[#111] border border-white/10 rounded-xl p-6 shadow-xl space-y-6 text-left">
+                      {/* Header */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                        <div>
+                          <span className="text-[9px] font-black text-emerald-400 font-mono uppercase tracking-widest block mb-0.5">
+                            Active Review Session
+                          </span>
+                          <h4 className="text-sm font-bold text-white leading-tight">
+                            {selectedReviewQA.sessionRole} Mock Round
+                          </h4>
+                          <span className="text-[10px] text-white/40 font-mono font-bold">
+                            Recorded on {new Date(selectedReviewQA.sessionTimestamp).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-mono font-bold text-emerald-400">
+                          Score: {selectedReviewQA.score}/100
+                        </div>
+                      </div>
+
+                      {/* Question & Answer Box */}
+                      <div className="space-y-3 bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-mono font-black text-white/40 uppercase tracking-widest block">The Question</span>
+                          <p className="text-xs font-extrabold text-white leading-relaxed">
+                            {selectedReviewQA.question}
+                          </p>
+                        </div>
+                        <div className="h-px bg-white/5 my-2" />
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-mono font-black text-white/40 uppercase tracking-widest block">Your Answer Text</span>
+                          <p className="text-xs text-white/80 leading-relaxed font-semibold italic">
+                            "{selectedReviewQA.answer}"
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Custom Audio Element */}
+                      <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-2">
+                            <Volume2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                              Voice Recording Playback
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-white/40 font-mono font-bold uppercase tracking-wider">
+                            Interactive Player
+                          </span>
+                        </div>
+                        
+                        <audio
+                          src={selectedReviewQA.audioUrl}
+                          controls
+                          className="w-full h-10 focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Fluency Diagnostics Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center space-y-1">
+                          <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest block">Speaking Speed</span>
+                          <div className="text-lg font-mono font-black text-white">
+                            {selectedReviewQA.metrics?.wordsPerMinute || "N/A"} <span className="text-xs text-white/50">WPM</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-emerald-400/80 font-mono block">
+                            {(selectedReviewQA.metrics?.wordsPerMinute || 0) >= 110 && (selectedReviewQA.metrics?.wordsPerMinute || 0) <= 150 ? "Optimal Pace" : "Fast / Slow Pace"}
+                          </span>
+                        </div>
+                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center space-y-1">
+                          <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest block">Filler Words</span>
+                          <div className="text-lg font-mono font-black text-rose-400">
+                            {selectedReviewQA.metrics?.totalFillerCount || 0} <span className="text-xs text-white/50">detected</span>
+                          </div>
+                          <span className="text-[9px] text-white/40 font-semibold block">
+                            um, uh, like, actually, so
+                          </span>
+                        </div>
+                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center space-y-1">
+                          <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest block">Silence Hesitations</span>
+                          <div className="text-lg font-mono font-black text-amber-400">
+                            {selectedReviewQA.metrics?.hesitationDuration || 0} <span className="text-xs text-white/50">seconds</span>
+                          </div>
+                          <span className="text-[9px] text-white/40 font-semibold block">
+                            Natural pauses allowed
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Recruiter Coaching & Feedback Review */}
+                      <div className="space-y-2 bg-[#1e293b]/20 border border-[#334155]/20 rounded-xl p-4">
+                        <h5 className="text-xs font-mono font-black text-white uppercase tracking-widest flex items-center gap-1.5">
+                          <Award className="w-3.5 h-3.5 text-emerald-400" /> Evaluation Diagnostics
+                        </h5>
+                        <p className="text-xs text-white/70 leading-relaxed font-semibold">
+                          {selectedReviewQA.feedback}
+                        </p>
+                      </div>
+
+                      {/* Self-Reflection & Active Listening Rubric */}
+                      <div className="border border-white/10 rounded-xl p-5 space-y-4">
+                        <div>
+                          <h5 className="text-xs font-mono font-black text-white uppercase tracking-widest">
+                            Self-Reflection Delivery Checklist
+                          </h5>
+                          <p className="text-[10px] text-white/50 font-semibold mt-0.5">
+                            Close your eyes, listen to your audio playback, and actively self-rate your performance:
+                          </p>
+                        </div>
+
+                        <div className="space-y-3">
+                          {[
+                            { id: "star", text: "Did I structure my story clearly using the STAR method (Situation, Task, Action, Result)?" },
+                            { id: "fillers", text: "Did I minimize verbal clutter and speak smoothly without excessive 'um's or 'like's?" },
+                            { id: "tone", text: "Is my vocal pitch, enthusiasm, and volume confident and professional throughout?" },
+                            { id: "pacing", text: "Did I speak at an optimal speed (not too rushed, with breathing pauses between ideas)?" },
+                            { id: "keywords", text: "Did I pronounce key industry/role terminology accurately and clearly?" }
+                          ].map((rubric) => {
+                            const isChecked = !!reflectionChecked[selectedReviewKey]?.[rubric.id];
+                            return (
+                              <label
+                                key={rubric.id}
+                                className="flex items-start gap-3 p-2 bg-white/[0.01] hover:bg-white/[0.03] border border-white/5 hover:border-white/10 rounded-lg cursor-pointer transition-all select-none"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    setReflectionChecked((prev) => {
+                                      const audioMap = prev[selectedReviewKey] || {};
+                                      return {
+                                        ...prev,
+                                        [selectedReviewKey]: {
+                                          ...audioMap,
+                                          [rubric.id]: e.target.checked,
+                                        },
+                                      };
+                                    });
+                                  }}
+                                  className="w-4 h-4 rounded border-white/10 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-black bg-black/40 mt-0.5 cursor-pointer shrink-0"
+                                />
+                                <span className="text-xs text-white/80 font-medium leading-tight">
+                                  {rubric.text}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+
+                        {/* Coach Reflection Tip */}
+                        <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3 text-[11px] font-semibold text-emerald-400 leading-normal flex items-start gap-2">
+                          <Sparkles className="w-3.5 h-3.5 mt-0.5 text-emerald-400 shrink-0" />
+                          <span>
+                            <strong>Pro Coaching Tip:</strong> Listen to your voice at least twice. The first pass should be strictly on structure—did you answer the prompt directly? The second pass should focus entirely on tone and speed.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#111] border border-white/10 rounded-xl p-12 text-center space-y-3 h-full flex flex-col justify-center items-center shadow-lg min-h-[400px]">
+                      <Headphones className="w-10 h-10 text-emerald-400/40" />
+                      <div>
+                        <h4 className="font-extrabold text-white text-sm">Select an Audio Recording</h4>
+                        <p className="text-xs text-white/50 leading-relaxed font-semibold max-w-xs mx-auto mt-0.5">
+                          Choose a saved answer from the history list on the left to start your active self-reflection playback.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* SUB-TAB 2: ALL INTERVIEW HISTORY & MISTAKES LOG */}
       {activeSubTab === "history" && session.status !== "ongoing" && (
@@ -1209,16 +1881,26 @@ export default function InterviewSimulator({
 
                                   {/* Per-question spoken diagnostics */}
                                   {item.metrics && (item.metrics.wordsPerMinute !== undefined || item.metrics.hesitationDuration !== undefined) && (
-                                    <div className="flex flex-wrap gap-4 py-2 px-3 bg-white/[0.01] border border-white/5 rounded-lg text-[10px] font-mono text-white/40">
-                                      <div>
-                                        <span className="font-bold text-white/60 uppercase">Speaking speed:</span> {item.metrics.wordsPerMinute || 0} WPM
+                                    <div className="flex flex-col gap-2 py-2 px-3 bg-white/[0.01] border border-white/5 rounded-lg text-[10px] font-mono text-white/40">
+                                      <div className="flex flex-wrap gap-4">
+                                        <div>
+                                          <span className="font-bold text-white/60 uppercase">Speaking speed:</span> {item.metrics.wordsPerMinute || 0} WPM
+                                        </div>
+                                        <div>
+                                          <span className="font-bold text-white/60 uppercase">Conversational hesitations:</span> {item.metrics.hesitationDuration || 0}s
+                                        </div>
+                                        <div>
+                                          <span className="font-bold text-white/60 uppercase">Filler word count:</span> {item.metrics.totalFillerCount || 0} words
+                                        </div>
                                       </div>
-                                      <div>
-                                        <span className="font-bold text-white/60 uppercase">Conversational hesitations:</span> {item.metrics.hesitationDuration || 0}s
-                                      </div>
-                                      <div>
-                                        <span className="font-bold text-white/60 uppercase">Filler word count:</span> {item.metrics.totalFillerCount || 0} words
-                                      </div>
+                                      {item.audioUrl && (
+                                        <div className="flex items-center gap-2 mt-1 py-1 px-2 bg-emerald-500/5 border border-emerald-500/10 rounded w-fit">
+                                          <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1 shrink-0">
+                                            <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> Play Recorded Audio:
+                                          </span>
+                                          <audio src={item.audioUrl} controls className="h-6 max-w-[200px]" />
+                                        </div>
+                                      )}
                                     </div>
                                   )}
 

@@ -633,6 +633,7 @@ export default function App() {
             hesitationDuration: verbalMetrics?.hesitationDuration || 0,
             wordsPerMinute: verbalMetrics?.wordsPerMinute || 0,
             totalFillerCount: verbalMetrics?.totalFillerCount || 0,
+            audioUrl: verbalMetrics?.audioUrl || undefined,
           },
         ],
       }));
@@ -680,6 +681,7 @@ export default function App() {
         score: ans?.score || 0,
         suggestedStarAnswer: ans?.suggestedStarAnswer || "",
         type: q.type,
+        audioUrl: ans?.audioUrl || undefined,
         metrics: {
           technicalDepth: ans?.technicalDepth || 0,
           communicationClarity: ans?.communicationClarity || 0,
