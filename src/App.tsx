@@ -415,7 +415,7 @@ export default function App() {
       headers["X-Request-Integrity"] = integritySignature;
       headers["X-Request-Client-Id"] = userId;
 
-      const response = await fetch(endpoint, {
+            const response = await fetch(endpoint, {
         method: "POST",
         headers,
         body: JSON.stringify(body),
@@ -425,6 +425,7 @@ export default function App() {
         throw new Error(data.message || "Endpoint operation failed");
       }
       return data;
+
     } catch (err: any) {
       console.error(`Error fetching ${endpoint}:`, err);
       setApiError(err.message || "Failed to contact the career analysis server. Please ensure the backend is running and your GEMINI_API_KEY is active.");
