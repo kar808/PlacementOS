@@ -1,0 +1,6 @@
+{
+  "name": "PlacementOS",
+  "description": "A super-premium AI-powered career co-pilot and placement intelligence suite for students of all colleges and backgrounds.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Details of the student's background, target roles, and metrics.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "college": { "type": "string" },
+        "degree": { "type": "string" },
+        "branch": { "type": "string" },
+        "year": { "type": "string" },
+        "gpa": { "type": "string" },
+        "backlogs": { "type": "string" },
+        "location": { "type": "string" },
+        "preferredLocation": { "type": "string" },
+        "technicalSkills": { "type": "array", "items": { "type": "string" } },
+        "nonTechnicalSkills": { "type": "array", "items": { "type": "string" } },
+        "projects": { "type": "string" },
+        "internships": { "type": "string" },
+        "certifications": { "type": "string" },
+        "extracurriculars": { "type": "string" },
+        "communicationLevel": { "type": "string" },
+        "careerGoals": { "type": "string" },
+        "targetRoles": { "type": "array", "items": { "type": "string" } },
+        "targetCompanies": { "type": "array", "items": { "type": "string" } },
+        "salaryExpectation": { "type": "string" },
+        "workMode": { "type": "string" },
+        "timeAvailable": { "type": "string" },
+        "placementDeadline": { "type": "string" },
+        "resumeStatus": { "type": "string" },
+        "linkedInStatus": { "type": "string" },
+        "portfolioStatus": { "type": "string" },
+        "codingLevel": { "type": "string" },
+        "confidenceLevel": { "type": "string" },
+        "constraints": { "type": "string" },
+        "linkedinUrl": { "type": "string" },
+        "githubUrl": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" }
+      },
+      "required": ["name", "college", "degree", "branch", "year", "gpa"]
+    },
+    "PastInterviewSession": {
+      "title": "PastInterviewSession",
+      "description": "Complete transcript and analytical metrics for a completed mock interview session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "overallScore": { "type": "integer" },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "technicalDepth": { "type": "integer" },
+            "communicationClarity": { "type": "integer" },
+            "confidence": { "type": "integer" }
+          },
+          "required": ["technicalDepth", "communicationClarity", "confidence"]
+        },
+        "questionsAndAnswers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "question": { "type": "string" },
+              "answer": { "type": "string" },
+              "feedback": { "type": "string" },
+              "score": { "type": "integer" },
+              "suggestedStarAnswer": { "type": "string" },
+              "type": { "type": "string" },
+              "metrics": {
+                "type": "object",
+                "properties": {
+                  "technicalDepth": { "type": "integer" },
+                  "communicationClarity": { "type": "integer" },
+                  "confidence": { "type": "integer" }
+                },
+                "required": ["technicalDepth", "communicationClarity", "confidence"]
+              }
+            },
+            "required": ["question", "answer", "feedback", "score", "suggestedStarAnswer", "type", "metrics"]
+          }
+        }
+      },
+      "required": ["id", "role", "timestamp", "overallScore", "metrics", "questionsAndAnswers"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "StudentProfile",
+      "description": "User profiles storing student career data."
+    },
+    "/users/{userId}/interviews/{interviewId}": {
+      "schema": "PastInterviewSession",
+      "description": "Completed mock interviews with full performance feedback."
+    }
+  }
+}
