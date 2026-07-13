@@ -32,9 +32,15 @@ import JobOutreach from "./components/JobOutreach";
 import NegotiationCoach from "./components/NegotiationCoach";
 import CommunicationCoach from "./components/CommunicationCoach";
 import AuthScreen from "./components/AuthScreen";
+import LandingPage from "./components/LandingPage";
 import OnboardingWizard from "./components/OnboardingWizard";
 import HRProfileRating from "./components/HRProfileRating";
 import PlacementSchedule from "./components/PlacementSchedule";
+import UserDashboard from "./components/UserDashboard";
+import AdminDashboard from "./components/AdminDashboard";
+import SettingsPanel from "./components/SettingsPanel";
+import AppLoadingSpinner from "./components/AppLoadingSpinner";
+import ErrorAlertModal from "./components/ErrorAlertModal";
 
 // Lucide Icons
 import {
@@ -56,15 +62,41 @@ import {
   RefreshCw,
   UserCheck,
   CalendarClock,
+  Home,
+  Activity,
+  Settings
 } from "lucide-react";
 
 // Client-side rate-limiting rolling window tracking
 const clientRequestHistory: { [userId: string]: number[] } = {};
 
+// Helper to produce a deterministic, sorted canonical JSON string representation
+function getCanonicalString(obj: any): string {
+  if (obj === null || obj === undefined) return "null";
+  if (typeof obj !== "object") {
+    if (typeof obj === "string") {
+      return `"${obj.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+    }
+    return String(obj);
+  }
+  if (Array.isArray(obj)) {
+    return "[" + obj.map(getCanonicalString).join(",") + "]";
+  }
+  const keys = Object.keys(obj).sort();
+  const parts = keys
+    .map(k => {
+      const val = obj[k];
+      if (val === undefined) return null;
+      return `"${k}":${getCanonicalString(val)}`;
+    })
+    .filter(p => p !== null);
+  return "{" + parts.join(",") + "}";
+}
+
 // Client-side synchronous request integrity calculation helper
 function computeRequestIntegrity(endpoint: string, body: any, timestamp: number, userId: string): string {
   const secret = "PlacementOS_Secure_Key_2026";
-  const data = `${endpoint}:${JSON.stringify(body || {})}:${timestamp}:${userId}:${secret}`;
+  const data = `${endpoint}:${getCanonicalString(body || {})}:${timestamp}:${userId}:${secret}`;
   let hash = 0;
   for (let i = 0; i < data.length; i++) {
     const char = data.charCodeAt(i);
@@ -80,6 +112,7 @@ export default function App() {
   const [localUserBypass, setLocalUserBypass] = useState<boolean>(() => {
     return localStorage.getItem("local_sandbox_active") === "true";
   });
+  const [showAuth, setShowAuth] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [hasProfile, setHasProfile] = useState<boolean>(false);
 
@@ -89,7 +122,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<string>("blueprint");
+  const [activeTab, setActiveTab] = useState<string>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // Core profile & cache states (persisted via localStorage)
@@ -176,6 +209,80 @@ export default function App() {
   // Global Error state (e.g. if API Key is missing or server fails)
   const [apiError, setApiError] = useState<string | null>(null);
 
+  // Product Analytics Logging and Notifications state
+  const [activities, setActivities] = useState<any[]>(() => {
+    const saved = localStorage.getItem("placement_activities");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [notifications, setNotifications] = useState<any[]>(() => {
+    const saved = localStorage.getItem("placement_notifications");
+    if (saved) return JSON.parse(saved);
+    return [
+      {
+        id: "notif_1",
+        title: "Welcome to PlacementOS Core!",
+        body: "Your secure cloud sandboxed student profile has been mounted successfully.",
+        timestamp: "09:00 AM",
+        read: false
+      },
+      {
+        id: "notif_2",
+        title: "Google Google Sign-In Activated",
+        body: "Federated login active. All session metadata are sealed behind your UID credentials.",
+        timestamp: "09:02 AM",
+        read: true
+      }
+    ];
+  });
+
+  const addNotification = (title: string, body: string) => {
+    const newNotif = {
+      id: `notif_${Date.now()}`,
+      title,
+      body,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    setNotifications(prev => {
+      const updated = [newNotif, ...prev];
+      localStorage.setItem("placement_notifications", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const logActivity = async (event: string, description: string, category = "general") => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const isoString = new Date().toISOString();
+    
+    const newActivity = {
+      id: `act_${Date.now()}`,
+      event,
+      description,
+      timestamp,
+      category
+    };
+
+    setActivities(prev => {
+      const updated = [newActivity, ...prev];
+      localStorage.setItem("placement_activities", JSON.stringify(updated));
+      return updated;
+    });
+
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, "users", auth.currentUser.uid, "activityLog", newActivity.id), {
+          event,
+          description,
+          timestamp: isoString,
+          category
+        });
+      } catch (err) {
+        console.error("Failed to sync activity to Firestore:", err);
+      }
+    }
+  };
+
   // Listen to Online / Offline window states
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -199,7 +306,10 @@ export default function App() {
           if (userDocSnap.exists()) {
             const savedProfile = userDocSnap.data() as StudentProfile;
             setProfile(savedProfile);
-            setHasProfile(true);
+            
+            // Incomplete profiles (e.g. Google sign up with missing education) are sent to Onboarding Wizard
+            const isComplete = !!(savedProfile.college && savedProfile.degree && savedProfile.branch);
+            setHasProfile(isComplete);
 
             // Fetch analytical modules
             const intelSnap = await getDoc(doc(db, "users", firebaseUser.uid, "analytics", "intelligence"));
@@ -227,11 +337,27 @@ export default function App() {
             } catch (err) {
               console.error("Error reading interviews from Firestore:", err);
             }
+
+            // Fetch activity log from Firestore
+            try {
+              const activitySnap = await getDocs(collection(db, "users", firebaseUser.uid, "activityLog"));
+              const historyList: any[] = [];
+              activitySnap.forEach((doc) => {
+                historyList.push({ id: doc.id, ...doc.data() });
+              });
+              // Sort activities descending by timestamp
+              historyList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+              setActivities(historyList);
+              localStorage.setItem("placement_activities", JSON.stringify(historyList));
+            } catch (err) {
+              console.error("Error reading activity log from Firestore:", err);
+            }
           } else {
             setHasProfile(false);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Firestore read error:", error);
+          setApiError(`Firebase/Firestore Profile Initialization Failure: ${error?.message || error}`);
           setHasProfile(false);
         }
       } else {
@@ -399,6 +525,7 @@ export default function App() {
     }
     clientRequestHistory[userId].push(now);
 
+    let response: Response | null = null;
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (auth.currentUser) {
@@ -415,20 +542,74 @@ export default function App() {
       headers["X-Request-Integrity"] = integritySignature;
       headers["X-Request-Client-Id"] = userId;
 
-            const response = await fetch(endpoint, {
+      response = await fetch(endpoint, {
         method: "POST",
         headers,
         body: JSON.stringify(body),
       });
-      const data = await response.json();
-      if (!response.ok || data.error) {
-        throw new Error(data.message || "Endpoint operation failed");
+
+      const contentType = response.headers.get("content-type") || "";
+      let data: any = null;
+
+      // Ensure response is JSON before invoking parsing methods to prevent fatal 'Unexpected token' errors
+      if (contentType.toLowerCase().includes("application/json")) {
+        try {
+          // Read raw text first, then parse manually to isolate and handle any malformed JSON safely
+          const rawText = await response.text();
+          if (!rawText || rawText.trim() === "") {
+            throw new Error("Received an empty response body from the server.");
+          }
+          try {
+            data = JSON.parse(rawText);
+          } catch (parseError: any) {
+            const isHtml = rawText.trim().startsWith("<!DOCTYPE") || rawText.trim().startsWith("<html");
+            if (isHtml) {
+              throw new Error("Server returned an HTML document/error page instead of JSON.");
+            }
+            throw new Error(`Failed to parse response JSON: ${parseError.message || parseError}. Raw: ${rawText.substring(0, 80)}`);
+          }
+        } catch (err: any) {
+          throw new Error(`Response validation error: ${err.message}`);
+        }
+      } else {
+        // Handle HTML error pages or plain text responses gracefully
+        const rawText = await response.text();
+        const snippet = rawText ? rawText.trim().substring(0, 500) : "No body text";
+        const isHtml = snippet.startsWith("<!DOCTYPE") || snippet.startsWith("<html");
+        
+        if (isHtml) {
+          throw new Error(`Server returned an HTML error page (Status ${response.status}): ${snippet}`);
+        } else {
+          throw new Error(`Server returned non-JSON content type "${contentType}" (Status ${response.status}): "${snippet}"`);
+        }
+      }
+
+      if (!response.ok || (data && data.error)) {
+        throw new Error((data && data.message) || `Endpoint operation failed with status ${response.status}`);
       }
       return data;
 
     } catch (err: any) {
       console.error(`Error fetching ${endpoint}:`, err);
-      setApiError(err.message || "Failed to contact the career analysis server. Please ensure the backend is running and your GEMINI_API_KEY is active.");
+      const errMsg = err.message || "Failed to contact the career analysis server. Please ensure the backend is running and your GEMINI_API_KEY is active.";
+      setApiError(errMsg);
+
+      // Log fatal errors to Firestore errorLog subcollection for debugging
+      if (auth.currentUser) {
+        try {
+          const errorId = `err_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          await setDoc(doc(db, "users", auth.currentUser.uid, "errorLog", errorId), {
+            endpoint,
+            payload: body || null,
+            timestamp: new Date().toISOString(),
+            errorStatus: response?.status || null,
+            errorMessage: errMsg,
+          });
+        } catch (dbErr) {
+          console.error("Failed to sync errorLog to Firestore:", dbErr);
+        }
+      }
+
       throw err;
     }
   };
@@ -809,6 +990,7 @@ export default function App() {
 
   // Left sidebar tabs array
   const navigationTabs = [
+    { id: "home", name: "User Dashboard", icon: Home },
     { id: "blueprint", name: "Student Profile", icon: User },
     { id: "dashboard", name: "Placement Audit", icon: LayoutDashboard },
     { id: "resume", name: "Resume & LinkedIn", icon: FileText },
@@ -820,25 +1002,34 @@ export default function App() {
     { id: "outreach", name: "Job Strategy", icon: Search },
     { id: "negotiate", name: "Offer & Negotiation", icon: Scale },
     { id: "communication", name: "Confidence Coach", icon: MessageCircleCode },
+    ...((user?.email === "sushilmadan.yg@gmail.com" || localUserBypass) ? [
+      { id: "admin", name: "Admin Dashboard", icon: Activity }
+    ] : []),
+    { id: "settings", name: "Settings", icon: Settings },
   ];
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4">
-        <div className="space-y-4 text-center">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider rounded-full font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" /> Loading placement core...
-          </div>
-          <div className="text-sm font-semibold text-white/40 font-mono">Connecting to PlacementOS Secure Node...</div>
-        </div>
-      </div>
-    );
+    return <AppLoadingSpinner phase="auth" />;
   }
 
   if (!user && !localUserBypass) {
+    if (showAuth) {
+      return (
+        <AuthScreen 
+          onAuthSuccess={() => {}} 
+          onLocalBypass={() => {
+            localStorage.setItem("local_sandbox_active", "true");
+            setLocalUserBypass(true);
+          }}
+          onBack={() => setShowAuth(false)}
+        />
+      );
+    }
+
     return (
-      <AuthScreen 
-        onAuthSuccess={() => {}} 
+      <LandingPage 
+        onGetStarted={() => setShowAuth(true)}
+        onLogin={() => setShowAuth(true)}
         onLocalBypass={() => {
           localStorage.setItem("local_sandbox_active", "true");
           setLocalUserBypass(true);
@@ -1041,44 +1232,71 @@ export default function App() {
         <main className="flex-1 overflow-y-auto space-y-6">
           {/* Global Missing API Key Alert / Server Error boundary */}
           {apiError && (
-            <div className="bg-[#111] border border-rose-500/30 rounded-xl p-5 flex items-start gap-3 shadow-sm">
-              <ShieldAlert className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
-              <div>
-                <h3 className="font-bold text-rose-400 text-sm">Career Advisor Offline</h3>
-                <p className="text-xs text-white/70 mt-1 leading-relaxed">
-                  {apiError}
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => setApiError(null)}
-                    className="text-xs font-bold text-rose-400 hover:text-rose-300 underline"
-                  >
-                    Dismiss Warning
-                  </button>
-                  <button
-                    onClick={() => runCoreAudit()}
-                    className="text-xs font-bold text-rose-400 hover:text-rose-300 border border-rose-500/20 bg-white/5 px-2.5 py-1 rounded-md shadow-xs"
-                  >
-                    Retry Core Audit
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ErrorAlertModal
+              error={apiError}
+              onClose={() => setApiError(null)}
+              onRetry={() => runCoreAudit()}
+            />
           )}
 
           {/* Quick analysis notice */}
           {isAnalyzing && (
-            <div className="bg-[#111] border border-white/10 text-white rounded-xl p-6 shadow-lg flex items-center gap-4 justify-between animate-pulse">
-              <div className="space-y-1">
-                <h4 className="font-bold text-sm text-emerald-400">PlacementOS Analyzing Profile...</h4>
-                <p className="text-white/60 text-xs">Generating Employability map, scoring assets, and designing target role pathways.</p>
-              </div>
-              <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin shrink-0"></div>
-            </div>
+            <AppLoadingSpinner phase="audit" />
           )}
 
           {/* View Router */}
           <div className="max-w-6xl mx-auto">
+            {activeTab === "home" && (
+              <UserDashboard
+                profile={profile}
+                scores={scores}
+                interviewHistory={interviewHistory}
+                onNavigateToSection={handleNavigateToSection}
+                activities={activities}
+                notifications={notifications}
+                onMarkNotificationRead={(id) => {
+                  setNotifications(prev => {
+                    const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+                    localStorage.setItem("placement_notifications", JSON.stringify(updated));
+                    return updated;
+                  });
+                }}
+                onMarkAllNotificationsRead={() => {
+                  setNotifications(prev => {
+                    const updated = prev.map(n => ({ ...n, read: true }));
+                    localStorage.setItem("placement_notifications", JSON.stringify(updated));
+                    return updated;
+                  });
+                }}
+                onRefreshData={async () => {
+                  setIsAnalyzing(true);
+                  try {
+                    await runCoreAudit();
+                    logActivity("Manual Core Audit Triggered", "Aggregated employability matrices updated across all active channels.", "analytics");
+                    addNotification("Employability matrices updated", "Manual refresh successfully updated your active career readiness scorecards.");
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setIsAnalyzing(false);
+                  }
+                }}
+                isRefreshing={isAnalyzing}
+              />
+            )}
+
+            {activeTab === "admin" && (user?.email === "sushilmadan.yg@gmail.com" || localUserBypass) && (
+              <AdminDashboard currentLogsCount={activities.length} />
+            )}
+
+            {activeTab === "settings" && (
+              <SettingsPanel
+                profile={profile}
+                onSaveProfile={handleSaveProfile}
+                interviewHistory={interviewHistory}
+                onSignOut={handleSignOut}
+              />
+            )}
+
             {activeTab === "blueprint" && (
               <ProfileForm profile={profile} onSave={handleSaveProfile} hrAnalysis={hrAnalysis} />
             )}

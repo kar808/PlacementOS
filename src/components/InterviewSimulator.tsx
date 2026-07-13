@@ -91,6 +91,10 @@ export default function InterviewSimulator({
   const recognitionRef = useRef<any>(null);
   const baseTranscriptRef = useRef<string>("");
 
+  const currentQuestion: MockInterviewQuestion | undefined = session.questions[session.currentQuestionIndex];
+  const lastHistoryItem = session.chatHistory[session.chatHistory.length - 1];
+  const isQuestionAnswered = lastHistoryItem?.role === "student" && lastHistoryItem.feedback !== undefined;
+
   // Check speech recognition support and initialize
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -492,10 +496,6 @@ export default function InterviewSimulator({
       { subject: "Confidence", value: avgConf }
     ];
   };
-
-  const currentQuestion: MockInterviewQuestion | undefined = session.questions[session.currentQuestionIndex];
-  const lastHistoryItem = session.chatHistory[session.chatHistory.length - 1];
-  const isQuestionAnswered = lastHistoryItem?.role === "student" && lastHistoryItem.feedback !== undefined;
 
   const activeRadarData = getActiveRadarData();
   const historicalRadarData = getHistoricalRadarData();
