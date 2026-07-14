@@ -70,41 +70,7 @@ import {
 // Client-side rate-limiting rolling window tracking
 const clientRequestHistory: { [userId: string]: number[] } = {};
 
-// Helper to produce a deterministic, sorted canonical JSON string representation
-function getCanonicalString(obj: any): string {
-  if (obj === null || obj === undefined) return "null";
-  if (typeof obj !== "object") {
-    if (typeof obj === "string") {
-      return `"${obj.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-    }
-    return String(obj);
-  }
-  if (Array.isArray(obj)) {
-    return "[" + obj.map(getCanonicalString).join(",") + "]";
-  }
-  const keys = Object.keys(obj).sort();
-  const parts = keys
-    .map(k => {
-      const val = obj[k];
-      if (val === undefined) return null;
-      return `"${k}":${getCanonicalString(val)}`;
-    })
-    .filter(p => p !== null);
-  return "{" + parts.join(",") + "}";
-}
-
-// Client-side synchronous request integrity calculation helper
-function computeRequestIntegrity(endpoint: string, body: any, timestamp: number, userId: string): string {
-  const secret = "PlacementOS_Secure_Key_2026";
-  const data = `${endpoint}:${getCanonicalString(body || {})}:${timestamp}:${userId}:${secret}`;
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) {
-    const char = data.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return hash.toString(16);
-}
+import { getCanonicalString, computeRequestIntegrity } from "./lib/apiUtils";
 
 export default function App() {
   // Firebase Auth and Profile states
@@ -1364,6 +1330,7 @@ export default function App() {
                 onResetInterview={handleResetInterview}
                 isGenerating={isGeneratingInterview}
                 isEvaluating={isEvaluatingInterview}
+                callServerEndpoint={callServerEndpoint}
               />
             )}
 

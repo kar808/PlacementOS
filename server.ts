@@ -262,6 +262,16 @@ const rateLimiter = (limit: number, windowMs: number) => {
   };
 };
 
+// Register server-side logging endpoint before global /api verification middlewares
+app.post("/api/logs", (req, res) => {
+  const { level, category, message, details, userId } = req.body;
+  const timestamp = new Date().toISOString();
+  const logStr = `[${timestamp}] [CLIENT-LOG] [${level || "INFO"}] [${category || "GENERAL"}] ${message || ""} (User: ${userId || "anonymous"})\nDetails: ${JSON.stringify(details || {})}`;
+  addToDebugLogs(logStr);
+  console.log(logStr);
+  res.json({ success: true });
+});
+
 // Register middlewares on all API routes
 app.use("/api", validateJWT);
 app.use("/api", validateRequestIntegrity);

@@ -31,6 +31,7 @@ interface InterviewSimulatorProps {
   onResetInterview: () => void;
   isGenerating: boolean;
   isEvaluating: boolean;
+  callServerEndpoint: (endpoint: string, body: any) => Promise<any>;
 }
 
 export default function InterviewSimulator({
@@ -43,6 +44,7 @@ export default function InterviewSimulator({
   onResetInterview,
   isGenerating,
   isEvaluating,
+  callServerEndpoint,
 }: InterviewSimulatorProps) {
   const [selectedRole, setSelectedRole] = useState(profile.targetRoles[0] || "");
   const [userAnswerInput, setUserAnswerInput] = useState("");
@@ -428,23 +430,11 @@ export default function InterviewSimulator({
     setClarifyError(null);
     setIsTimerActive(false); // Pause the countdown timer!
     try {
-      const response = await fetch("/api/placement/interview/clarify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          question: currentQuestion.question,
-          type: currentQuestion.type,
-          expectedFocus: currentQuestion.expectedFocus,
-        }),
+      const data = await callServerEndpoint("/api/placement/interview/clarify", {
+        question: currentQuestion.question,
+        type: currentQuestion.type,
+        expectedFocus: currentQuestion.expectedFocus,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to contact the AI Coach for clarification.");
-      }
-
-      const data = await response.json();
       setClarificationData(data);
     } catch (err: any) {
       console.error("Clarification error:", err);
