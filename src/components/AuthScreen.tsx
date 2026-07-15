@@ -70,7 +70,7 @@ function describeAuthError(err: unknown): string {
     case "auth/account-exists-with-different-credential":
       return `An account already exists for ${e.customData?.email ?? "this email"} with a different sign-in method.`;
     case "auth/unauthorized-domain":
-      return "This domain isn't authorized in Firebase settings. Add it under Authentication → Settings → Authorized domains.";
+      return "This domain isn't authorized in Firebase settings. If you intended to use Supabase, please verify that you have added VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Vercel Environment Variables. Otherwise, add this domain under Firebase Console → Authentication → Settings → Authorized domains.";
     case "auth/operation-not-allowed":
       return "Google sign-in is currently disabled. Please enable it in Firebase Console → Authentication.";
     case "auth/invalid-api-key":
@@ -228,14 +228,19 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
 
     try {
       let userId: string;
+      // Convert username to synthetic email if it does not contain '@'
+      const targetEmail = loginEmail.includes("@") 
+        ? loginEmail.trim() 
+        : `${loginEmail.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "")}@placementos.com`;
+
       if (isSupabaseConfigured()) {
-        const { user: sbUser, error: sbError } = await supabaseAuth.signIn(loginEmail, loginPassword);
+        const { user: sbUser, error: sbError } = await supabaseAuth.signIn(targetEmail, loginPassword);
         if (sbError || !sbUser) {
-          throw new Error(sbError || "Failed to sign in to Supabase");
+          throw new Error(sbError || "Failed to sign in. Please verify your username and password.");
         }
         userId = sbUser.uid;
       } else {
-        const userCredential = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+        const userCredential = await signInWithEmailAndPassword(auth, targetEmail, loginPassword);
         userId = userCredential.user.uid;
       }
       
@@ -251,7 +256,7 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
       setFailedAttempts(0);
       
       // Create session metadata
-      await logSessionStart(userId, loginEmail);
+      await logSessionStart(userId, targetEmail);
 
       // Successfully authenticated
       onAuthSuccess(userId);
@@ -264,7 +269,7 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         setLockoutTimer(60);
         setError("Too many failed login attempts. Account access throttled for 60 seconds to protect account security.");
       } else {
-        setError(`${describeAuthError(err)} (${5 - attempts} attempts remaining before account security lockout)`);
+        setError(`Invalid Username or Password. (${5 - attempts} attempts remaining before account security lockout)`);
       }
     } finally {
       setIsLoading(false);
@@ -306,9 +311,13 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!signupEmail.trim() || !emailRegex.test(signupEmail)) {
-      setError("Please enter a valid institutional email address.");
+    if (!signupEmail.trim() || signupEmail.trim().length < 3) {
+      setError("Please enter a username with at least 3 characters.");
+      return;
+    }
+
+    if (signupEmail.trim().includes(" ")) {
+      setError("Username cannot contain spaces.");
       return;
     }
 
@@ -352,9 +361,8 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!signupEmail.trim() || !emailRegex.test(signupEmail)) {
-      setError("Please go back and enter a valid institutional email address.");
+    if (!signupEmail.trim() || signupEmail.trim().length < 3) {
+      setError("Please go back and enter a choose a valid username.");
       return;
     }
 
@@ -381,11 +389,16 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
 
     try {
       let userId: string;
+      // Convert username to synthetic email if it does not contain '@'
+      const targetEmail = signupEmail.includes("@")
+        ? signupEmail.trim()
+        : `${signupEmail.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "")}@placementos.com`;
+
       // Construct a unified profile
       const userProfile: StudentProfile = {
         ...DEFAULT_STUDENT_PROFILE,
         name: `${firstName} ${lastName}`.trim(),
-        email: signupEmail,
+        email: targetEmail,
         location: `${state ? `${state}, ` : ""}${country}`,
         college,
         degree,
@@ -399,7 +412,7 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
       };
 
       if (isSupabaseConfigured()) {
-        const { user: sbUser, error: sbError } = await supabaseAuth.signUp(signupEmail, signupPassword, `${firstName} ${lastName}`.trim());
+        const { user: sbUser, error: sbError } = await supabaseAuth.signUp(targetEmail, signupPassword, `${firstName} ${lastName}`.trim());
         if (sbError || !sbUser) {
           throw new Error(sbError || "Failed to sign up on Supabase");
         }
@@ -417,13 +430,13 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         });
 
         // Log Session Start
-        await logSessionStart(userId, signupEmail);
+        await logSessionStart(userId, targetEmail);
 
-        // Supabase sends a verification email automatically if enabled
-        setMode("verify");
+        // Immediately grant entry! No verification wait screens
+        onAuthSuccess(userId);
       } else {
         // Create user credential in Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, signupEmail, signupPassword);
+        const userCredential = await createUserWithEmailAndPassword(auth, targetEmail, signupPassword);
         const user = userCredential.user;
         userId = user.uid;
 
@@ -439,21 +452,14 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         });
 
         // Log Session Start
-        await logSessionStart(userId, signupEmail);
+        await logSessionStart(userId, targetEmail);
 
-        // Send Email Verification
-        try {
-          await sendEmailVerification(user);
-          setMode("verify"); // Transit to verification wait stage
-        } catch (verifErr) {
-          console.error("Could not send verification email immediately:", verifErr);
-          // Fallback: let them through if verification block fails to send or let them retry
-          setMode("success");
-        }
+        // Immediately grant entry! No verification wait screens
+        onAuthSuccess(userId);
       }
     } catch (err: any) {
       console.error("[AuthScreen] Complete Sign Up failed:", err);
-      setError(describeAuthError(err));
+      setError(isSupabaseConfigured() ? err.message : describeAuthError(err));
     } finally {
       setIsLoading(false);
     }
@@ -642,6 +648,20 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
             <Sparkles className="w-3 h-3 animate-pulse" /> PlacementOS Career Companion
           </div>
           
+          <div className="flex justify-center">
+            {isSupabaseConfigured() ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-mono rounded-full font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                Supabase Secure Gateway
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-mono rounded-full font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Firebase Auth Sandbox Fallback
+              </span>
+            )}
+          </div>
+          
           {mode === "login" && (
             <>
               <h2 className="text-2xl font-black text-white tracking-tight">Access Your Placement Engine</h2>
@@ -720,15 +740,15 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         {mode === "login" && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest font-mono">Email Address</label>
+              <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest font-mono">Username</label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30" />
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="you@university.edu"
+                  placeholder="Enter your username"
                   className="w-full text-sm bg-black border border-white/10 rounded-xl pl-10.5 pr-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
                 />
               </div>
@@ -869,18 +889,19 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest font-mono">Institutional Email</label>
+                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest font-mono">Choose a Username</label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                     <input
-                      type="email"
+                      type="text"
                       required
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      placeholder="jane.doe@university.edu"
+                      placeholder="e.g., sushil"
                       className="w-full text-sm bg-black border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                     />
                   </div>
+                  <p className="text-[10px] text-white/30">Used securely to reload your profile. No email or verification required.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -1284,44 +1305,10 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
           </div>
         )}
 
-        {/* SHARED TOGGLES: GOOGLE & GUEST */}
+        {/* SHARED TOGGLES: GUEST */}
         {(mode === "login" || mode === "signup") && (
           <div className="space-y-3 pt-1">
             
-            {/* Divider */}
-            <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-[1px] bg-white/10" />
-              <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider font-mono">OR</span>
-              <div className="flex-1 h-[1px] bg-white/10" />
-            </div>
-
-            {/* Google OAuth Option */}
-            <button
-              onClick={handleGoogleLogin}
-              disabled={isLoading}
-              className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.61c-.29 1.5-.1.31-1.32 2.31v1.92h2.13c1.25-1.15 2.13-2.85 2.13-4.82z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-3.13-1.92c-.87.58-1.99.92-3.13.92-2.41 0-4.45-1.63-5.18-3.82H.87v2.41C2.85 20.35 7.15 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M6.82 14.19a7.11 7.11 0 0 1 0-2.38V9.4H.87a11.97 11.97 0 0 0 0 5.19l5.95-.4z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0 7.15 0 2.85 3.65.87 7.75l5.95 2.41c.73-2.19 2.77-3.82 5.18-3.82z"
-                />
-              </svg>
-              <span>Continue with Google Sign-In</span>
-            </button>
-
             {/* Guest access option */}
             <button
               onClick={handleGuestLogin}
