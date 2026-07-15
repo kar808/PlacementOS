@@ -16,11 +16,6 @@ import {
 } from "./types";
 import { DEFAULT_STUDENT_PROFILE } from "./lib/defaultProfile";
 
-// Firebase integration
-import { onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
-import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
-import { auth, db } from "./lib/firebase";
-
 // Supabase integration
 import { getSupabase, isSupabaseConfigured, supabaseAuth, supabaseDb, AdaptedUser } from "./lib/supabase";
 
@@ -77,8 +72,8 @@ import { getCanonicalString, computeRequestIntegrity } from "./lib/apiUtils";
 import { startCall, endCall } from "./lib/apiMonitoring";
 
 export default function App() {
-  // Firebase Auth and Profile states
-  const [user, setUser] = useState<FirebaseUser | AdaptedUser | null>(null);
+  // Auth and Profile states
+  const [user, setUser] = useState<AdaptedUser | null>(null);
   const [localUserBypass, setLocalUserBypass] = useState<boolean>(() => {
     return localStorage.getItem("local_sandbox_active") === "true";
   });
@@ -239,24 +234,15 @@ export default function App() {
       return updated;
     });
 
-    const currentUserId = isSupabaseConfigured() ? user?.uid : auth.currentUser?.uid;
-    if (currentUserId) {
+    const currentUserId = user?.uid;
+    if (currentUserId && currentUserId !== "local_sandbox_user") {
       try {
-        if (isSupabaseConfigured()) {
-          await supabaseDb.saveActivity(currentUserId, newActivity.id, {
-            event,
-            description,
-            timestamp: isoString,
-            category
-          });
-        } else {
-          await setDoc(doc(db, "users", currentUserId, "activityLog", newActivity.id), {
-            event,
-            description,
-            timestamp: isoString,
-            category
-          });
-        }
+        await supabaseDb.saveActivity(currentUserId, newActivity.id, {
+          event,
+          description,
+          timestamp: isoString,
+          category
+        });
       } catch (err) {
         console.error("Failed to sync activity to database:", err);
       }
@@ -306,156 +292,79 @@ export default function App() {
       }
     };
 
-    if (isSupabaseConfigured()) {
-      setAuthLoading(true);
-      const unsubscribe = supabaseAuth.onAuthStateChange(async (sbUser) => {
-        setUser(sbUser);
-        if (sbUser) {
-          try {
-            const savedProfile = await supabaseDb.getProfile(sbUser.uid);
-            if (savedProfile) {
-              setProfile(savedProfile);
-              const isComplete = !!(savedProfile.college && savedProfile.degree && savedProfile.branch);
-              setHasProfile(isComplete);
+    setAuthLoading(true);
+    const unsubscribe = supabaseAuth.onAuthStateChange(async (sbUser) => {
+      setUser(sbUser);
+      if (sbUser) {
+        try {
+          const savedProfile = await supabaseDb.getProfile(sbUser.uid);
+          if (savedProfile) {
+            setProfile(savedProfile);
+            const isComplete = !!(savedProfile.college && savedProfile.degree && savedProfile.branch);
+            setHasProfile(isComplete);
 
-              // Fetch analytical modules from Supabase
-              const intelligenceData = await supabaseDb.getAnalytics(sbUser.uid, "intelligence");
-              if (intelligenceData) setIntelligenceMap(intelligenceData);
+            // Fetch analytical modules from Supabase
+            const intelligenceData = await supabaseDb.getAnalytics(sbUser.uid, "intelligence");
+            if (intelligenceData) setIntelligenceMap(intelligenceData);
 
-              const scoresData = await supabaseDb.getAnalytics(sbUser.uid, "scores");
-              if (scoresData) setScores(scoresData);
+            const scoresData = await supabaseDb.getAnalytics(sbUser.uid, "scores");
+            if (scoresData) setScores(scoresData);
 
-              const rolesData = await supabaseDb.getAnalytics(sbUser.uid, "roles");
-              if (rolesData?.list) setRecommendedRoles(rolesData.list);
+            const rolesData = await supabaseDb.getAnalytics(sbUser.uid, "roles");
+            if (rolesData?.list) setRecommendedRoles(rolesData.list);
 
-              const hrData = await supabaseDb.getAnalytics(sbUser.uid, "hrAnalysis");
-              if (hrData) setHrAnalysis(hrData);
+            const hrData = await supabaseDb.getAnalytics(sbUser.uid, "hrAnalysis");
+            if (hrData) setHrAnalysis(hrData);
 
-              // Fetch interviews from Supabase
-              try {
-                const history = await supabaseDb.getInterviews(sbUser.uid);
-                setInterviewHistory(history);
-                localStorage.setItem("placement_interview_history", JSON.stringify(history));
-              } catch (err) {
-                console.error("Error reading interviews from Supabase:", err);
-              }
-
-              // Fetch activities from Supabase
-              try {
-                const historyList = await supabaseDb.getActivities(sbUser.uid);
-                setActivities(historyList);
-                localStorage.setItem("placement_activities", JSON.stringify(historyList));
-              } catch (err) {
-                console.error("Error reading activity log from Supabase:", err);
-              }
-            } else {
-              // Pre-populate profile with basic metadata if no saved profile exists yet
-              const initialProfile: StudentProfile = {
-                ...DEFAULT_STUDENT_PROFILE,
-                email: sbUser.email || "",
-                name: sbUser.displayName || sbUser.email?.split("@")[0] || "New Student",
-                location: "Bengaluru, India"
-              };
-              setProfile(initialProfile);
-              setHasProfile(false);
+            // Fetch interviews from Supabase
+            try {
+              const history = await supabaseDb.getInterviews(sbUser.uid);
+              setInterviewHistory(history);
+              localStorage.setItem("placement_interview_history", JSON.stringify(history));
+            } catch (err) {
+              console.error("Error reading interviews from Supabase:", err);
             }
-          } catch (error: any) {
-            console.error("Supabase read error:", error);
-            setApiError(`Supabase Profile Initialization Failure: ${error?.message || error}`);
+
+            // Fetch activities from Supabase
+            try {
+              const historyList = await supabaseDb.getActivities(sbUser.uid);
+              setActivities(historyList);
+              localStorage.setItem("placement_activities", JSON.stringify(historyList));
+            } catch (err) {
+              console.error("Error reading activity log from Supabase:", err);
+            }
+          } else {
+            // Pre-populate profile with basic metadata if no saved profile exists yet
+            const initialProfile: StudentProfile = {
+              ...DEFAULT_STUDENT_PROFILE,
+              email: sbUser.email || "",
+              name: sbUser.displayName || sbUser.email?.split("@")[0] || "New Student",
+              location: "Bengaluru, India"
+            };
+            setProfile(initialProfile);
             setHasProfile(false);
           }
-        } else {
-          handleNoUser();
+        } catch (error: any) {
+          console.error("Supabase read error:", error);
+          setApiError(`Supabase Profile Initialization Failure: ${error?.message || error}`);
+          setHasProfile(false);
         }
-        setAuthLoading(false);
-      });
-      return unsubscribe;
-    } else {
-      setAuthLoading(true);
-      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        setUser(firebaseUser);
-        if (firebaseUser) {
-          try {
-            const userDocRef = doc(db, "users", firebaseUser.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-              const savedProfile = userDocSnap.data() as StudentProfile;
-              setProfile(savedProfile);
-              
-              // Incomplete profiles (e.g. Google sign up with missing education) are sent to Onboarding Wizard
-              const isComplete = !!(savedProfile.college && savedProfile.degree && savedProfile.branch);
-              setHasProfile(isComplete);
-
-              // Fetch analytical modules
-              const intelSnap = await getDoc(doc(db, "users", firebaseUser.uid, "analytics", "intelligence"));
-              if (intelSnap.exists()) setIntelligenceMap(intelSnap.data() as IntelligenceMap);
-
-              const scoresSnap = await getDoc(doc(db, "users", firebaseUser.uid, "analytics", "scores"));
-              if (scoresSnap.exists()) setScores(scoresSnap.data() as ReadinessScores);
-
-              const rolesSnap = await getDoc(doc(db, "users", firebaseUser.uid, "analytics", "roles"));
-              if (rolesSnap.exists()) setRecommendedRoles((rolesSnap.data() as any).list);
-
-              const hrSnap = await getDoc(doc(db, "users", firebaseUser.uid, "analytics", "hrAnalysis"));
-              if (hrSnap.exists()) setHrAnalysis(hrSnap.data() as HRProfileAnalysis);
-
-              // Fetch interview history from Firestore
-              try {
-                const interviewsSnap = await getDocs(collection(db, "users", firebaseUser.uid, "interviews"));
-                const history: PastInterviewSession[] = [];
-                interviewsSnap.forEach((doc) => {
-                  history.push(doc.data() as PastInterviewSession);
-                });
-                history.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                setInterviewHistory(history);
-                localStorage.setItem("placement_interview_history", JSON.stringify(history));
-              } catch (err) {
-                console.error("Error reading interviews from Firestore:", err);
-              }
-
-              // Fetch activity log from Firestore
-              try {
-                const activitySnap = await getDocs(collection(db, "users", firebaseUser.uid, "activityLog"));
-                const historyList: any[] = [];
-                activitySnap.forEach((doc) => {
-                  historyList.push({ id: doc.id, ...doc.data() });
-                });
-                // Sort activities descending by timestamp
-                historyList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                setActivities(historyList);
-                localStorage.setItem("placement_activities", JSON.stringify(historyList));
-              } catch (err) {
-                console.error("Error reading activity log from Firestore:", err);
-              }
-            } else {
-              setHasProfile(false);
-            }
-          } catch (error: any) {
-            console.error("Firestore read error:", error);
-            setApiError(`Firebase/Firestore Profile Initialization Failure: ${error?.message || error}`);
-            setHasProfile(false);
-          }
-        } else {
-          handleNoUser();
-        }
-        setAuthLoading(false);
-      });
-      return () => unsubscribe();
-    }
+      } else {
+        handleNoUser();
+      }
+      setAuthLoading(false);
+    });
+    return unsubscribe;
   }, [localUserBypass]);
 
-  // Sync profile edits with local cache and Firestore/Supabase
+  // Sync profile edits with local cache and Supabase
   const saveProfileUpdate = async (updated: StudentProfile) => {
     setProfile(updated);
     localStorage.setItem("placement_profile", JSON.stringify(updated));
-    if (user) {
+    if (user && user.uid !== "local_sandbox_user") {
       try {
-        if (isSupabaseConfigured()) {
-          const success = await supabaseDb.saveProfile(user.uid, updated);
-          if (!success) throw new Error("Supabase write failed");
-        } else {
-          await setDoc(doc(db, "users", user.uid), updated);
-        }
+        const success = await supabaseDb.saveProfile(user.uid, updated);
+        if (!success) throw new Error("Supabase write failed");
         setSyncFailed(false);
       } catch (err) {
         console.error("Profile sync error:", err);
@@ -466,11 +375,7 @@ export default function App() {
 
   const handleSignOut = async () => {
     try {
-      if (isSupabaseConfigured()) {
-        await supabaseAuth.signOut();
-      } else {
-        await signOut(auth);
-      }
+      await supabaseAuth.signOut();
     } catch (err) {
       console.error("SignOut error:", err);
     }
@@ -513,14 +418,10 @@ export default function App() {
     setHasProfile(true);
     localStorage.setItem("placement_profile", JSON.stringify(completedProfile));
     
-    if (user) {
+    if (user && user.uid !== "local_sandbox_user") {
       try {
-        if (isSupabaseConfigured()) {
-          const success = await supabaseDb.saveProfile(user.uid, completedProfile);
-          if (!success) throw new Error("Supabase write failed");
-        } else {
-          await setDoc(doc(db, "users", user.uid), completedProfile);
-        }
+        const success = await supabaseDb.saveProfile(user.uid, completedProfile);
+        if (!success) throw new Error("Supabase write failed");
         setSyncFailed(false);
       } catch (err) {
         console.error("Save onboarding error:", err);
@@ -532,37 +433,21 @@ export default function App() {
 
   // Manual retry synchronization handler
   const handleSyncRetry = async () => {
-    if (!user) return;
+    if (!user || user.uid === "local_sandbox_user") return;
     setIsSyncing(true);
     try {
-      if (isSupabaseConfigured()) {
-        await supabaseDb.saveProfile(user.uid, profile);
-        if (intelligenceMap) {
-          await supabaseDb.saveAnalytics(user.uid, "intelligence", intelligenceMap);
-        }
-        if (scores) {
-          await supabaseDb.saveAnalytics(user.uid, "scores", scores);
-        }
-        if (recommendedRoles) {
-          await supabaseDb.saveAnalytics(user.uid, "roles", { list: recommendedRoles });
-        }
-        if (hrAnalysis) {
-          await supabaseDb.saveAnalytics(user.uid, "hrAnalysis", hrAnalysis);
-        }
-      } else {
-        await setDoc(doc(db, "users", user.uid), profile);
-        if (intelligenceMap) {
-          await setDoc(doc(db, "users", user.uid, "analytics", "intelligence"), intelligenceMap);
-        }
-        if (scores) {
-          await setDoc(doc(db, "users", user.uid, "analytics", "scores"), scores);
-        }
-        if (recommendedRoles) {
-          await setDoc(doc(db, "users", user.uid, "analytics", "roles"), { list: recommendedRoles });
-        }
-        if (hrAnalysis) {
-          await setDoc(doc(db, "users", user.uid, "analytics", "hrAnalysis"), hrAnalysis);
-        }
+      await supabaseDb.saveProfile(user.uid, profile);
+      if (intelligenceMap) {
+        await supabaseDb.saveAnalytics(user.uid, "intelligence", intelligenceMap);
+      }
+      if (scores) {
+        await supabaseDb.saveAnalytics(user.uid, "scores", scores);
+      }
+      if (recommendedRoles) {
+        await supabaseDb.saveAnalytics(user.uid, "roles", { list: recommendedRoles });
+      }
+      if (hrAnalysis) {
+        await supabaseDb.saveAnalytics(user.uid, "hrAnalysis", hrAnalysis);
       }
       setSyncFailed(false);
     } catch (err) {
@@ -578,12 +463,8 @@ export default function App() {
     localStorage.setItem("placement_hr_analysis", JSON.stringify(analysisData));
     if (user && user.uid !== "local_sandbox_user") {
       try {
-        if (isSupabaseConfigured()) {
-          const success = await supabaseDb.saveAnalytics(user.uid, "hrAnalysis", analysisData);
-          if (!success) throw new Error("Supabase write failed");
-        } else {
-          await setDoc(doc(db, "users", user.uid, "analytics", "hrAnalysis"), analysisData);
-        }
+        const success = await supabaseDb.saveAnalytics(user.uid, "hrAnalysis", analysisData);
+        if (!success) throw new Error("Supabase write failed");
         setSyncFailed(false);
       } catch (err) {
         console.error("HR analysis sync error:", err);
@@ -592,10 +473,10 @@ export default function App() {
     }
   };
 
-  // Unified endpoint executor helper with Firebase/Supabase JWT verification header, request integrity and client-side rate limiting
+  // Unified endpoint executor helper with Supabase JWT verification header, request integrity and client-side rate limiting
   const callServerEndpoint = async (endpoint: string, body: any) => {
     setApiError(null);
-    const userId = isSupabaseConfigured() ? (user?.uid || "sandbox-user") : (auth.currentUser?.uid || "sandbox-user");
+    const userId = user?.uid || "sandbox-user";
     const monitorStartTime = startCall(endpoint);
 
     // 1. Client-Side Rate-Limiting Protection (sliding 60-second window, max 25 requests per user)
@@ -615,17 +496,10 @@ export default function App() {
     let response: Response | null = null;
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (isSupabaseConfigured()) {
-        const supabase = getSupabase();
-        const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-        if (session) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
-        } else {
-          headers["Authorization"] = `Bearer sandbox-token-123456`;
-        }
-      } else if (auth.currentUser) {
-        const token = await auth.currentUser.getIdToken();
-        headers["Authorization"] = `Bearer ${token}`;
+      const supabase = getSupabase();
+      const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+      if (session) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
       } else {
         headers["Authorization"] = `Bearer sandbox-token-123456`;
       }
@@ -693,10 +567,9 @@ export default function App() {
       setApiError(errMsg);
 
       // Log fatal errors to database for debugging
-      const currentUserId = isSupabaseConfigured() ? user?.uid : auth.currentUser?.uid;
-      if (currentUserId) {
+      const currentUserId = user?.uid;
+      if (currentUserId && currentUserId !== "local_sandbox_user") {
         try {
-          const errorId = `err_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
           const logPayload = {
             endpoint,
             payload: body || null,
@@ -704,17 +577,13 @@ export default function App() {
             errorStatus: response?.status || null,
             errorMessage: errMsg,
           };
-          if (isSupabaseConfigured()) {
-            await supabaseDb.saveSystemLog({
-              level: "error",
-              category: "endpoint_failure",
-              message: `Endpoint ${endpoint} failed: ${errMsg}`,
-              details: logPayload,
-              userId: currentUserId
-            });
-          } else {
-            await setDoc(doc(db, "users", currentUserId, "errorLog", errorId), logPayload);
-          }
+          await supabaseDb.saveSystemLog({
+            level: "error",
+            category: "endpoint_failure",
+            message: `Endpoint ${endpoint} failed: ${errMsg}`,
+            details: logPayload,
+            userId: currentUserId
+          });
         } catch (dbErr) {
           console.error("Failed to sync errorLog to database:", dbErr);
         }
@@ -739,17 +608,11 @@ export default function App() {
       localStorage.setItem("placement_scores", JSON.stringify(data.scores));
       localStorage.setItem("placement_roles", JSON.stringify(data.recommendedRoles));
 
-      if (user) {
+      if (user && user.uid !== "local_sandbox_user") {
         try {
-          if (isSupabaseConfigured()) {
-            await supabaseDb.saveAnalytics(user.uid, "intelligence", data.intelligenceMap);
-            await supabaseDb.saveAnalytics(user.uid, "scores", data.scores);
-            await supabaseDb.saveAnalytics(user.uid, "roles", { list: data.recommendedRoles });
-          } else {
-            await setDoc(doc(db, "users", user.uid, "analytics", "intelligence"), data.intelligenceMap);
-            await setDoc(doc(db, "users", user.uid, "analytics", "scores"), data.scores);
-            await setDoc(doc(db, "users", user.uid, "analytics", "roles"), { list: data.recommendedRoles });
-          }
+          await supabaseDb.saveAnalytics(user.uid, "intelligence", data.intelligenceMap);
+          await supabaseDb.saveAnalytics(user.uid, "scores", data.scores);
+          await supabaseDb.saveAnalytics(user.uid, "roles", { list: data.recommendedRoles });
           setSyncFailed(false);
         } catch (dbErr) {
           console.error("Database audit sync error:", dbErr);
@@ -1013,11 +876,7 @@ export default function App() {
 
     if (user && user.uid !== "local_sandbox_user") {
       try {
-        if (isSupabaseConfigured()) {
-          await supabaseDb.saveInterview(user.uid, pastSession.id, pastSession);
-        } else {
-          await setDoc(doc(db, "users", user.uid, "interviews", pastSession.id), pastSession);
-        }
+        await supabaseDb.saveInterview(user.uid, pastSession.id, pastSession);
       } catch (err) {
         console.error("Save interview history error:", err);
       }
@@ -1193,7 +1052,7 @@ export default function App() {
             </div>
           )}
           <button
-            onClick={() => signOut(auth)}
+            onClick={handleSignOut}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -1220,7 +1079,7 @@ export default function App() {
             </span>
             <div>
               <p className="text-xs font-black text-amber-400 font-mono">
-                {!isOnline ? "CAMPAIGN OFFLINE MODE ACTIVE" : "FIRESTORE SYNCHRONIZATION ERROR"}
+                {!isOnline ? "CAMPAIGN OFFLINE MODE ACTIVE" : "SUPABASE SYNCHRONIZATION ERROR"}
               </p>
               <p className="text-[10px] text-white/50 font-semibold leading-relaxed mt-0.5">
                 {!isOnline 

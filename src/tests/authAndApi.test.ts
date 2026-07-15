@@ -1,31 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { getCanonicalString, computeRequestIntegrity } from "../lib/apiUtils";
-import { logger, LogLevel } from "../lib/logger";
-
-// Mock firebase
-vi.mock("../lib/firebase", () => {
-  return {
-    auth: {
-      currentUser: {
-        uid: "test-user-id",
-        getIdToken: async () => "mocked-token-abc-123",
-      },
-    },
-    db: {},
-  };
-});
-
-// Mock firestore functions
-vi.mock("firebase/firestore", () => {
-  return {
-    collection: vi.fn(),
-    addDoc: vi.fn(async () => ({ id: "mocked-doc-id" })),
-    serverTimestamp: () => "mocked-server-timestamp",
-  };
-});
-
-// Mock fetch globally
-const originalFetch = global.fetch;
+import { logger } from "../lib/logger";
 
 describe("Centralized API Utils & Integrity Verification Tests", () => {
   it("getCanonicalString should handle basic objects deterministically", () => {

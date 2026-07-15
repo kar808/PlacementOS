@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { StudentProfile, ReadinessScores, PastInterviewSession } from "../types";
-import { auth } from "../lib/firebase";
 import { 
   LayoutDashboard, 
   Sparkles, 
@@ -34,6 +33,7 @@ interface UserDashboardProps {
   onMarkAllNotificationsRead: () => void;
   onRefreshData?: () => void;
   isRefreshing?: boolean;
+  userId?: string;
 }
 
 export default function UserDashboard({
@@ -46,7 +46,8 @@ export default function UserDashboard({
   onMarkNotificationRead,
   onMarkAllNotificationsRead,
   onRefreshData,
-  isRefreshing
+  isRefreshing,
+  userId
 }: UserDashboardProps) {
   const [showAllNotifications, setShowAllNotifications] = useState<boolean>(false);
 
@@ -371,7 +372,7 @@ export default function UserDashboard({
               <span>SECURITY PROTOCOLS</span>
             </div>
             <p className="text-[10px] text-white/60 leading-normal">
-              Your profile metrics and session histories are encrypted and isolated under UID <code className="text-emerald-400 font-mono font-bold">{auth.currentUser?.uid?.substring(0, 8) || "SANDBOX"}...</code>.
+              Your profile metrics and session histories are encrypted and isolated under UID <code className="text-emerald-400 font-mono font-bold">{userId?.substring(0, 8) || "SANDBOX"}...</code>.
             </p>
           </div>
 

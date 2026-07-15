@@ -1,6 +1,4 @@
-import { db, auth } from "./firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { isSupabaseConfigured, getSupabase, supabaseDb } from "./supabase";
+import { isSupabaseConfigured, getSupabase, supabaseDb, supabaseAuth } from "./supabase";
 
 export enum LogLevel {
   INFO = "INFO",
@@ -18,27 +16,16 @@ export interface LogEntry {
 }
 
 class CentralLogger {
-  private getUserId(): string | null {
-    try {
-      return auth.currentUser?.uid || null;
-    } catch {
-      return null;
-    }
-  }
-
   private async persistToCloud(entry: LogEntry) {
     let userId = entry.userId;
     if (!userId) {
       if (isSupabaseConfigured()) {
-        const supabase = getSupabase();
         try {
-          const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
-          userId = session?.user?.id || null;
+          const user = await supabaseAuth.getCurrentUser();
+          userId = user?.uid || null;
         } catch {
           userId = null;
         }
-      } else {
-        userId = this.getUserId();
       }
     }
     
@@ -88,64 +75,25 @@ class CentralLogger {
         }
       }
     } else {
-      // 1. Dedicated systemLogs Firestore Collection Transport
+      // If no cloud is configured, log locally in console/localStorage if needed
       try {
-        await addDoc(collection(db, "systemLogs"), {
-          level: entry.level,
-          category: entry.category,
-          message: entry.message,
-          timestamp: serverTimestamp(),
-          userId: userId || "anonymous",
-          stackTrace: stackTrace,
-          details: entry.details ? (entry.details instanceof Error ? entry.details.message : JSON.stringify(entry.details)) : null,
-        });
-      } catch (err) {
-        console.error("Failed to persist log to dedicated systemLogs collection:", err);
-      }
-
-      // 2. Backward compatible user-specific collection transport
-      if (userId) {
-        try {
-          // Based on level/category, select subcollection according to firestore.rules
-          const subcollection = entry.level === LogLevel.ERROR ? "errorLog" : "activityLog";
-          const path = `users/${userId}/${subcollection}`;
-          await addDoc(collection(db, path), {
-            level: entry.level,
-            category: entry.category,
-            message: entry.message,
-            timestamp: serverTimestamp(),
-            details: entry.details ? (entry.details instanceof Error ? entry.details.message : JSON.stringify(entry.details)) : null,
-            userId,
-          });
-        } catch (err) {
-          console.error("Failed to persist log to Firestore user subcollection:", err);
-        }
-      } else {
-        // If no user is logged in, send it to the server-side logging API
-        try {
-          await fetch("/api/logs", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ ...entry, stackTrace }),
-          });
-        } catch (e) {
-          console.error("Failed to send log to server:", e);
-        }
+        const localLogs = JSON.parse(localStorage.getItem("placement_local_logs") || "[]");
+        localLogs.push({ ...entry, stackTrace });
+        localStorage.setItem("placement_local_logs", JSON.stringify(localLogs.slice(-100)));
+      } catch (e) {
+        console.error("Failed to save local log:", e);
       }
     }
   }
 
   log(level: LogLevel, category: LogEntry["category"], message: string, details?: any) {
-    const userId = this.getUserId();
     const entry: LogEntry = {
       level,
       category,
       message,
       timestamp: new Date().toISOString(),
       details,
-      userId,
+      userId: null,
     };
 
     // 1. Console Output with appropriate styles/colors

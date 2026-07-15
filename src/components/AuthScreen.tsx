@@ -1,16 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signInAnonymously,
-  signInWithPopup,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  AuthError 
-} from "firebase/auth";
-import { auth, db, googleProvider } from "../lib/firebase";
-import { setDoc, getDoc, doc } from "firebase/firestore";
-
 // Supabase integration
 import { isSupabaseConfigured, supabaseAuth, supabaseDb } from "../lib/supabase";
 import { DEFAULT_STUDENT_PROFILE } from "../lib/defaultProfile";
@@ -53,45 +41,10 @@ const PRESET_SKILLS = [
   "Machine Learning", "Docker", "Git", "DevOps", "Financial Modeling"
 ];
 
-// Map Firebase auth error codes to human-readable, actionable messages.
+// Map auth error codes to human-readable, actionable messages.
 function describeAuthError(err: unknown): string {
-  const e = err as AuthError & { customData?: { email?: string } };
-  const code = e?.code ?? "";
-  
-  switch (code) {
-    case "auth/popup-closed-by-user":
-      return "You closed the Google sign-in window before finishing.";
-    case "auth/popup-blocked":
-      return "Your browser blocked the sign-in popup. Please allow popups for this site and try again.";
-    case "auth/cancelled-popup-request":
-      return "Another sign-in attempt is already in progress. Please wait a moment.";
-    case "auth/network-request-failed":
-      return "Network error — check your internet connection.";
-    case "auth/account-exists-with-different-credential":
-      return `An account already exists for ${e.customData?.email ?? "this email"} with a different sign-in method.`;
-    case "auth/unauthorized-domain":
-      return "This domain isn't authorized in Firebase settings. If you intended to use Supabase, please verify that you have added VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your Vercel Environment Variables. Otherwise, add this domain under Firebase Console → Authentication → Settings → Authorized domains.";
-    case "auth/operation-not-allowed":
-      return "Google sign-in is currently disabled. Please enable it in Firebase Console → Authentication.";
-    case "auth/invalid-api-key":
-      return "The Firebase API key is invalid. Please check firebase-applet-config.json.";
-    case "auth/internal-error":
-      return "Firebase reported an internal error. Please try again in a moment.";
-    case "auth/email-already-in-use":
-      return "This email is already in use. Please sign in instead.";
-    case "auth/invalid-credential":
-    case "auth/wrong-password":
-    case "auth/user-not-found":
-      return "Invalid email or password. Please verify your credentials.";
-    case "auth/weak-password":
-      return "Password is too weak. Please use at least 6 characters.";
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-    default:
-      return e?.message
-        ? `${code ? `[${code}] ` : ""}${e.message}`
-        : "An unknown sign-in error occurred. Check browser console for details.";
-  }
+  const e = err as any;
+  return e?.message || "An unknown sign-in error occurred. Check browser console for details.";
 }
 
 type AuthMode = "login" | "signup" | "forgot" | "verify" | "success" | "expired";
@@ -189,30 +142,18 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         status: "Active"
       };
 
-      if (isSupabaseConfigured()) {
-        await supabaseDb.saveActivity(userId, `act_${Date.now()}`, {
-          event: "Logged In",
-          description: `New active login session registered from ${browser} on ${os}`,
-          timestamp: new Date().toISOString(),
-          category: "auth"
-        });
-      } else {
-        // Save session inside user's subcollection
-        await setDoc(doc(db, "users", userId, "sessions", sessionId), sessionData);
-        
-        // Also write activity log event
-        await setDoc(doc(db, "users", userId, "activityLog", `act_${Date.now()}`), {
-          event: "Logged In",
-          description: `New active login session registered from ${browser} on ${os}`,
-          timestamp: new Date().toISOString(),
-          category: "auth"
-        });
-      }
+      // Save activity event log to Supabase
+      await supabaseDb.saveActivity(userId, `act_${Date.now()}`, {
+        event: "Logged In",
+        description: `New active login session registered from ${browser} on ${os}`,
+        timestamp: new Date().toISOString(),
+        category: "auth"
+      });
 
       // Keep session details locally too
       localStorage.setItem("current_session_id", sessionId);
     } catch (err) {
-      console.error("Failed to log session metadata to Firestore:", err);
+      console.error("Failed to log session metadata:", err);
     }
   };
 
@@ -233,16 +174,11 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         ? loginEmail.trim() 
         : `${loginEmail.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "")}@placementos.com`;
 
-      if (isSupabaseConfigured()) {
-        const { user: sbUser, error: sbError } = await supabaseAuth.signIn(targetEmail, loginPassword);
-        if (sbError || !sbUser) {
-          throw new Error(sbError || "Failed to sign in. Please verify your username and password.");
-        }
-        userId = sbUser.uid;
-      } else {
-        const userCredential = await signInWithEmailAndPassword(auth, targetEmail, loginPassword);
-        userId = userCredential.user.uid;
+      const { user: sbUser, error: sbError } = await supabaseAuth.signIn(targetEmail, loginPassword);
+      if (sbError || !sbUser) {
+        throw new Error(sbError || "Failed to sign in. Please verify your username and password.");
       }
+      userId = sbUser.uid;
       
       // Remember me logic
       if (rememberMe) {
@@ -282,13 +218,9 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured()) {
-        const { error: sbError } = await supabaseAuth.resetPassword(loginEmail);
-        if (sbError) {
-          throw new Error(sbError);
-        }
-      } else {
-        await sendPasswordResetEmail(auth, loginEmail);
+      const { error: sbError } = await supabaseAuth.resetPassword(loginEmail);
+      if (sbError) {
+        throw new Error(sbError);
       }
       setError(null);
       setMode("login");
@@ -350,12 +282,12 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setSignupStep(3);
   };
 
-  // Sign up step 3 & final firebase creation
+  // Sign up step 3 & final Supabase creation
   const handleSignUpFinal = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Robust consistent checks across fields before sending to Firebase
+    // Robust consistent checks across fields before sending to Supabase
     if (!firstName.trim() || !lastName.trim()) {
       setError("Please go back and fill out both your First Name and Last Name.");
       return;
@@ -411,55 +343,31 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         constraints: newsletterSub ? "Subscribed to global newsletter notifications." : ""
       };
 
-      if (isSupabaseConfigured()) {
-        const { user: sbUser, error: sbError } = await supabaseAuth.signUp(targetEmail, signupPassword, `${firstName} ${lastName}`.trim());
-        if (sbError || !sbUser) {
-          throw new Error(sbError || "Failed to sign up on Supabase");
-        }
-        userId = sbUser.uid;
-
-        // Save user profile directly to Supabase
-        await supabaseDb.saveProfile(userId, userProfile);
-
-        // Create first activity event log
-        await supabaseDb.saveActivity(userId, `act_${Date.now()}`, {
-          event: "Account Created",
-          description: "PlacementOS Career Companion initialized successfully with secure credentials on Supabase.",
-          timestamp: new Date().toISOString(),
-          category: "auth"
-        });
-
-        // Log Session Start
-        await logSessionStart(userId, targetEmail);
-
-        // Immediately grant entry! No verification wait screens
-        onAuthSuccess(userId);
-      } else {
-        // Create user credential in Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, targetEmail, signupPassword);
-        const user = userCredential.user;
-        userId = user.uid;
-
-        // Save user profile directly to Firestore
-        await setDoc(doc(db, "users", userId), userProfile);
-
-        // Create first activity event log
-        await setDoc(doc(db, "users", userId, "activityLog", `act_${Date.now()}`), {
-          event: "Account Created",
-          description: "PlacementOS Career Companion initialized successfully with secure credentials.",
-          timestamp: new Date().toISOString(),
-          category: "auth"
-        });
-
-        // Log Session Start
-        await logSessionStart(userId, targetEmail);
-
-        // Immediately grant entry! No verification wait screens
-        onAuthSuccess(userId);
+      const { user: sbUser, error: sbError } = await supabaseAuth.signUp(targetEmail, signupPassword, `${firstName} ${lastName}`.trim());
+      if (sbError || !sbUser) {
+        throw new Error(sbError || "Failed to sign up on Supabase");
       }
+      userId = sbUser.uid;
+
+      // Save user profile directly to Supabase
+      await supabaseDb.saveProfile(userId, userProfile);
+
+      // Create first activity event log
+      await supabaseDb.saveActivity(userId, `act_${Date.now()}`, {
+        event: "Account Created",
+        description: "PlacementOS Career Companion initialized successfully with secure credentials on Supabase.",
+        timestamp: new Date().toISOString(),
+        category: "auth"
+      });
+
+      // Log Session Start
+      await logSessionStart(userId, targetEmail);
+
+      // Immediately grant entry! No verification wait screens
+      onAuthSuccess(userId);
     } catch (err: any) {
       console.error("[AuthScreen] Complete Sign Up failed:", err);
-      setError(isSupabaseConfigured() ? err.message : describeAuthError(err));
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -470,31 +378,16 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured()) {
-        const currentUser = await supabaseAuth.getCurrentUser();
-        if (currentUser) {
-          if (currentUser.emailVerified) {
-            setMode("success");
-          } else {
-            setError("Your email address is not yet verified. Please check your inbox for the Supabase verification link.");
-          }
+      const currentUser = await supabaseAuth.getCurrentUser();
+      if (currentUser) {
+        if (currentUser.emailVerified) {
+          setMode("success");
         } else {
-          setError("User context lost. Please log in again.");
-          setMode("login");
+          setError("Your email address is not yet verified. Please check your inbox for the Supabase verification link.");
         }
       } else {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          await currentUser.reload();
-          if (currentUser.emailVerified) {
-            setMode("success");
-          } else {
-            setError("Your email address is not yet verified. Please click the link in your inbox.");
-          }
-        } else {
-          setError("User context lost. Please log in again.");
-          setMode("login");
-        }
+        setError("User context lost. Please log in again.");
+        setMode("login");
       }
     } catch (err: any) {
       console.error("Error refreshing user verification state:", err);
@@ -509,28 +402,18 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured()) {
-        const targetEmail = signupEmail || loginEmail;
-        if (!targetEmail) {
-          throw new Error("No target email address available to resend verification.");
-        }
-        const { error: sbError } = await supabaseAuth.resendVerificationEmail(targetEmail);
-        if (sbError) {
-          throw new Error(sbError);
-        }
-        alert(`A fresh verification link has been dispatched to ${targetEmail}.`);
-      } else {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          await sendEmailVerification(currentUser);
-          alert("A fresh verification link has been dispatched to your email address.");
-        } else {
-          setError("User session not found.");
-        }
+      const targetEmail = signupEmail || loginEmail;
+      if (!targetEmail) {
+        throw new Error("No target email address available to resend verification.");
       }
+      const { error: sbError } = await supabaseAuth.resendVerificationEmail(targetEmail);
+      if (sbError) {
+        throw new Error(sbError);
+      }
+      alert(`A fresh verification link has been dispatched to ${targetEmail}.`);
     } catch (err: any) {
       console.error("[AuthScreen] Resend verification failed:", err);
-      setError(isSupabaseConfigured() ? err.message : describeAuthError(err));
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -541,46 +424,13 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured()) {
-        const { error: sbError } = await supabaseAuth.signInWithGoogle();
-        if (sbError) {
-          throw new Error(sbError);
-        }
-      } else {
-        const userCredential = await signInWithPopup(auth, googleProvider);
-        const user = userCredential.user;
-        
-        // Ensure default profile document is created if it does not exist
-        const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (!userDocSnap.exists()) {
-          const parts = (user.displayName || "").split(" ");
-          const first = parts[0] || "Student";
-          const last = parts.slice(1).join(" ") || "User";
-
-          const initialProfile = {
-            ...DEFAULT_STUDENT_PROFILE,
-            email: user.email || "",
-            name: user.displayName || user.email?.split("@")[0] || "New Student",
-            location: "Bengaluru, India"
-          };
-          await setDoc(userDocRef, initialProfile);
-
-          // Write activity log
-          await setDoc(doc(db, "users", user.uid, "activityLog", `act_${Date.now()}`), {
-            event: "Account Created",
-            description: "New student account registered via Google OAuth secure gateway.",
-            timestamp: new Date().toISOString(),
-            category: "auth"
-          });
-        }
-
-        await logSessionStart(user.uid, user.email || "google-oauth");
-        onAuthSuccess(user.uid);
+      const { error: sbError } = await supabaseAuth.signInWithGoogle();
+      if (sbError) {
+        throw new Error(sbError);
       }
     } catch (err: any) {
       console.error("[AuthScreen] Google auth failed:", err);
-      setError(isSupabaseConfigured() ? err.message : describeAuthError(err));
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -591,35 +441,18 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured()) {
-        const randId = Math.floor(100000 + Math.random() * 900000);
-        const guestEmail = `guest_${randId}@placementos.com`;
-        const guestPassword = `PlacementOSGuest123!`;
-        const { user: sbUser, error: sbError } = await supabaseAuth.signUp(guestEmail, guestPassword, "Guest Student");
-        if (sbError || !sbUser) {
-          throw new Error(sbError || "Failed to register guest credentials on Supabase.");
-        }
-        await logSessionStart(sbUser.uid, guestEmail);
-        onAuthSuccess(sbUser.uid);
-      } else {
-        const userCredential = await signInAnonymously(auth);
-        await logSessionStart(userCredential.user.uid, "anonymous-guest");
-        onAuthSuccess(userCredential.user.uid);
+      const randId = Math.floor(100000 + Math.random() * 900000);
+      const guestEmail = `guest_${randId}@placementos.com`;
+      const guestPassword = `PlacementOSGuest123!`;
+      const { user: sbUser, error: sbError } = await supabaseAuth.signUp(guestEmail, guestPassword, "Guest Student");
+      if (sbError || !sbUser) {
+        throw new Error(sbError || "Failed to register guest credentials on Supabase.");
       }
+      await logSessionStart(sbUser.uid, guestEmail);
+      onAuthSuccess(sbUser.uid);
     } catch (err: any) {
-      console.warn("Standard guest login failed, attempting fallback credentials:", err);
-      try {
-        const randId = Math.floor(100000 + Math.random() * 900000);
-        const guestEmail = `guest_${randId}@placementos.com`;
-        const guestPassword = `PlacementOSGuest123!`;
-        const userCredential = await createUserWithEmailAndPassword(auth, guestEmail, guestPassword);
-        
-        await logSessionStart(userCredential.user.uid, guestEmail);
-        onAuthSuccess(userCredential.user.uid);
-      } catch (fallbackErr: any) {
-        console.error("Automated guest creation fallback failed:", fallbackErr);
-        setError("Guest access is currently restricted. Please register using a standard email and password above.");
-      }
+      console.error("Guest login failed:", err);
+      setError("Guest access is currently restricted. Please register using a standard email and password above.");
     } finally {
       setIsLoading(false);
     }
@@ -1266,9 +1099,9 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
 
             <button
               type="button"
-              onClick={() => {
-                const uid = auth.currentUser?.uid;
-                if (uid) onAuthSuccess(uid);
+              onClick={async () => {
+                const currentUser = await supabaseAuth.getCurrentUser();
+                if (currentUser?.uid) onAuthSuccess(currentUser.uid);
                 else setMode("login");
               }}
               className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
