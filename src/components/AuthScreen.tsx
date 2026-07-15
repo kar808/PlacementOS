@@ -10,6 +10,9 @@ import {
 } from "firebase/auth";
 import { auth, db, googleProvider } from "../lib/firebase";
 import { setDoc, getDoc, doc } from "firebase/firestore";
+
+// Supabase integration
+import { isSupabaseConfigured, supabaseAuth, supabaseDb } from "../lib/supabase";
 import { DEFAULT_STUDENT_PROFILE } from "../lib/defaultProfile";
 import { StudentProfile } from "../types";
 import ErrorAlertModal from "./ErrorAlertModal";
@@ -186,16 +189,25 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         status: "Active"
       };
 
-      // Save session inside user's subcollection
-      await setDoc(doc(db, "users", userId, "sessions", sessionId), sessionData);
-      
-      // Also write activity log event
-      await setDoc(doc(db, "users", userId, "activityLog", `act_${Date.now()}`), {
-        event: "Logged In",
-        description: `New active login session registered from ${browser} on ${os}`,
-        timestamp: new Date().toISOString(),
-        category: "auth"
-      });
+      if (isSupabaseConfigured()) {
+        await supabaseDb.saveActivity(userId, `act_${Date.now()}`, {
+          event: "Logged In",
+          description: `New active login session registered from ${browser} on ${os}`,
+          timestamp: new Date().toISOString(),
+          category: "auth"
+        });
+      } else {
+        // Save session inside user's subcollection
+        await setDoc(doc(db, "users", userId, "sessions", sessionId), sessionData);
+        
+        // Also write activity log event
+        await setDoc(doc(db, "users", userId, "activityLog", `act_${Date.now()}`), {
+          event: "Logged In",
+          description: `New active login session registered from ${browser} on ${os}`,
+          timestamp: new Date().toISOString(),
+          category: "auth"
+        });
+      }
 
       // Keep session details locally too
       localStorage.setItem("current_session_id", sessionId);
@@ -215,7 +227,17 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setIsLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+      let userId: string;
+      if (isSupabaseConfigured()) {
+        const { user: sbUser, error: sbError } = await supabaseAuth.signIn(loginEmail, loginPassword);
+        if (sbError || !sbUser) {
+          throw new Error(sbError || "Failed to sign in to Supabase");
+        }
+        userId = sbUser.uid;
+      } else {
+        const userCredential = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+        userId = userCredential.user.uid;
+      }
       
       // Remember me logic
       if (rememberMe) {
@@ -229,10 +251,10 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
       setFailedAttempts(0);
       
       // Create session metadata
-      await logSessionStart(userCredential.user.uid, loginEmail);
+      await logSessionStart(userId, loginEmail);
 
       // Successfully authenticated
-      onAuthSuccess(userCredential.user.uid);
+      onAuthSuccess(userId);
     } catch (err: any) {
       console.error("[AuthScreen] Sign In failed:", err);
       const attempts = failedAttempts + 1;
@@ -255,13 +277,20 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      await sendPasswordResetEmail(auth, loginEmail);
+      if (isSupabaseConfigured()) {
+        const { error: sbError } = await supabaseAuth.resetPassword(loginEmail);
+        if (sbError) {
+          throw new Error(sbError);
+        }
+      } else {
+        await sendPasswordResetEmail(auth, loginEmail);
+      }
       setError(null);
       setMode("login");
       alert(`A secure password reset email has been dispatched to ${loginEmail}. Please complete resetting your credentials via the link.`);
     } catch (err: any) {
       console.error("[AuthScreen] Password reset failed:", err);
-      setError(describeAuthError(err));
+      setError(isSupabaseConfigured() ? err.message : describeAuthError(err));
     } finally {
       setIsLoading(false);
     }
@@ -351,10 +380,7 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setIsLoading(true);
 
     try {
-      // Create user credential in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, signupEmail, signupPassword);
-      const user = userCredential.user;
-
+      let userId: string;
       // Construct a unified profile
       const userProfile: StudentProfile = {
         ...DEFAULT_STUDENT_PROFILE,
@@ -372,28 +398,58 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         constraints: newsletterSub ? "Subscribed to global newsletter notifications." : ""
       };
 
-      // Save user profile directly to Firestore
-      await setDoc(doc(db, "users", user.uid), userProfile);
+      if (isSupabaseConfigured()) {
+        const { user: sbUser, error: sbError } = await supabaseAuth.signUp(signupEmail, signupPassword, `${firstName} ${lastName}`.trim());
+        if (sbError || !sbUser) {
+          throw new Error(sbError || "Failed to sign up on Supabase");
+        }
+        userId = sbUser.uid;
 
-      // Create first activity event log
-      await setDoc(doc(db, "users", user.uid, "activityLog", `act_${Date.now()}`), {
-        event: "Account Created",
-        description: "PlacementOS Career Companion initialized successfully with secure credentials.",
-        timestamp: new Date().toISOString(),
-        category: "auth"
-      });
+        // Save user profile directly to Supabase
+        await supabaseDb.saveProfile(userId, userProfile);
 
-      // Log Session Start
-      await logSessionStart(user.uid, signupEmail);
+        // Create first activity event log
+        await supabaseDb.saveActivity(userId, `act_${Date.now()}`, {
+          event: "Account Created",
+          description: "PlacementOS Career Companion initialized successfully with secure credentials on Supabase.",
+          timestamp: new Date().toISOString(),
+          category: "auth"
+        });
 
-      // Send Email Verification
-      try {
-        await sendEmailVerification(user);
-        setMode("verify"); // Transit to verification wait stage
-      } catch (verifErr) {
-        console.error("Could not send verification email immediately:", verifErr);
-        // Fallback: let them through if verification block fails to send or let them retry
-        setMode("success");
+        // Log Session Start
+        await logSessionStart(userId, signupEmail);
+
+        // Supabase sends a verification email automatically if enabled
+        setMode("verify");
+      } else {
+        // Create user credential in Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, signupEmail, signupPassword);
+        const user = userCredential.user;
+        userId = user.uid;
+
+        // Save user profile directly to Firestore
+        await setDoc(doc(db, "users", userId), userProfile);
+
+        // Create first activity event log
+        await setDoc(doc(db, "users", userId, "activityLog", `act_${Date.now()}`), {
+          event: "Account Created",
+          description: "PlacementOS Career Companion initialized successfully with secure credentials.",
+          timestamp: new Date().toISOString(),
+          category: "auth"
+        });
+
+        // Log Session Start
+        await logSessionStart(userId, signupEmail);
+
+        // Send Email Verification
+        try {
+          await sendEmailVerification(user);
+          setMode("verify"); // Transit to verification wait stage
+        } catch (verifErr) {
+          console.error("Could not send verification email immediately:", verifErr);
+          // Fallback: let them through if verification block fails to send or let them retry
+          setMode("success");
+        }
       }
     } catch (err: any) {
       console.error("[AuthScreen] Complete Sign Up failed:", err);
@@ -408,17 +464,31 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        await currentUser.reload();
-        if (currentUser.emailVerified) {
-          setMode("success");
+      if (isSupabaseConfigured()) {
+        const currentUser = await supabaseAuth.getCurrentUser();
+        if (currentUser) {
+          if (currentUser.emailVerified) {
+            setMode("success");
+          } else {
+            setError("Your email address is not yet verified. Please check your inbox for the Supabase verification link.");
+          }
         } else {
-          setError("Your email address is not yet verified. Please click the link in your inbox.");
+          setError("User context lost. Please log in again.");
+          setMode("login");
         }
       } else {
-        setError("User context lost. Please log in again.");
-        setMode("login");
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await currentUser.reload();
+          if (currentUser.emailVerified) {
+            setMode("success");
+          } else {
+            setError("Your email address is not yet verified. Please click the link in your inbox.");
+          }
+        } else {
+          setError("User context lost. Please log in again.");
+          setMode("login");
+        }
       }
     } catch (err: any) {
       console.error("Error refreshing user verification state:", err);
@@ -433,15 +503,28 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        await sendEmailVerification(currentUser);
-        alert("A fresh verification link has been dispatched to your email address.");
+      if (isSupabaseConfigured()) {
+        const targetEmail = signupEmail || loginEmail;
+        if (!targetEmail) {
+          throw new Error("No target email address available to resend verification.");
+        }
+        const { error: sbError } = await supabaseAuth.resendVerificationEmail(targetEmail);
+        if (sbError) {
+          throw new Error(sbError);
+        }
+        alert(`A fresh verification link has been dispatched to ${targetEmail}.`);
       } else {
-        setError("User session not found.");
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await sendEmailVerification(currentUser);
+          alert("A fresh verification link has been dispatched to your email address.");
+        } else {
+          setError("User session not found.");
+        }
       }
     } catch (err: any) {
-      setError(describeAuthError(err));
+      console.error("[AuthScreen] Resend verification failed:", err);
+      setError(isSupabaseConfigured() ? err.message : describeAuthError(err));
     } finally {
       setIsLoading(false);
     }
@@ -452,39 +535,46 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      const userCredential = await signInWithPopup(auth, googleProvider);
-      const user = userCredential.user;
-      
-      // Ensure default profile document is created if it does not exist
-      const userDocRef = doc(db, "users", user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (!userDocSnap.exists()) {
-        const parts = (user.displayName || "").split(" ");
-        const first = parts[0] || "Student";
-        const last = parts.slice(1).join(" ") || "User";
+      if (isSupabaseConfigured()) {
+        const { error: sbError } = await supabaseAuth.signInWithGoogle();
+        if (sbError) {
+          throw new Error(sbError);
+        }
+      } else {
+        const userCredential = await signInWithPopup(auth, googleProvider);
+        const user = userCredential.user;
+        
+        // Ensure default profile document is created if it does not exist
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+          const parts = (user.displayName || "").split(" ");
+          const first = parts[0] || "Student";
+          const last = parts.slice(1).join(" ") || "User";
 
-        const initialProfile = {
-          ...DEFAULT_STUDENT_PROFILE,
-          email: user.email || "",
-          name: user.displayName || user.email?.split("@")[0] || "New Student",
-          location: "Bengaluru, India"
-        };
-        await setDoc(userDocRef, initialProfile);
+          const initialProfile = {
+            ...DEFAULT_STUDENT_PROFILE,
+            email: user.email || "",
+            name: user.displayName || user.email?.split("@")[0] || "New Student",
+            location: "Bengaluru, India"
+          };
+          await setDoc(userDocRef, initialProfile);
 
-        // Write activity log
-        await setDoc(doc(db, "users", user.uid, "activityLog", `act_${Date.now()}`), {
-          event: "Account Created",
-          description: "New student account registered via Google OAuth secure gateway.",
-          timestamp: new Date().toISOString(),
-          category: "auth"
-        });
+          // Write activity log
+          await setDoc(doc(db, "users", user.uid, "activityLog", `act_${Date.now()}`), {
+            event: "Account Created",
+            description: "New student account registered via Google OAuth secure gateway.",
+            timestamp: new Date().toISOString(),
+            category: "auth"
+          });
+        }
+
+        await logSessionStart(user.uid, user.email || "google-oauth");
+        onAuthSuccess(user.uid);
       }
-
-      await logSessionStart(user.uid, user.email || "google-oauth");
-      onAuthSuccess(user.uid);
     } catch (err: any) {
       console.error("[AuthScreen] Google auth failed:", err);
-      setError(describeAuthError(err));
+      setError(isSupabaseConfigured() ? err.message : describeAuthError(err));
     } finally {
       setIsLoading(false);
     }
@@ -495,9 +585,21 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
     setError(null);
     setIsLoading(true);
     try {
-      const userCredential = await signInAnonymously(auth);
-      await logSessionStart(userCredential.user.uid, "anonymous-guest");
-      onAuthSuccess(userCredential.user.uid);
+      if (isSupabaseConfigured()) {
+        const randId = Math.floor(100000 + Math.random() * 900000);
+        const guestEmail = `guest_${randId}@placementos.com`;
+        const guestPassword = `PlacementOSGuest123!`;
+        const { user: sbUser, error: sbError } = await supabaseAuth.signUp(guestEmail, guestPassword, "Guest Student");
+        if (sbError || !sbUser) {
+          throw new Error(sbError || "Failed to register guest credentials on Supabase.");
+        }
+        await logSessionStart(sbUser.uid, guestEmail);
+        onAuthSuccess(sbUser.uid);
+      } else {
+        const userCredential = await signInAnonymously(auth);
+        await logSessionStart(userCredential.user.uid, "anonymous-guest");
+        onAuthSuccess(userCredential.user.uid);
+      }
     } catch (err: any) {
       console.warn("Standard guest login failed, attempting fallback credentials:", err);
       try {

@@ -14,7 +14,7 @@ interface State {
   isOffline: boolean;
 }
 
-export default class AppErrorBoundary extends React.Component<Props, State> {
+export default class AppErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {

@@ -25,7 +25,7 @@ export function getCanonicalString(obj: any): string {
 }
 
 export function computeRequestIntegrity(endpoint: string, body: any, timestamp: number, userId: string): string {
-  const secret = "PlacementOS_Secure_Key_2026";
+  const secret = (import.meta as any).env?.VITE_INTEGRITY_SECRET_KEY || "PlacementOS_Secure_Key_2026";
   const data = `${endpoint}:${getCanonicalString(body || {})}:${timestamp}:${userId}:${secret}`;
   let hash = 0;
   for (let i = 0; i < data.length; i++) {

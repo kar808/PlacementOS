@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { subscribeToMetrics, EndpointMetric } from "../lib/apiMonitoring";
 import { 
   Users, 
   TrendingUp, 
@@ -63,6 +64,13 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ currentLogsCount = 0 }: AdminDashboardProps) {
   const [metricFilter, setMetricFilter] = useState<string>("all");
+  const [metrics, setMetrics] = useState<EndpointMetric[]>([]);
+
+  useEffect(() => {
+    return subscribeToMetrics((newMetrics) => {
+      setMetrics(newMetrics);
+    });
+  }, []);
 
   // Sum total registered mock + real users
   const totalMockUsers = 2450 + 1; // 2450 pre-seeded + current session profile
@@ -248,6 +256,67 @@ export default function AdminDashboard({ currentLogsCount = 0 }: AdminDashboardP
                     <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {usr.status}
                     </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Service Endpoint Health & Latency Monitor Panel */}
+      <div className="bg-[#111] border border-white/10 rounded-2xl p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="space-y-1">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+              Service Endpoint Performance & Health
+            </h3>
+            <p className="text-[11px] text-white/40 leading-normal">
+              Real-time latency metrics, error frequencies, and service health scores of cloud-hosted career endpoint controllers.
+            </p>
+          </div>
+        </div>
+
+        {/* Latency / Endpoint Health Table */}
+        <div className="overflow-x-auto border border-white/5 rounded-xl">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-black/40 border-b border-white/10 font-mono text-[10px] text-white/40 uppercase">
+                <th className="p-3.5 font-bold">API Endpoint Controller</th>
+                <th className="p-3.5 font-bold text-center">Requests</th>
+                <th className="p-3.5 font-bold text-center">Success Rate</th>
+                <th className="p-3.5 font-bold text-center">Avg Latency</th>
+                <th className="p-3.5 font-bold text-center">Endpoint Health</th>
+                <th className="p-3.5 font-bold text-right">Last Invocation</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 font-semibold">
+              {metrics.map((metric) => (
+                <tr key={metric.endpoint} className="hover:bg-white/5 transition-colors">
+                  <td className="p-3.5 text-white font-mono text-[11px]">{metric.endpoint}</td>
+                  <td className="p-3.5 text-center font-mono text-white/80">{metric.totalCalls}</td>
+                  <td className="p-3.5 text-center font-mono">
+                    <span className="text-emerald-400">{metric.successCalls}</span>
+                    <span className="text-white/30 mx-1">/</span>
+                    <span className="text-red-400">{metric.failedCalls}</span>
+                  </td>
+                  <td className="p-3.5 text-center font-mono text-white/70">{metric.averageLatencyMs}ms</td>
+                  <td className="p-3.5 text-center">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      metric.healthScore >= 95 
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                        : metric.healthScore >= 80 
+                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
+                        : "bg-red-500/10 text-red-400 border border-red-500/20"
+                    }`}>
+                      {metric.healthScore}% Health
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-right text-white/40 font-mono text-[10px]">
+                    {metric.lastCallTimestamp > 0 
+                      ? new Date(metric.lastCallTimestamp).toLocaleTimeString() 
+                      : "Never"}
                   </td>
                 </tr>
               ))}

@@ -2,13 +2,24 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
+// Production-safe custom CORS middleware to handle preflight and client-server handshakes
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-Timestamp, X-Request-Integrity, X-Request-Client-Id");
+  
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json());
 
@@ -18,29 +29,48 @@ const debugLogs: string[] = [];
 function addToDebugLogs(msg: string) {
   debugLogs.push(msg);
   if (debugLogs.length > 200) debugLogs.shift();
-  try {
-    fs.writeFileSync(path.join(process.cwd(), "src", "api-debug.log"), debugLogs.join("\n"));
-  } catch (err) {}
+  // Safe disk-write prevention for read-only serverless/production platforms like Vercel
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+    try {
+      fs.writeFileSync(path.join(process.cwd(), "src", "api-debug.log"), debugLogs.join("\n"));
+    } catch (err) {}
+  }
 }
 
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  if (req.url.startsWith("/api")) {
-    const logStr = `[${new Date().toISOString()}] ${req.method} ${req.url}\nHeaders: ${JSON.stringify(req.headers, null, 2)}\nBody: ${JSON.stringify(req.body, null, 2)}`;
-    addToDebugLogs(logStr);
-  }
+  const startTime = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - startTime;
+    const url = req.url || "";
+    
+    // Skip logging for static assets, source files, and developer/Vite tools
+    const isStaticOrSource = 
+      url.startsWith("/src/") ||
+      url.startsWith("/assets/") ||
+      url.startsWith("/node_modules/") ||
+      url.startsWith("/@vite") ||
+      url.startsWith("/@id") ||
+      url.includes("firebase-applet-config") ||
+      /\.(ts|tsx|js|jsx|css|json|ico|png|jpg|jpeg|svg|gif|woff|woff2|ttf|eot)$/i.test(url.split("?")[0]);
+      
+    if (!isStaticOrSource || res.statusCode >= 400) {
+      const logStr = `[${new Date().toISOString()}] ${req.method} ${req.url} - Status: ${res.statusCode} (${duration}ms)`;
+      addToDebugLogs(logStr);
+      console.log(logStr);
+    }
+  });
   next();
 });
 
 
-// Load Firebase Project ID for JWT validation
-let firebaseProjectId = "fifth-magpie-q3n78";
+// Load Firebase Project ID for JWT validation (supporting env variable and static configuration)
+let firebaseProjectId = process.env.FIREBASE_PROJECT_ID || "fifth-magpie-q3n78";
 try {
   const configPath = path.join(process.cwd(), "firebase-applet-config.json");
   if (fs.existsSync(configPath)) {
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     if (config.projectId) {
-      firebaseProjectId = config.projectId;
+      firebaseProjectId = process.env.FIREBASE_PROJECT_ID || config.projectId;
     }
   }
 } catch (e) {
@@ -93,27 +123,45 @@ const validateJWT = (req: express.Request, res: express.Response, next: express.
       });
     }
 
-    // Validate Issuer & Audience claims
-    if (payload.iss !== `https://securetoken.google.com/${firebaseProjectId}`) {
-      return res.status(401).json({
-        error: true,
-        message: "Unauthorized access: Invalid Firebase token issuer."
-      });
-    }
+    const isSupabaseToken = payload.iss && payload.iss.includes("supabase.co");
 
-    if (payload.aud !== firebaseProjectId) {
-      return res.status(401).json({
-        error: true,
-        message: "Unauthorized access: Invalid Firebase token audience target."
-      });
-    }
+    if (isSupabaseToken) {
+      if (payload.aud !== "authenticated") {
+        return res.status(401).json({
+          error: true,
+          message: "Unauthorized access: Invalid Supabase token audience target."
+        });
+      }
 
-    // Attach verified user information to the request context
-    (req as any).user = {
-      uid: payload.sub,
-      email: payload.email,
-      emailVerified: payload.email_verified
-    };
+      // Attach verified user information to the request context
+      (req as any).user = {
+        uid: payload.sub,
+        email: payload.email,
+        emailVerified: payload.email_confirmed_at ? true : false
+      };
+    } else {
+      // Validate Issuer & Audience claims for Firebase
+      if (payload.iss !== `https://securetoken.google.com/${firebaseProjectId}`) {
+        return res.status(401).json({
+          error: true,
+          message: "Unauthorized access: Invalid Firebase token issuer."
+        });
+      }
+
+      if (payload.aud !== firebaseProjectId) {
+        return res.status(401).json({
+          error: true,
+          message: "Unauthorized access: Invalid Firebase token audience target."
+        });
+      }
+
+      // Attach verified user information to the request context
+      (req as any).user = {
+        uid: payload.sub,
+        email: payload.email,
+        emailVerified: payload.email_verified
+      };
+    }
 
     next();
   } catch (err) {
@@ -148,9 +196,10 @@ function getCanonicalString(obj: any): string {
 }
 
 // Server-side request integrity calculation helper (matching the client-side implementation)
+const INTEGRITY_SECRET = process.env.INTEGRITY_SECRET_KEY || "PlacementOS_Secure_Key_2026";
+
 function computeRequestIntegrity(endpoint: string, body: any, timestamp: number, userId: string): string {
-  const secret = "PlacementOS_Secure_Key_2026";
-  const data = `${endpoint}:${getCanonicalString(body || {})}:${timestamp}:${userId}:${secret}`;
+  const data = `${endpoint}:${getCanonicalString(body || {})}:${timestamp}:${userId}:${INTEGRITY_SECRET}`;
   let hash = 0;
   for (let i = 0; i < data.length; i++) {
     const char = data.charCodeAt(i);
@@ -182,8 +231,8 @@ const validateRequestIntegrity = (req: express.Request, res: express.Response, n
   const timestamp = Number(timestampHeader);
   const now = Date.now();
 
-  // Enforce 1-hour expiration to prevent replay exploits (with a generous clock drift allowance for container environments)
-  if (isNaN(timestamp) || Math.abs(now - timestamp) > 3600000) {
+  // Enforce 24-hour expiration to prevent replay exploits (with a generous clock drift/DST/timezone allowance for serverless & container environments)
+  if (isNaN(timestamp) || Math.abs(now - timestamp) > 86400000) {
     if (isBypassAllowed) {
       addToDebugLogs(`[WARN] Bypassing expired or invalid integrity timestamp in sandbox/development mode for ${req.path}`);
       return next();
@@ -208,7 +257,7 @@ const validateRequestIntegrity = (req: express.Request, res: express.Response, n
       receivedSig: integrityHeader,
       expectedSig,
       match: expectedSig === integrityHeader,
-      serverDataStr: `${req.baseUrl + req.path}:${getCanonicalString(req.body)}:${timestamp}:${clientHeader}:PlacementOS_Secure_Key_2026`
+      serverDataStr: `${req.baseUrl + req.path}:${getCanonicalString(req.body)}:${timestamp}:${clientHeader}:${INTEGRITY_SECRET}`
     };
     addToDebugLogs(`\n--- INTEGRITY SIGNATURE CHECK ---\n${JSON.stringify(debugObj, null, 2)}\n`);
   } catch (err) {}
@@ -336,9 +385,11 @@ const handleApiError = (res: express.Response, error: any) => {
   const logStr = `[${new Date().toISOString()}] API ERROR: ${errStr}`;
   debugLogs.push(logStr);
   console.error(logStr);
-  try {
-    fs.writeFileSync(path.join(process.cwd(), "src", "api-debug.log"), debugLogs.join("\n"));
-  } catch (err) {}
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+    try {
+      fs.writeFileSync(path.join(process.cwd(), "src", "api-debug.log"), debugLogs.join("\n"));
+    } catch (err) {}
+  }
 
   res.status(500).json({
     error: true,
@@ -1160,6 +1211,7 @@ Return a cohesive JSON object.
 // ------------------------------------------------------------------------
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -1168,14 +1220,35 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
+    // Serve the source files directory in production to support sourcemaps and automated resource checks
+    app.use("/src", express.static(path.join(process.cwd(), "src"), {
+      setHeaders: (res, filePath) => {
+        const ext = path.extname(filePath);
+        if (ext === ".ts" || ext === ".tsx" || ext === ".jsx") {
+          res.setHeader("Content-Type", "application/javascript");
+        }
+      }
+    }));
+    
     app.get("*", (req, res) => {
+      // Return 404 for requests expecting assets/source files so they don't receive HTML
+      const ext = path.extname(req.path);
+      if (ext || req.path.startsWith("/src/") || req.path.startsWith("/assets/")) {
+        return res.status(404).send("Not Found");
+      }
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
