@@ -3,8 +3,28 @@ import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
+
+// Initialize server-side database SDKs
+let firestoreDb: any = null;
+try {
+  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(configPath)) {
+    const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const firebaseApp = initializeApp(firebaseConfig);
+    firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+  }
+} catch (e) {
+  console.error("Could not initialize server-side Firestore:", e);
+}
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || "";
+const supabaseAdmin = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
@@ -88,6 +108,11 @@ function decodeBase64Url(str: string): string {
 
 // JWT validation middleware for Express API routes
 const validateJWT = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Allow public endpoints to bypass JWT auth (e.g. waitlist registration)
+  if (req.path === "/public/waitlist/register" || req.path.startsWith("/public/")) {
+    return next();
+  }
+
   const authHeader = req.headers["authorization"];
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
@@ -97,11 +122,6 @@ const validateJWT = (req: express.Request, res: express.Response, next: express.
   }
 
   const token = authHeader.split(" ")[1];
-
-  // Support sandbox/development environments bypass
-  if (token === "sandbox-token-123456" || token.startsWith("sandbox-token")) {
-    return next();
-  }
 
   try {
     const parts = token.split(".");
@@ -211,6 +231,11 @@ function computeRequestIntegrity(endpoint: string, body: any, timestamp: number,
 
 // Middleware to enforce strict request integrity and reject replay attacks
 const validateRequestIntegrity = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Allow public endpoints to bypass integrity checks
+  if (req.path === "/public/waitlist/register" || req.path.startsWith("/public/")) {
+    return next();
+  }
+
   const timestampHeader = req.headers["x-request-timestamp"];
   const integrityHeader = req.headers["x-request-integrity"];
   const clientHeader = req.headers["x-request-client-id"];
@@ -319,6 +344,192 @@ app.post("/api/logs", (req, res) => {
   addToDebugLogs(logStr);
   console.log(logStr);
   res.json({ success: true });
+});
+
+// ------------------------------------------------------------------------
+// PUBLIC API ENDPOINT: Waitlist Registration
+// ------------------------------------------------------------------------
+app.post("/api/public/waitlist/register", async (req, res) => {
+  const { fullName, email, role, organization, source } = req.body;
+  
+  // 1. Request body validation
+  if (!fullName || !fullName.trim()) {
+    console.error(`[${new Date().toISOString()}] WAITLIST_REGISTRATION_FAILED: Missing fullName`);
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "INVALID_INPUT",
+        message: "Full name is required."
+      }
+    });
+  }
+
+  if (!email || !email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    console.error(`[${new Date().toISOString()}] WAITLIST_REGISTRATION_FAILED: Invalid email: ${email}`);
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "INVALID_INPUT",
+        message: "A valid email address is required."
+      }
+    });
+  }
+
+  if (!role) {
+    console.error(`[${new Date().toISOString()}] WAITLIST_REGISTRATION_FAILED: Missing role`);
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "INVALID_INPUT",
+        message: "Current role selection is required."
+      }
+    });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    if (!firestoreDb) {
+      throw new Error("Server-side Firestore database has not been initialized. Please check configuration.");
+    }
+
+    // Check duplicates in Firestore
+    let isFirestoreDuplicate = false;
+    try {
+      const q = query(collection(firestoreDb, "waitlist"), where("email", "==", normalizedEmail));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        isFirestoreDuplicate = true;
+      }
+    } catch (fsCheckErr) {
+      console.warn("Firestore duplicate check warning on server:", fsCheckErr);
+    }
+
+    // Check duplicates in Supabase
+    let isSupabaseDuplicate = false;
+    if (supabaseAdmin) {
+      try {
+        const { data: sbCheck, error: sbCheckErr } = await supabaseAdmin
+          .from("waitlist")
+          .select("email")
+          .eq("email", normalizedEmail)
+          .maybeSingle();
+        
+        if (sbCheck && !sbCheckErr) {
+          isSupabaseDuplicate = true;
+        }
+      } catch (sbCheckErr) {
+        console.warn("Supabase duplicate check warning on server:", sbCheckErr);
+      }
+    }
+
+    if (isFirestoreDuplicate || isSupabaseDuplicate) {
+      // Log duplicate attempt to duplicates collection/table
+      const dupEntry = {
+        email: normalizedEmail,
+        full_name: fullName.trim(),
+        role: role,
+        organization: organization || "",
+        source: source || "organic_api",
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        await addDoc(collection(firestoreDb, "waitlist_duplicates"), dupEntry);
+      } catch (logErr) {
+        console.warn("Failed to log duplicate waitlist entry to Firestore:", logErr);
+      }
+
+      if (supabaseAdmin) {
+        try {
+          await supabaseAdmin.from("waitlist_duplicates").insert(dupEntry);
+        } catch (sbLogErr) {
+          console.warn("Failed to log duplicate waitlist entry to Supabase:", sbLogErr);
+        }
+      }
+
+      console.warn(`[${new Date().toISOString()}] WAITLIST_REGISTRATION_DUPLICATE: ${normalizedEmail} is already registered.`);
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: "WAITLIST_DUPLICATE_EMAIL",
+          message: "This email is already on our early access waitlist."
+        }
+      });
+    }
+
+    // Save actual waitlist entry
+    const newEntry = {
+      full_name: fullName.trim(),
+      email: normalizedEmail,
+      role: role,
+      organization: organization || "",
+      source: source || "organic_api",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // 1. Save to Firestore
+    await addDoc(collection(firestoreDb, "waitlist"), newEntry);
+
+    // 2. Save to Supabase
+    let supabaseSuccess = false;
+    if (supabaseAdmin) {
+      try {
+        const { error: sbInsertErr } = await supabaseAdmin
+          .from("waitlist")
+          .insert(newEntry);
+
+        if (sbInsertErr) {
+          console.warn("Supabase direct waitlist write failed from server. Falling back to profiles...");
+          const { error: sbFallbackErr } = await supabaseAdmin.from("profiles").upsert({
+            id: `waitlist_${normalizedEmail}`,
+            profile: {
+              ...newEntry,
+              is_waitlist: true,
+              type: "waitlist_registration"
+            },
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+          
+          if (!sbFallbackErr) supabaseSuccess = true;
+        } else {
+          supabaseSuccess = true;
+        }
+      } catch (sbErr) {
+        console.error("Supabase write exception from server, trying system_logs fallback...", sbErr);
+        try {
+          await supabaseAdmin.from("system_logs").insert({
+            user_id: "anonymous_waitlist",
+            level: "info",
+            category: "waitlist",
+            message: `Waitlist entry: ${normalizedEmail} (${fullName.trim()})`,
+            details: JSON.stringify(newEntry),
+            timestamp: new Date().toISOString()
+          });
+          supabaseSuccess = true;
+        } catch (logErr) {
+          console.error("All Supabase write fallbacks failed from server:", logErr);
+        }
+      }
+    }
+
+    console.log(`[${new Date().toISOString()}] WAITLIST_REGISTRATION_SUCCESS: Registered ${normalizedEmail}`);
+    return res.status(200).json({
+      success: true,
+      message: "Successfully registered on the early access waitlist!"
+    });
+
+  } catch (error: any) {
+    console.error(`[${new Date().toISOString()}] WAITLIST_REGISTRATION_ERROR:`, error);
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: "WAITLIST_PERMISSION_DENIED",
+        message: "Unable to register for the waitlist. Please try again later."
+      }
+    });
+  }
 });
 
 // Register middlewares on all API routes

@@ -74,9 +74,6 @@ import { startCall, endCall } from "./lib/apiMonitoring";
 export default function App() {
   // Auth and Profile states
   const [user, setUser] = useState<AdaptedUser | null>(null);
-  const [localUserBypass, setLocalUserBypass] = useState<boolean>(() => {
-    return localStorage.getItem("local_sandbox_active") === "true";
-  });
   const [showAuth, setShowAuth] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [hasProfile, setHasProfile] = useState<boolean>(false);
@@ -261,35 +258,10 @@ export default function App() {
     };
   }, []);
 
-  // Listen to Auth state and fetch user details from Firestore or Supabase
+  // Listen to Auth state and fetch user details from Supabase
   useEffect(() => {
     const handleNoUser = () => {
-      if (localUserBypass) {
-        const cached = localStorage.getItem("placement_profile");
-        if (cached) {
-          setProfile(JSON.parse(cached));
-          setHasProfile(true);
-          
-          const cachedIntel = localStorage.getItem("placement_intelligence");
-          if (cachedIntel) setIntelligenceMap(JSON.parse(cachedIntel));
-          
-          const cachedScores = localStorage.getItem("placement_scores");
-          if (cachedScores) setScores(JSON.parse(cachedScores));
-          
-          const cachedRoles = localStorage.getItem("placement_roles");
-          if (cachedRoles) setRecommendedRoles(JSON.parse(cachedRoles));
-
-          const cachedHr = localStorage.getItem("placement_hr_analysis");
-          if (cachedHr) setHrAnalysis(JSON.parse(cachedHr));
-
-          const cachedHistory = localStorage.getItem("placement_interview_history");
-          if (cachedHistory) setInterviewHistory(JSON.parse(cachedHistory));
-        } else {
-          setHasProfile(false);
-        }
-      } else {
-        setHasProfile(false);
-      }
+      setHasProfile(false);
     };
 
     setAuthLoading(true);
@@ -355,13 +327,13 @@ export default function App() {
       setAuthLoading(false);
     });
     return unsubscribe;
-  }, [localUserBypass]);
+  }, []);
 
   // Sync profile edits with local cache and Supabase
   const saveProfileUpdate = async (updated: StudentProfile) => {
     setProfile(updated);
     localStorage.setItem("placement_profile", JSON.stringify(updated));
-    if (user && user.uid !== "local_sandbox_user") {
+    if (user) {
       try {
         const success = await supabaseDb.saveProfile(user.uid, updated);
         if (!success) throw new Error("Supabase write failed");
@@ -380,7 +352,6 @@ export default function App() {
       console.error("SignOut error:", err);
     }
     // Clear all localStorage and state variables
-    localStorage.removeItem("local_sandbox_active");
     localStorage.removeItem("placement_profile");
     localStorage.removeItem("placement_intelligence");
     localStorage.removeItem("placement_scores");
@@ -395,7 +366,6 @@ export default function App() {
     localStorage.removeItem("placement_interview_history");
     localStorage.removeItem("placement_active_interview_role");
     
-    setLocalUserBypass(false);
     setProfile(DEFAULT_STUDENT_PROFILE);
     setHasProfile(false);
     setIntelligenceMap(null);
@@ -981,9 +951,6 @@ export default function App() {
     { id: "outreach", name: "Job Strategy", icon: Search },
     { id: "negotiate", name: "Offer & Negotiation", icon: Scale },
     { id: "communication", name: "Confidence Coach", icon: MessageCircleCode },
-    ...((user?.email === "sushilmadan.yg@gmail.com" || localUserBypass) ? [
-      { id: "admin", name: "Admin Dashboard", icon: Activity }
-    ] : []),
     { id: "settings", name: "Settings", icon: Settings },
   ];
 
@@ -991,15 +958,11 @@ export default function App() {
     return <AppLoadingSpinner phase="auth" />;
   }
 
-  if (!user && !localUserBypass) {
+  if (!user) {
     if (showAuth) {
       return (
         <AuthScreen 
           onAuthSuccess={() => {}} 
-          onLocalBypass={() => {
-            localStorage.setItem("local_sandbox_active", "true");
-            setLocalUserBypass(true);
-          }}
           onBack={() => setShowAuth(false)}
         />
       );
@@ -1008,17 +971,8 @@ export default function App() {
     return (
       <LandingPage 
         onGetStarted={() => setShowAuth(true)}
-        onLogin={() => setShowAuth(true)}
-        onLocalBypass={() => {
-          localStorage.setItem("local_sandbox_active", "true");
-          setLocalUserBypass(true);
-        }}
       />
     );
-  }
-
-  if (!hasProfile) {
-    return <OnboardingWizard onComplete={handleOnboardingComplete} />;
   }
 
   return (
@@ -1263,9 +1217,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === "admin" && (user?.email === "sushilmadan.yg@gmail.com" || localUserBypass) && (
-              <AdminDashboard currentLogsCount={activities.length} />
-            )}
+
 
             {activeTab === "settings" && (
               <SettingsPanel

@@ -19,11 +19,11 @@ export default function ErrorAlertModal({
   // Determine recovery recommendations based on error text
   const getActionableSteps = () => {
     const errText = error.toLowerCase();
-    if (errText.includes("integrity") || errText.includes("security") || errText.includes("handshake")) {
+    if (errText.includes("integrity") || errText.includes("security") || errText.includes("handshake") || errText.includes("auth")) {
       return [
-        "Your sandbox credentials or integrity handshake signature is desynchronized.",
-        "Try clicking 'Bypass Auth' or logging out and logging back in.",
-        "Check that your processes are fully updated by restarting the dev server."
+        "Your login session or security token may be desynchronized.",
+        "Try logging out and signing in again to refresh your session keys.",
+        "Verify your database integration settings are properly configured."
       ];
     }
     if (errText.includes("api_key") || errText.includes("key") || errText.includes("unconfigured") || errText.includes("gemini")) {
@@ -33,22 +33,22 @@ export default function ErrorAlertModal({
         "Double-check that the Express server's .env matches .env.example settings."
       ];
     }
-    if (errText.includes("permission") || errText.includes("insufficient")) {
+    if (errText.includes("permission") || errText.includes("insufficient") || errText.includes("supabase")) {
       return [
-        "Firebase Firestore reported a security rules authorization violation.",
-        "Ensure you are logged in with the matching student UID credentials.",
-        "Trigger a redeploy of the latest firestore.rules to enable errorLog caching."
+        "The database returned a permission or initialization violation.",
+        "Ensure your Supabase project environment variables are correctly set.",
+        "Check that your account has the correct permissions for this resource."
       ];
     }
     return [
-      "Check your internet connection and verify that the local career companion server is active.",
+      "Check your internet connection and verify that the application backend is active.",
       "Verify that standard API proxy pathways (/api/*) are accessible under port 3000.",
-      "Attempt to trigger a fresh core audit check to rebuild state parameters."
+      "Attempt to refresh the dashboard or trigger a fresh profile analysis."
     ];
   };
 
   const steps = getActionableSteps();
-  const mailToUrl = `mailto:${supportEmail}?subject=PlacementOS%20Fatal%20Error%20Report&body=Hi%20Support,%0D%0A%0D%0AI%20encountered%20a%20fatal%20error%20on%20PlacementOS.%0D%0A%0D%0AError%20Details:%0D%0A${encodeURIComponent(error)}%0D%0A%0D%0AUser%20Agent:%0D%0A${encodeURIComponent(navigator.userAgent)}`;
+  const mailToUrl = `mailto:${supportEmail}?subject=PlacementOS%20System%20Error%20Report&body=Hi%20Support,%0D%0A%0D%0AI%20encountered%20an%20error%20on%20PlacementOS.%0D%0A%0D%0AError%20Details:%0D%0A${encodeURIComponent(error)}%0D%0A%0D%0AUser%20Agent:%0D%0A${encodeURIComponent(navigator.userAgent)}`;
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-[fadeIn_0.2s_ease-out]">
@@ -69,10 +69,10 @@ export default function ErrorAlertModal({
             </div>
             <div>
               <h3 className="text-base font-black text-white tracking-tight">
-                Fatal System Error
+                System Connection Alert
               </h3>
               <p className="text-[10px] text-white/40 uppercase tracking-wider font-mono mt-0.5">
-                POS Campaign Interrupted
+                Diagnostics Tracker
               </p>
             </div>
           </div>

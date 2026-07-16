@@ -85,6 +85,22 @@
         }
       },
       "required": ["id", "role", "timestamp", "overallScore", "metrics", "questionsAndAnswers"]
+    },
+    "WaitlistEntry": {
+      "title": "WaitlistEntry",
+      "description": "Registered users on the early access waitlist",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "organization": { "type": "string" },
+        "source": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["fullName", "email", "role"]
     }
   },
   "firestore": {
@@ -95,6 +111,10 @@
     "/users/{userId}/interviews/{interviewId}": {
       "schema": "PastInterviewSession",
       "description": "Completed mock interviews with full performance feedback."
+    },
+    "/waitlist/{waitlistId}": {
+      "schema": "WaitlistEntry",
+      "description": "Early access pre-launch waitlist registration entries."
     }
   }
 }

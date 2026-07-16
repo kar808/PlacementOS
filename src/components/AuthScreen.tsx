@@ -29,7 +29,6 @@ import {
 
 interface AuthScreenProps {
   onAuthSuccess: (uid: string) => void;
-  onLocalBypass?: () => void;
   onBack?: () => void;
 }
 
@@ -49,7 +48,7 @@ function describeAuthError(err: unknown): string {
 
 type AuthMode = "login" | "signup" | "forgot" | "verify" | "success" | "expired";
 
-export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: AuthScreenProps) {
+export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,11 +200,12 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
       const attempts = failedAttempts + 1;
       setFailedAttempts(attempts);
       
+      const realErrorMessage = err?.message || "Invalid Username or Password.";
       if (attempts >= 5) {
         setLockoutTimer(60);
-        setError("Too many failed login attempts. Account access throttled for 60 seconds to protect account security.");
+        setError(`Too many failed login attempts. Account access throttled for 60 seconds. ${realErrorMessage}`);
       } else {
-        setError(`Invalid Username or Password. (${5 - attempts} attempts remaining before account security lockout)`);
+        setError(`${realErrorMessage} (${5 - attempts} attempts remaining before account security lockout)`);
       }
     } finally {
       setIsLoading(false);
@@ -1066,7 +1066,7 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
                 onClick={() => setMode("success")}
                 className="w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                Skip Verification (Sandbox Mode)
+                Continue After Verification
               </button>
 
               <button
@@ -1171,18 +1171,6 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
           </div>
         )}
 
-        {/* Local Sandbox Bypass Escape Hatch */}
-        {onLocalBypass && (mode === "login" || mode === "signup") && (
-          <button
-            type="button"
-            onClick={onLocalBypass}
-            className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <span>Bypass Auth / Local Sandbox</span>
-            <Sparkles className="w-3.5 h-3.5" />
-          </button>
-        )}
-
         {/* Back navigation button to landing tour */}
         {onBack && (
           <button
@@ -1197,7 +1185,7 @@ export default function AuthScreen({ onAuthSuccess, onLocalBypass, onBack }: Aut
         {/* Zero-trust protection badge */}
         <div className="flex items-center gap-1.5 justify-center text-[10px] text-white/30 font-mono">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/60" />
-          <span>All profiles securely sandboxed on Firebase Firestore</span>
+          <span>All profiles securely stored on Supabase PostgreSQL</span>
         </div>
 
       </div>

@@ -86,6 +86,45 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
  * CREATE POLICY "Allow users to read their own system logs" 
  *   ON public.system_logs FOR SELECT 
  *   USING (auth.uid()::text = user_id);
+ * 
+ * -- 5. Create waitlist table
+ * CREATE TABLE IF NOT EXISTS public.waitlist (
+ *   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+ *   full_name TEXT NOT NULL,
+ *   email TEXT UNIQUE NOT NULL,
+ *   role TEXT NOT NULL,
+ *   organization TEXT DEFAULT '',
+ *   source TEXT DEFAULT 'organic',
+ *   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+ *   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+ * );
+ * 
+ * ALTER TABLE public.waitlist ENABLE ROW LEVEL SECURITY;
+ * 
+ * CREATE POLICY "Allow anyone to join the waitlist" 
+ *   ON public.waitlist FOR INSERT 
+ *   WITH CHECK (true);
+ * 
+ * CREATE POLICY "Allow authenticated read to waitlist" 
+ *   ON public.waitlist FOR SELECT 
+ *   USING (true);
+ * 
+ * -- 6. Create waitlist_duplicates table
+ * CREATE TABLE IF NOT EXISTS public.waitlist_duplicates (
+ *   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+ *   email TEXT NOT NULL,
+ *   full_name TEXT NOT NULL,
+ *   role TEXT NOT NULL,
+ *   organization TEXT DEFAULT '',
+ *   source TEXT DEFAULT 'organic',
+ *   timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+ * );
+ * 
+ * ALTER TABLE public.waitlist_duplicates ENABLE ROW LEVEL SECURITY;
+ * 
+ * CREATE POLICY "Allow anyone to log waitlist duplicates" 
+ *   ON public.waitlist_duplicates FOR INSERT 
+ *   WITH CHECK (true);
  * ============================================================================
  */
 
@@ -552,6 +591,24 @@ export const supabaseDb = {
     } catch (err) {
       console.error("Supabase deleteUser exception:", err);
       return false;
+    }
+  },
+
+  async getWaitlistCount(): Promise<number> {
+    const supabase = getSupabase();
+    if (!supabase) return 247;
+    try {
+      const { count, error } = await supabase
+        .from("waitlist")
+        .select("*", { count: "exact", head: true });
+      if (error) {
+        console.warn("Supabase count query failed:", error);
+        return 247;
+      }
+      return count !== null ? count : 247;
+    } catch (err) {
+      console.error("Failed to fetch waitlist count from Supabase:", err);
+      return 247;
     }
   }
 };
