@@ -4,7 +4,8 @@ import {
   MessageSquare, Play, Send, RefreshCw, Star, ArrowRight, 
   CheckCircle2, ChevronDown, ChevronUp, Brain, Mic, MicOff, 
   AlertTriangle, Sparkles, Activity, History, Award, BookOpen,
-  Volume2, HelpCircle, Clock, Headphones, Pause, PlayCircle
+  Volume2, HelpCircle, Clock, Headphones, Pause, PlayCircle,
+  Lightbulb, Zap, X, Compass, Copy, Check
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -50,6 +51,11 @@ export default function InterviewSimulator({
   const [userAnswerInput, setUserAnswerInput] = useState("");
   const [activeSubTab, setActiveSubTab] = useState<"practice" | "trends" | "audio-review" | "history">("practice");
   const [expandedPastSessionId, setExpandedPastSessionId] = useState<string | null>(null);
+
+  // Floating Quick Tips Toggle Overlay state
+  const [showQuickTips, setShowQuickTips] = useState<boolean>(false);
+  const [quickTipsCategory, setQuickTipsCategory] = useState<"round" | "speech" | "formulas" | "mindset">("round");
+  const [copiedScriptIndex, setCopiedScriptIndex] = useState<number | null>(null);
 
   // Active question countdown timer
   const [timeLeft, setTimeLeft] = useState(120);
@@ -643,6 +649,17 @@ export default function InterviewSimulator({
                         </button>
                       </div>
                     )}
+
+                    {/* Quick Tips Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickTips((prev) => !prev)}
+                      className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-cyan-500/15 hover:from-amber-500/25 hover:to-cyan-500/25 border border-amber-500/30 text-amber-300 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer shadow-sm shrink-0"
+                      title="Toggle Communication Quick Tips"
+                    >
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                      <span>Quick Tips</span>
+                    </button>
 
                     <button onClick={onResetInterview} className="text-xs text-rose-400 hover:text-rose-300 font-bold font-mono cursor-pointer bg-transparent border-none shrink-0">
                       Exit Mock
@@ -1912,6 +1929,325 @@ export default function InterviewSimulator({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ALWAYS ACCESSIBLE FLOATING QUICK TIPS TOGGLE BUTTON */}
+      <button
+        type="button"
+        id="floating-quick-tips-toggle"
+        onClick={() => setShowQuickTips((prev) => !prev)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 via-emerald-500 to-cyan-500 hover:scale-105 text-black font-black text-xs uppercase tracking-wider rounded-full shadow-2xl shadow-amber-500/20 border border-white/20 transition-all cursor-pointer active:scale-95 group"
+        title="Toggle Context-Sensitive Communication Quick Tips"
+      >
+        <Lightbulb className="w-4 h-4 text-black group-hover:rotate-12 transition-transform" />
+        <span className="font-mono">Quick Tips</span>
+        {session.status === "ongoing" && (
+          <span className="w-2 h-2 rounded-full bg-black animate-ping"></span>
+        )}
+      </button>
+
+      {/* FLOATING CONTEXT-SENSITIVE QUICK TIPS OVERLAY MODAL */}
+      {showQuickTips && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#111] border border-white/15 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="p-5 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-cyan-500/10 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-300">
+                  <Lightbulb className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
+                    Communication Quick Tips
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono rounded uppercase font-bold tracking-wider">
+                      Context Live
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-white/60 font-medium mt-0.5">
+                    {currentQuestion 
+                      ? `Real-time guidance for ${currentQuestion.type.toUpperCase()} round questions`
+                      : `Contextual advice for target role: ${selectedRole || 'General Interview'}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowQuickTips(false)}
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Sub-Category Navigation Tabs */}
+            <div className="flex border-b border-white/10 bg-black/40 px-4 pt-2 gap-1 overflow-x-auto shrink-0">
+              <button
+                onClick={() => setQuickTipsCategory("round")}
+                className={`px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-all relative border-b-2 cursor-pointer ${
+                  quickTipsCategory === "round"
+                    ? "text-amber-300 border-amber-400 font-mono"
+                    : "text-white/50 border-transparent hover:text-white"
+                }`}
+              >
+                <Brain className="w-3.5 h-3.5 text-amber-400" /> Round Strategy
+              </button>
+              <button
+                onClick={() => setQuickTipsCategory("speech")}
+                className={`px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-all relative border-b-2 cursor-pointer ${
+                  quickTipsCategory === "speech"
+                    ? "text-emerald-300 border-emerald-400 font-mono"
+                    : "text-white/50 border-transparent hover:text-white"
+                }`}
+              >
+                <Mic className="w-3.5 h-3.5 text-emerald-400" /> Verbal Diagnostics
+              </button>
+              <button
+                onClick={() => setQuickTipsCategory("formulas")}
+                className={`px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-all relative border-b-2 cursor-pointer ${
+                  quickTipsCategory === "formulas"
+                    ? "text-cyan-300 border-cyan-400 font-mono"
+                    : "text-white/50 border-transparent hover:text-white"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> STAR & Formulas
+              </button>
+              <button
+                onClick={() => setQuickTipsCategory("mindset")}
+                className={`px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-all relative border-b-2 cursor-pointer ${
+                  quickTipsCategory === "mindset"
+                    ? "text-purple-300 border-purple-400 font-mono"
+                    : "text-white/50 border-transparent hover:text-white"
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5 text-purple-400" /> Anxiety Hacks
+              </button>
+            </div>
+
+            {/* Modal Content Body */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {/* CATEGORY 1: ROUND STRATEGY */}
+              {quickTipsCategory === "round" && (
+                <div className="space-y-4">
+                  {currentQuestion ? (
+                    <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getQuestionTypeLabel(currentQuestion.type)}`}>
+                          Active Round: {currentQuestion.type}
+                        </span>
+                        <span className="text-[10px] text-white/40 font-mono">Question #{session.currentQuestionIndex + 1}</span>
+                      </div>
+                      <p className="text-xs font-bold text-white italic">"{currentQuestion.question}"</p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white/60">
+                      Target Role Focus: <strong className="text-emerald-400">{selectedRole || 'General Candidate'}</strong>
+                    </div>
+                  )}
+
+                  {/* Context Advice Cards */}
+                  {(!currentQuestion || currentQuestion.type === "technical") && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5" /> Technical Round Rules
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1">
+                          <strong className="text-white block font-mono text-[11px]">1. High-Level Approach First</strong>
+                          <p className="text-white/60 leading-relaxed text-[11px]">State your time & space complexity goals before writing logic or code. Avoid jumping straight into syntax.</p>
+                        </div>
+                        <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1">
+                          <strong className="text-white block font-mono text-[11px]">2. State Edge Cases Proactively</strong>
+                          <p className="text-white/60 leading-relaxed text-[11px]">Mention null inputs, empty collections, or memory limits. This demonstrates senior architectural foresight.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(!currentQuestion || currentQuestion.type === "behavioral") && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <Star className="w-3.5 h-3.5" /> Behavioral Round Rules
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1">
+                          <strong className="text-white block font-mono text-[11px]">1. The 60/40 Action Split</strong>
+                          <p className="text-white/60 leading-relaxed text-[11px]">Spend 60% of your story detailing YOUR specific actions. Use "I designed/implemented", not just "we".</p>
+                        </div>
+                        <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1">
+                          <strong className="text-white block font-mono text-[11px]">2. Quantified Impact Endings</strong>
+                          <p className="text-white/60 leading-relaxed text-[11px]">Conclude every story with a hard metric (e.g., "reduced latency by 35%", "saved 8 hours/week").</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(!currentQuestion || currentQuestion.type === "hr" || (currentQuestion.type as string) === "situational") && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-black text-cyan-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> HR & Situational Rules
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1">
+                          <strong className="text-white block font-mono text-[11px]">1. Adaptability & Ownership</strong>
+                          <p className="text-white/60 leading-relaxed text-[11px]">Show excitement for team collaboration and constructive feedback. Avoid blaming past teammates or managers.</p>
+                        </div>
+                        <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1">
+                          <strong className="text-white block font-mono text-[11px]">2. Keep Answers under 2 Mins</strong>
+                          <p className="text-white/60 leading-relaxed text-[11px]">HR screeners assess conciseness. A 90-second focused response outperforms a 4-minute rambling pitch.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CATEGORY 2: VERBAL DIAGNOSTICS */}
+              {quickTipsCategory === "speech" && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3">
+                    <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider font-mono">
+                      Live Session Speech Metrics
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                      <div className="p-2 bg-white/5 rounded-lg">
+                        <span className="text-[9px] text-white/40 font-mono uppercase block">Total Fillers</span>
+                        <span className="text-base font-black font-mono text-amber-400">
+                          {(Object.values(fillerCounts) as number[]).reduce((a, b) => a + b, 0)}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-white/5 rounded-lg">
+                        <span className="text-[9px] text-white/40 font-mono uppercase block">Pace (WPM)</span>
+                        <span className="text-base font-black font-mono text-cyan-400">
+                          {wordsPerMinute || "0"}
+                        </span>
+                      </div>
+                      <div className="p-2 bg-white/5 rounded-lg">
+                        <span className="text-[9px] text-white/40 font-mono uppercase block">Tone Confidence</span>
+                        <span className="text-base font-black font-mono text-emerald-400">
+                          {sentimentScore}%
+                        </span>
+                      </div>
+                      <div className="p-2 bg-white/5 rounded-lg">
+                        <span className="text-[9px] text-white/40 font-mono uppercase block">Hesitations</span>
+                        <span className="text-base font-black font-mono text-purple-400">
+                          {hesitationDuration}s
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Real-time coaching recommendation */}
+                  <div className="space-y-2 text-xs">
+                    <strong className="text-white font-mono uppercase tracking-wider text-[11px] block">Actionable Verbal Fixes:</strong>
+                    <ul className="space-y-2">
+                      <li className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2 text-amber-200">
+                        <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>Silence is Power:</strong> Replace filler words like <em>"um"</em>, <em>"like"</em>, or <em>"basically"</em> with 1-second silent pauses. Silent pauses sound deliberate and authoritative.
+                        </div>
+                      </li>
+                      <li className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-start gap-2 text-cyan-200">
+                        <Clock className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>Cadence Target:</strong> Ideal conversational speed is 120-140 WPM. If you catch yourself speeding up, drop your chin slightly and breathe through your nose.
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* CATEGORY 3: FORMULAS & SCRIPTS */}
+              {quickTipsCategory === "formulas" && (
+                <div className="space-y-4 text-xs">
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black text-cyan-400 uppercase tracking-wider font-mono">
+                      STAR Method Template
+                    </h4>
+                    <div className="p-3.5 bg-black/40 border border-white/10 rounded-xl space-y-2">
+                      <p className="text-white/70 leading-relaxed">
+                        <strong className="text-white font-mono">Formula:</strong> [Situation] → [Task] → [Action (60%)] → [Quantified Result]
+                      </p>
+                      <button
+                        onClick={() => {
+                          const script = "In my previous project, the main situation was [describe context]. My task was to [describe goal]. To resolve this, I [detailed action taken]. As a result, we achieved [metric/outcome].";
+                          setUserAnswerInput((prev) => (prev ? `${prev}\n\n${script}` : script));
+                          setCopiedScriptIndex(1);
+                          setTimeout(() => setCopiedScriptIndex(null), 2000);
+                        }}
+                        className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        {copiedScriptIndex === 1 ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedScriptIndex === 1 ? "Inserted STAR Outline into Draft!" : "Insert STAR Template into Answer Draft"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider font-mono">
+                      PREP Method (Technical & Architectural Questions)
+                    </h4>
+                    <div className="p-3.5 bg-black/40 border border-white/10 rounded-xl space-y-2">
+                      <p className="text-white/70 leading-relaxed">
+                        <strong className="text-white font-mono">Formula:</strong> [Point] → [Reason] → [Example] → [Point Reiteration]
+                      </p>
+                      <button
+                        onClick={() => {
+                          const script = "My primary recommendation is [Core Point]. The reason for this choice is [Technical Reason]. For instance, in [Example Case], this approach [Benefit]. Therefore, [Reiterate Core Point].";
+                          setUserAnswerInput((prev) => (prev ? `${prev}\n\n${script}` : script));
+                          setCopiedScriptIndex(2);
+                          setTimeout(() => setCopiedScriptIndex(null), 2000);
+                        }}
+                        className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        {copiedScriptIndex === 2 ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedScriptIndex === 2 ? "Inserted PREP Outline into Draft!" : "Insert PREP Template into Answer Draft"}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CATEGORY 4: MINDSET & ANXIETY HACKS */}
+              {quickTipsCategory === "mindset" && (
+                <div className="space-y-3 text-xs">
+                  <div className="p-3.5 bg-purple-500/10 border border-purple-500/20 rounded-xl space-y-1.5">
+                    <h4 className="font-bold text-purple-300 font-mono text-[11px]">1. The 3-Second Rule</h4>
+                    <p className="text-white/70 leading-relaxed text-[11px]">
+                      Never speak immediately after the interviewer finishes asking the question. Count 1-2-3 in your mind while nodding. This signals high composure and critical thinking.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1.5">
+                    <h4 className="font-bold text-emerald-300 font-mono text-[11px]">2. Box Breathing Reset</h4>
+                    <p className="text-white/70 leading-relaxed text-[11px]">
+                      If you feel nervous: Inhale deeply for 4 seconds → Hold for 4 seconds → Exhale smoothly for 4 seconds → Hold for 4 seconds. This instantly activates your parasympathetic nervous system.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl space-y-1.5">
+                    <h4 className="font-bold text-cyan-300 font-mono text-[11px]">3. Re-framing Script if Stuck</h4>
+                    <p className="text-white/70 leading-relaxed text-[11px]">
+                      If you lose your train of thought, don't panic or freeze. Say with a smile: <em>"To pivot back to the core question..."</em> or <em>"Let me reframe that clearly..."</em>
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-black/60 border-t border-white/10 flex items-center justify-between">
+              <span className="text-[10px] text-white/40 font-mono">
+                Press ESC or click close to return to active mock session
+              </span>
+              <button
+                onClick={() => setShowQuickTips(false)}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs rounded-lg transition-all cursor-pointer font-mono shadow-md shadow-emerald-500/10"
+              >
+                Return to Simulator
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
