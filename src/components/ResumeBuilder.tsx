@@ -83,80 +83,17 @@ export default function ResumeBuilder({
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       } catch (e) {
         console.warn("Failed to parse saved resume versions cache:", e);
       }
     }
-    return [
-      {
-        id: "ver_default_1",
-        title: "Software Engineer - Full Stack CV",
-        targetRole: "Full Stack Engineer",
-        uploadedAt: "Jul 20, 2026",
-        fileData: {
-          name: "Resume_FullStack_2026.pdf",
-          size: 245120,
-          mimeType: "application/pdf",
-          base64Data: "",
-          textContent: `[Candidate Resume: Full Stack Developer]\nName: ${profile.name || "Student Candidate"}\nTarget Role: Full Stack Engineer\nTechnical Skills: React, Node.js, TypeScript, PostgreSQL, Docker, AWS\nKey Experience:\n- Engineered scalable REST APIs using Node.js & TypeScript, reducing p99 latency by 38% across 100K DAU.\n- Built responsive frontend application with React 18 & Tailwind CSS achieving 98+ Google Lighthouse score.`,
-        },
-        suggestions: suggestions || {
-          optimizationScore: 88,
-          keywordMatchScore: 91,
-          atsReadabilityScore: 94,
-          uploadedText: "Full Stack Developer resume with React & Node.js expertise.",
-          atsBulletImprovements: [
-            {
-              before: "Worked on website performance and API endpoints.",
-              after: "Engineered scalable REST APIs using Node.js & TypeScript, reducing p99 response latencies by 38% across 100K daily active users.",
-              explanation: "Replaced passive description with quantifiable latency metrics and clear technological ownership."
-            }
-          ],
-          weakPhrasesDetected: ["Worked on", "Responsible for", "Helped with"],
-          suggestedHeadline: "Full Stack Engineer | React & Node.js Specialist | Scalable Systems & Cloud Architecture",
-          suggestedAboutSection: "Results-driven Full Stack Engineer with strong foundations in React, TypeScript, and microservice backends. Proven track record of delivering high-performance web products."
-        },
-        jobDescription: "Seeking Full Stack Software Engineer skilled in React, Node.js, and cloud deployments.",
-        score: 88
-      },
-      {
-        id: "ver_default_2",
-        title: "Frontend Developer - UI/UX Focus",
-        targetRole: "Frontend Engineer / UI Specialist",
-        uploadedAt: "Jul 22, 2026",
-        fileData: {
-          name: "Resume_Frontend_React_Tailwind.pdf",
-          size: 198400,
-          mimeType: "application/pdf",
-          base64Data: "",
-          textContent: `[Candidate Resume: Frontend Developer]\nName: ${profile.name || "Student Candidate"}\nTarget Role: Frontend Developer\nTechnical Skills: React 18, Next.js, Tailwind CSS, TypeScript, Webpack\nKey Experience:\n- Architected accessible design system following WCAG AA standards, accelerating UI velocity by 45%.`,
-        },
-        suggestions: {
-          optimizationScore: 92,
-          keywordMatchScore: 94,
-          atsReadabilityScore: 96,
-          uploadedText: "Frontend Developer resume with React, Tailwind, and Web Performance expertise.",
-          atsBulletImprovements: [
-            {
-              before: "Made UI screens responsive and styled components with CSS.",
-              after: "Architected modern responsive UI design system with React & Tailwind CSS, boosting Google Lighthouse score from 72 to 98/100.",
-              explanation: "Introduced quantifiable web performance metrics and architectural design system context."
-            }
-          ],
-          weakPhrasesDetected: ["Made UI screens", "Styled components"],
-          suggestedHeadline: "Frontend Engineer | React & Tailwind Design Systems | High Performance Web Apps",
-          suggestedAboutSection: "Passionate Frontend Developer focused on creating accessible, responsive, and visually stunning web applications."
-        },
-        jobDescription: "Looking for a Frontend Specialist experienced in React, Next.js, and design systems.",
-        score: 92
-      }
-    ];
+    return [];
   });
 
   const [activeVersionId, setActiveVersionId] = useState<string>(() => {
     const cachedActive = localStorage.getItem("placement_active_resume_id");
-    return cachedActive || "ver_default_1";
+    return cachedActive || "";
   });
 
   // Modal and Edit states for Saved Versions
@@ -285,16 +222,19 @@ export default function ResumeBuilder({
   // Delete Version
   const handleDeleteVersion = (versionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (savedVersions.length <= 1) {
-      alert("You must keep at least one saved resume version.");
-      return;
-    }
     const updated = savedVersions.filter(v => v.id !== versionId);
     setSavedVersions(updated);
     localStorage.setItem("placement_saved_resumes", JSON.stringify(updated));
 
-    if (activeVersionId === versionId && updated.length > 0) {
-      handleSelectVersion(updated[0]);
+    if (activeVersionId === versionId) {
+      if (updated.length > 0) {
+        handleSelectVersion(updated[0]);
+      } else {
+        setActiveVersionId("");
+        localStorage.removeItem("placement_active_resume_id");
+        setUploadedResumeFile(null);
+        setActiveSuggestions(null);
+      }
     }
   };
 
