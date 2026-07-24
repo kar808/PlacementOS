@@ -76,6 +76,22 @@ export default function FileUploadAnalyzer({
         continue;
       }
 
+      // Validate File Extension & MIME Type
+      const fileName = file.name.toLowerCase();
+      const validExtensions = [".pdf", ".docx", ".doc", ".txt", ".rtf", ".png", ".jpg", ".jpeg", ".webp", ".svg"];
+      const isValidExtension = validExtensions.some((ext) => fileName.endsWith(ext));
+      const isValidMime =
+        file.type.startsWith("image/") ||
+        file.type === "application/pdf" ||
+        file.type.includes("word") ||
+        file.type.includes("text") ||
+        file.type.includes("rtf");
+
+      if (!isValidExtension && !isValidMime) {
+        setError(`Invalid File Format: "${file.name}". Please insert a correct document or resume file (.pdf, .docx, .txt, or image file).`);
+        continue;
+      }
+
       let category: UploadedFileItem['category'] = "other";
       if (file.type.startsWith("image/")) {
         category = "resume_photo";

@@ -15,6 +15,7 @@ import {
   HRProfileAnalysis,
 } from "./types";
 import { DEFAULT_STUDENT_PROFILE } from "./lib/defaultProfile";
+import { sanitizeUserInput } from "./lib/sanitizer";
 
 // Supabase integration
 import { supabase } from "./supabaseClient";
@@ -62,7 +63,9 @@ import {
   CalendarClock,
   Home,
   Activity,
-  Settings
+  Settings,
+  Zap,
+  EyeOff
 } from "lucide-react";
 
 // Client-side rate-limiting rolling window tracking
@@ -201,6 +204,9 @@ export default function App() {
 
   // Global Error state (e.g. if API Key is missing or server fails)
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Deep Work focus mode state
+  const [isDeepWork, setIsDeepWork] = useState<boolean>(false);
 
   // Product Analytics Logging and Notifications state
   const [activities, setActivities] = useState<any[]>(() => {
@@ -572,6 +578,7 @@ export default function App() {
   // Unified endpoint executor helper with Supabase JWT verification header, request integrity and client-side rate limiting
   const callServerEndpoint = async (endpoint: string, body: any) => {
     setApiError(null);
+    const sanitizedBody = sanitizeUserInput(body);
     const userId = user?.uid || "sandbox-user";
     const monitorStartTime = startCall(endpoint);
 
@@ -602,7 +609,7 @@ export default function App() {
 
       // 2. Compute dynamic request integrity signature and timestamp
       const integrityTimestamp = Date.now();
-      const integritySignature = computeRequestIntegrity(endpoint, body, integrityTimestamp, userId);
+      const integritySignature = computeRequestIntegrity(endpoint, sanitizedBody, integrityTimestamp, userId);
       headers["X-Request-Timestamp"] = String(integrityTimestamp);
       headers["X-Request-Integrity"] = integritySignature;
       headers["X-Request-Client-Id"] = userId;
@@ -610,47 +617,48 @@ export default function App() {
       response = await fetch(endpoint, {
         method: "POST",
         headers,
-        body: JSON.stringify(body),
+        body: JSON.stringify(sanitizedBody),
       });
 
-      const contentType = response.headers.get("content-type") || "";
+      const rawText = await response.text();
       let data: any = null;
 
-      // Ensure response is JSON before invoking parsing methods to prevent fatal 'Unexpected token' errors
-      if (contentType.toLowerCase().includes("application/json")) {
-        try {
-          // Read raw text first, then parse manually to isolate and handle any malformed JSON safely
-          const rawText = await response.text();
-          if (!rawText || rawText.trim() === "") {
-            throw new Error("Received an empty response body from the server.");
-          }
-          try {
-            data = JSON.parse(rawText);
-          } catch (parseError: any) {
-            const isHtml = rawText.trim().startsWith("<!DOCTYPE") || rawText.trim().startsWith("<html");
-            if (isHtml) {
-              throw new Error("Server returned an HTML document/error page instead of JSON.");
-            }
-            throw new Error(`Failed to parse response JSON: ${parseError.message || parseError}. Raw: ${rawText.substring(0, 80)}`);
-          }
-        } catch (err: any) {
-          throw new Error(`Response validation error: ${err.message}`);
+      if (rawText && rawText.trim() !== "") {
+        let cleanedText = rawText.trim();
+        if (cleanedText.startsWith("```")) {
+          cleanedText = cleanedText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
         }
-      } else {
-        // Handle HTML error pages or plain text responses gracefully
-        const rawText = await response.text();
-        const snippet = rawText ? rawText.trim().substring(0, 500) : "No body text";
-        const isHtml = snippet.startsWith("<!DOCTYPE") || snippet.startsWith("<html");
-        
-        if (isHtml) {
-          throw new Error(`Server returned an HTML error page (Status ${response.status}): ${snippet}`);
-        } else {
-          throw new Error(`Server returned non-JSON content type "${contentType}" (Status ${response.status}): "${snippet}"`);
+        try {
+          data = JSON.parse(cleanedText);
+        } catch (e) {
+          // Attempt extracting JSON object from string if embedded
+          const match = cleanedText.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+          if (match) {
+            try {
+              data = JSON.parse(match[1]);
+            } catch (e2) {}
+          }
         }
       }
 
-      if (!response.ok || (data && data.error)) {
-        throw new Error((data && data.message) || `Endpoint operation failed with status ${response.status}`);
+      if (data) {
+        if (!response.ok || data.error) {
+          throw new Error(data.message || data.error || `Endpoint operation failed with status ${response.status}`);
+        }
+        endCall(endpoint, monitorStartTime, true);
+        return data;
+      }
+
+      // Handle cases where body is not JSON
+      const snippet = rawText ? rawText.trim().substring(0, 300) : "Empty response body";
+      const isHtml = snippet.startsWith("<!DOCTYPE") || snippet.startsWith("<html") || snippet.includes("<body");
+      
+      if (isHtml) {
+        throw new Error(`Server returned an HTML error page (Status ${response.status}). Please try again.`);
+      } else if (!response.ok) {
+        throw new Error(`Server error (Status ${response.status}): ${snippet}`);
+      } else {
+        throw new Error(`Unexpected server response format: ${snippet}`);
       }
       
       endCall(endpoint, monitorStartTime, true);
@@ -1122,6 +1130,21 @@ export default function App() {
                   <span>Readiness Index: <strong className="text-emerald-400 font-mono">{scores.overall}%</strong></span>
                 </div>
               )}
+              {/* Deep Work Toggle Button */}
+              <button
+                type="button"
+                id="deep-work-toggle-btn"
+                onClick={() => setIsDeepWork(!isDeepWork)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold font-mono transition-all cursor-pointer ${
+                  isDeepWork
+                    ? "bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-amber-500/30 text-purple-200 border-purple-500/60 shadow-lg shadow-purple-500/20 ring-2 ring-purple-500/30"
+                    : "bg-white/5 hover:bg-white/10 text-white/70 border-white/10 hover:text-white"
+                }`}
+                title={isDeepWork ? "Exit Deep Work Focus Mode" : "Enable Deep Work Focus Mode (Collapses Sidebar & Hides Distractions)"}
+              >
+                <Zap className={`w-3.5 h-3.5 ${isDeepWork ? "text-purple-300 fill-purple-300 animate-pulse" : "text-amber-400"}`} />
+                <span>{isDeepWork ? "DEEP WORK ON" : "Deep Work"}</span>
+              </button>
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg transition-colors cursor-pointer"
@@ -1191,51 +1214,89 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Navigation Sidebar for Large Screens */}
         {showWorkspaceNav && (
-          <aside className="hidden md:flex flex-col w-64 bg-[#111] border border-white/10 rounded-xl p-4 justify-between shrink-0 mr-4">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest block px-3 mb-2">Workspace Navigation</span>
-              {navigationTabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    id={`nav-${tab.id}`}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                      activeTab === tab.id
-                        ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/10"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 shrink-0" />
-                    {tab.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="space-y-2">
-              <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
-                <span className="text-[9px] font-bold text-white/40 uppercase block tracking-wider font-mono">Placement Target</span>
-                <p className="text-xs font-bold text-emerald-400 mt-1 truncate font-mono">
-                  {profile.targetRoles[0] || "Select Target Role"}
-                </p>
-                <p className="text-[10px] text-white/40 leading-normal mt-0.5">
-                  Deadline: {profile.placementDeadline}
-                </p>
+          isDeepWork ? (
+            <aside className="hidden md:flex flex-col w-16 bg-[#111] border border-white/10 rounded-xl py-4 px-2 items-center justify-between shrink-0 mr-4 transition-all shadow-xl">
+              <div className="space-y-2 flex flex-col items-center w-full">
+                <button
+                  onClick={() => setIsDeepWork(false)}
+                  className="p-2.5 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-xl hover:bg-purple-500/30 transition-all cursor-pointer mb-2 group"
+                  title="Expand Sidebar (Exit Deep Work Mode)"
+                >
+                  <EyeOff className="w-4 h-4 text-purple-300 group-hover:scale-110 transition-transform" />
+                </button>
+                {navigationTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+                        activeTab === tab.id
+                          ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/20"
+                          : "text-white/40 hover:text-white hover:bg-white/5"
+                      }`}
+                      title={tab.name}
+                    >
+                      <Icon className="w-4 h-4" />
+                    </button>
+                  );
+                })}
               </div>
               <button
-                onClick={handleSignOut}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg transition-colors text-xs font-bold cursor-pointer"
+                onClick={() => setIsDeepWork(false)}
+                className="p-2 text-white/30 hover:text-purple-300 hover:bg-purple-500/10 rounded-lg text-[9px] font-mono font-bold uppercase tracking-widest cursor-pointer text-center"
+                title="Exit Deep Work"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Reset Profile</span>
+                FOCUS
               </button>
-            </div>
-          </aside>
+            </aside>
+          ) : (
+            <aside className="hidden md:flex flex-col w-64 bg-[#111] border border-white/10 rounded-xl p-4 justify-between shrink-0 mr-4 transition-all">
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest block px-3 mb-2">Workspace Navigation</span>
+                {navigationTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      id={`nav-${tab.id}`}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                        activeTab === tab.id
+                          ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/10"
+                          : "text-white/60 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {tab.name}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-2">
+                <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
+                  <span className="text-[9px] font-bold text-white/40 uppercase block tracking-wider font-mono">Placement Target</span>
+                  <p className="text-xs font-bold text-emerald-400 mt-1 truncate font-mono">
+                    {profile.targetRoles[0] || "Select Target Role"}
+                  </p>
+                  <p className="text-[10px] text-white/40 leading-normal mt-0.5">
+                    Deadline: {profile.placementDeadline}
+                  </p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg transition-colors text-xs font-bold cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Reset Profile</span>
+                </button>
+              </div>
+            </aside>
+          )
         )}
 
         {/* Mobile Navigation Drawer */}
@@ -1292,6 +1353,27 @@ export default function App() {
 
         {/* Content Panel */}
         <main className="flex-1 overflow-y-auto space-y-6">
+          {/* Deep Work Focus Mode Active Header */}
+          {isDeepWork && (
+            <div className="p-3.5 bg-gradient-to-r from-purple-900/40 via-purple-900/20 to-black/60 border border-purple-500/30 rounded-2xl flex items-center justify-between gap-3 text-xs font-mono text-purple-200 shadow-xl backdrop-blur-md animate-in fade-in duration-200 mb-2">
+              <div className="flex items-center gap-3">
+                <span className="p-1.5 bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-300">
+                  <Zap className="w-4 h-4 text-purple-300 fill-purple-300 animate-pulse" />
+                </span>
+                <div>
+                  <h4 className="font-extrabold text-white text-xs tracking-tight">DEEP WORK FOCUS MODE ACTIVE</h4>
+                  <p className="text-[10px] text-purple-300/70 font-medium">Sidebar collapsed & non-essential distractions hidden for laser-focused career execution.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDeepWork(false)}
+                className="px-3.5 py-1.5 bg-purple-500 hover:bg-purple-400 text-black font-extrabold text-[10px] font-mono uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer shrink-0"
+              >
+                Exit Focus Mode
+              </button>
+            </div>
+          )}
+
           {/* Global Missing API Key Alert / Server Error boundary */}
           {apiError && (
             <ErrorAlertModal

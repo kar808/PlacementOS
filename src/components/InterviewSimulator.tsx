@@ -98,6 +98,8 @@ export default function InterviewSimulator({
 
   const recognitionRef = useRef<any>(null);
   const baseTranscriptRef = useRef<string>("");
+  const isListeningRef = useRef<boolean>(false);
+  const userAnswerInputRef = useRef<string>("");
 
   const currentQuestion: MockInterviewQuestion | undefined = session.questions[session.currentQuestionIndex];
   const lastHistoryItem = session.chatHistory[session.chatHistory.length - 1];
@@ -157,6 +159,7 @@ export default function InterviewSimulator({
   // Sync state analysis when text inputs are manually updated too
   const handleInputChange = (val: string) => {
     setUserAnswerInput(val);
+    userAnswerInputRef.current = val;
     analyzeSpeechDynamics(val);
     if (!isTimerActive && val.trim()) {
       setIsTimerActive(true); // Auto-resume timer if they type
@@ -223,6 +226,8 @@ export default function InterviewSimulator({
     setSpeechError(null);
 
     if (isListening) {
+      isListeningRef.current = false;
+      setIsListening(false);
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -237,12 +242,13 @@ export default function InterviewSimulator({
           console.error("Error stopping media recorder:", e);
         }
       }
-      setIsListening(false);
     } else {
+      isListeningRef.current = true;
       setIsTimerActive(true); // Auto-resume countdown timer if they speak!
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (!SpeechRecognition) {
         setSpeechError("Speech recognition is not supported in this browser. Please use Chrome, Safari, or Edge.");
+        isListeningRef.current = false;
         return;
       }
 
@@ -259,6 +265,7 @@ export default function InterviewSimulator({
           }
           const combined = (baseTranscriptRef.current + " " + sessionTranscript).replace(/\s+/g, " ").trim();
           setUserAnswerInput(combined);
+          userAnswerInputRef.current = combined;
           analyzeSpeechDynamics(combined);
 
           // Calculate real-time words-per-minute (WPM)
@@ -268,12 +275,11 @@ export default function InterviewSimulator({
             const wordCount = combined.split(/\s+/).filter(Boolean).length;
             if (elapsedSeconds > 1.5 && wordCount > 0) {
               const currentWpm = Math.round((wordCount / elapsedSeconds) * 60);
-              // Constrain WPM to realistic conversational speech boundaries
               setWordsPerMinute(Math.min(220, Math.max(30, currentWpm)));
             }
           }
 
-          // Track conversational hesitation pauses (silence gaps)
+          // Track conversational hesitation pauses
           if (lastSpeechTimestampRef.current) {
             const silenceGap = (now - lastSpeechTimestampRef.current) / 1000;
             if (silenceGap > 1.2 && silenceGap < 8.0) {
@@ -284,25 +290,44 @@ export default function InterviewSimulator({
         };
 
         rec.onerror = (err: any) => {
-          console.error("Speech recognition error:", err);
-          setIsListening(false);
-          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-            try { mediaRecorderRef.current.stop(); } catch (e) {}
-          }
-          if (err.error === "not-allowed") {
-            setSpeechError("Microphone access is blocked or not allowed. Please click 'Allow' on your browser's prompt or grant microphone permissions in your browser's settings.");
-          } else if (err.error === "no-speech") {
-            setSpeechError("No speech detected. Please check your microphone connection or speak closer and more clearly.");
-          } else if (err.error === "audio-capture") {
-            setSpeechError("No working microphone hardware detected. Please connect recording headphones or a mic.");
-          } else if (err.error === "network") {
-            setSpeechError("Network communication error with browser's speech engine.");
+          console.warn("Speech recognition error event:", err?.error);
+          if (err.error === "not-allowed" || err.error === "service-not-allowed") {
+            isListeningRef.current = false;
+            setIsListening(false);
+            setSpeechError("Microphone access is blocked or not allowed. Please click 'Allow' on your browser's prompt or grant microphone permissions in settings.");
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+              try { mediaRecorderRef.current.stop(); } catch (e) {}
+            }
+          } else if (err.error === "no-speech" || err.error === "network") {
+            // Transient pause or network hiccup: ignore error message if user wants continuous listening
+            if (!isListeningRef.current) {
+              setSpeechError("No speech detected. Please check your microphone connection.");
+            }
           } else if (err.error !== "aborted") {
-            setSpeechError(`Speech recognition error: ${err.error || "unknown"}. Please try again or type your answer.`);
+            if (!isListeningRef.current) {
+              setSpeechError(`Speech recognition message: ${err.error || "unknown"}.`);
+            }
           }
         };
 
         rec.onend = () => {
+          baseTranscriptRef.current = userAnswerInputRef.current;
+          
+          // CRITICAL: Automatically restart listening seamlessly if user hasn't pressed "Stop Speaking"
+          if (isListeningRef.current && recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+              return;
+            } catch (startErr) {
+              setTimeout(() => {
+                if (isListeningRef.current && recognitionRef.current) {
+                  try { recognitionRef.current.start(); } catch (e) {}
+                }
+              }, 250);
+              return;
+            }
+          }
+
           setIsListening(false);
           if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
             try { mediaRecorderRef.current.stop(); } catch (e) {}
@@ -310,6 +335,7 @@ export default function InterviewSimulator({
         };
 
         baseTranscriptRef.current = userAnswerInput;
+        userAnswerInputRef.current = userAnswerInput;
         speechStartTimeRef.current = Date.now();
         lastSpeechTimestampRef.current = Date.now();
 
@@ -345,7 +371,6 @@ export default function InterviewSimulator({
                   const base64Audio = reader.result as string;
                   setLastRecordedAudio(base64Audio);
                 };
-                // Stop all tracks in stream to release microphone icon
                 stream.getTracks().forEach(t => t.stop());
               };
 
@@ -361,6 +386,8 @@ export default function InterviewSimulator({
         setIsListening(true);
       } catch (e: any) {
         console.error("Speech start error:", e);
+        isListeningRef.current = false;
+        setIsListening(false);
         setSpeechError("Could not start speech recognition: please make sure your microphone is connected and authorized.");
       }
     }
@@ -373,13 +400,14 @@ export default function InterviewSimulator({
   };
 
   const handleNextQuestion = () => {
-    if (isListening && recognitionRef.current) {
+    isListeningRef.current = false;
+    if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (e) {}
-      setIsListening(false);
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try { mediaRecorderRef.current.stop(); } catch (e) {}
     }
+    setIsListening(false);
     onNextQuestion();
   };
 
@@ -387,15 +415,14 @@ export default function InterviewSimulator({
     e.preventDefault();
     if (!userAnswerInput.trim()) return;
 
-    if (isListening) {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch (e) {}
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        try { mediaRecorderRef.current.stop(); } catch (e) {}
-      }
-      setIsListening(false);
+    isListeningRef.current = false;
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) {}
     }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try { mediaRecorderRef.current.stop(); } catch (e) {}
+    }
+    setIsListening(false);
 
     const currentQuestion = session.questions[session.currentQuestionIndex];
     onEvaluateAnswer(

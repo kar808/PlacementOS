@@ -30,12 +30,20 @@ const supabaseAdmin = supabaseUrl && supabaseKey ? createClient(supabaseUrl, sup
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-// Production-safe custom CORS middleware to handle preflight and client-server handshakes
+// Production-safe custom CORS & Security Headers middleware
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-Timestamp, X-Request-Integrity, X-Request-Client-Id");
   
+  // Security Headers for Defense-in-Depth
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=()");
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
@@ -44,6 +52,45 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+// Server-Side Centralized Input Sanitizer Function
+const sanitizeServerInput = (val: any): any => {
+  if (val === null || val === undefined) return val;
+  if (typeof val === "string") {
+    // Preserve base64 image data strings intact if uploading files or avatars
+    if (val.startsWith("data:image/") || val.startsWith("data:application/pdf")) {
+      return val;
+    }
+    return val
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/javascript\s*:/gi, "")
+      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "")
+      .trim();
+  }
+  if (Array.isArray(val)) {
+    return val.map(sanitizeServerInput);
+  }
+  if (typeof val === "object") {
+    const cleaned: Record<string, any> = {};
+    for (const [k, v] of Object.entries(val)) {
+      cleaned[k] = sanitizeServerInput(v);
+    }
+    return cleaned;
+  }
+  return val;
+};
+
+// Global Request Input Sanitization Middleware
+app.use((req, res, next) => {
+  if (req.body && typeof req.body === "object") {
+    req.body = sanitizeServerInput(req.body);
+  }
+  if (req.query && typeof req.query === "object") {
+    req.query = sanitizeServerInput(req.query);
+  }
+  next();
+});
 
 // Simple debug logging array
 const debugLogs: string[] = [];
@@ -612,6 +659,26 @@ async function generateWithFallback(ai: GoogleGenAI, params: any) {
   throw lastError;
 }
 
+// Helper to parse JSON output from Gemini safely (stripping code blocks and backticks)
+function parseGeminiJson(rawText: string): any {
+  if (!rawText) return {};
+  let cleaned = rawText.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  }
+  try {
+    return JSON.parse(cleaned);
+  } catch (err) {
+    const jsonMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[1]);
+      } catch (e2) {}
+    }
+    throw err;
+  }
+}
+
 // Global API key check helper
 const handleApiError = (res: express.Response, error: any) => {
   const errStr = error instanceof Error ? error.stack || error.message : String(error);
@@ -624,6 +691,7 @@ const handleApiError = (res: express.Response, error: any) => {
     } catch (err) {}
   }
 
+  res.setHeader("Content-Type", "application/json");
   res.status(500).json({
     error: true,
     message: error instanceof Error ? error.message : "An unexpected server error occurred.",
@@ -781,7 +849,7 @@ Please evaluate and return a single cohesive JSON object conforming to the requi
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
@@ -889,7 +957,90 @@ Please evaluate and provide:
 });
 
 // ------------------------------------------------------------------------
-// API ENDPOINT 2B: Multimodal Document, Resume Photograph, File & Link Analyzer
+// API ENDPOINT 2B: Automatic AI Resume Builder ("Bestest AI")
+// ------------------------------------------------------------------------
+app.post("/api/placement/resume-autobuild", async (req, res) => {
+  try {
+    const { profile, targetRole } = req.body;
+    const ai = getAI();
+
+    const selectedRole = targetRole || profile?.targetRoles?.[0] || "Software Engineer";
+
+    const promptText = `You are the world's most elite AI Resume Architect and ATS Optimizer ("Bestest AI").
+Generate a complete, pristine, industry-grade professional resume tailored specifically for the candidate based on their profile data and target role.
+
+CANDIDATE PROFILE:
+- Name: ${profile?.name || "Candidate"}
+- Email: ${profile?.email || "candidate@vorynexa.com"}
+- College / University: ${profile?.collegeName || "State University"}
+- Graduation Year: ${profile?.graduationYear || "2025"}
+- Target Role: ${selectedRole}
+- Technical Skills: ${profile?.technicalSkills?.join(", ") || "TypeScript, React, Node.js, Python, SQL"}
+- Non-Technical Skills: ${profile?.nonTechnicalSkills?.join(", ") || "Problem Solving, Agile, Technical Communication"}
+- Existing Projects / Achievements: ${profile?.projects || "Full-stack Web App with Real-time Data Sync and REST API"}
+- Internship / Work Experience: ${profile?.internships || "Software Engineering Intern - Developed scalable backend services"}
+- Career Aspirations: ${profile?.careerAspirations || "To build resilient cloud-native software products"}
+
+INSTRUCTIONS:
+1. Craft a high-powered 2-3 sentence Professional Summary tailored for ${selectedRole}.
+2. Group technical skills logically (Languages, Frameworks/Libraries, Tools & Cloud, Core Engineering).
+3. Synthesize 3-4 detailed project/experience entries using the STAR method with metrics (e.g. "reduced latency by 35%", "scaled API to 10k requests/sec").
+4. Provide 10+ high-value ATS industry keywords embedded in the resume.
+5. Generate a complete, beautifully structured Markdown text version suitable for export as plain text or PDF.
+`;
+
+    const response = await generateWithFallback(ai, {
+      contents: [{ text: promptText }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          required: [
+            "professionalSummary",
+            "skillsGrouped",
+            "experienceAndProjects",
+            "atsKeywordsIncluded",
+            "fullMarkdownText"
+          ],
+          properties: {
+            professionalSummary: { type: Type.STRING },
+            skillsGrouped: {
+              type: Type.OBJECT,
+              required: ["languages", "frameworksAndTools", "coreEngineering"],
+              properties: {
+                languages: { type: Type.ARRAY, items: { type: Type.STRING } },
+                frameworksAndTools: { type: Type.ARRAY, items: { type: Type.STRING } },
+                coreEngineering: { type: Type.ARRAY, items: { type: Type.STRING } }
+              }
+            },
+            experienceAndProjects: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                required: ["title", "roleOrCategory", "bullets"],
+                properties: {
+                  title: { type: Type.STRING },
+                  roleOrCategory: { type: Type.STRING },
+                  bullets: { type: Type.ARRAY, items: { type: Type.STRING } }
+                }
+              }
+            },
+            atsKeywordsIncluded: { type: Type.ARRAY, items: { type: Type.STRING } },
+            fullMarkdownText: { type: Type.STRING }
+          }
+        }
+      }
+    });
+
+    const text = response.text || "{}";
+    res.json(JSON.parse(text));
+  } catch (error) {
+    handleApiError(res, error);
+  }
+});
+
+// ------------------------------------------------------------------------
+// API ENDPOINT 2C: Multimodal Document, Resume Photograph, File & Link Analyzer
 // ------------------------------------------------------------------------
 app.post("/api/placement/analyze-file", async (req, res) => {
   try {
@@ -1387,43 +1538,66 @@ Evaluate and return:
 // API ENDPOINT 7.5: Clarify & Rephrase Interview Question
 // ------------------------------------------------------------------------
 app.post("/api/placement/interview/clarify", async (req, res) => {
+  res.setHeader("Content-Type", "application/json");
   try {
     const { question, type, expectedFocus } = req.body;
-    const ai = getAI();
+    if (!question) {
+      return res.status(400).json({
+        error: true,
+        message: "Question parameter is required for clarification.",
+      });
+    }
 
+    const ai = getAI();
     const prompt = `You are a helpful, empathetic Mock Interview Coach.
 The user is struggling to understand the following interview question during their simulation:
 QUESTION: "${question}"
-TYPE: "${type}"
-EXPECTED MARKERS: "${expectedFocus}"
+TYPE: "${type || "technical"}"
+EXPECTED MARKERS: "${expectedFocus || "Core concepts and clear structure"}"
 
 Your goal is to:
 1. Rephrase the question into a simpler, more approachable, and conversational version that is easier to grasp immediately, while keeping its core technical or behavioral intent identical.
-2. Break down what the interviewer is actually asking for into 2 or 3 highly friendly, actionable hints (e.g. "Try starting with a project where you had a database bottleneck...").
-3. Make sure not to give away a complete answer, but guide the user on how to structure their thoughts (such as reminding them of the STAR method).
+2. Break down what the interviewer is actually asking for into 2 or 3 highly friendly, actionable hints.
+3. Guide the user on how to structure their thoughts (such as using the STAR method or step-by-step breakdown).
 
-Return the clarified question and helpful tips in a clean JSON format.`;
+Return a clean JSON object with keys "clarifiedQuestion" and "helpfulHints".`;
 
-    const response = await generateWithFallback(ai, {
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ["clarifiedQuestion", "helpfulHints"],
-          properties: {
-            clarifiedQuestion: { type: Type.STRING },
-            helpfulHints: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
+    try {
+      const response = await generateWithFallback(ai, {
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            required: ["clarifiedQuestion", "helpfulHints"],
+            properties: {
+              clarifiedQuestion: { type: Type.STRING },
+              helpfulHints: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              }
             }
           }
         }
-      }
-    });
+      });
 
-    const text = response.text || "{}";
-    res.json(JSON.parse(text));
+      const parsed = parseGeminiJson(response.text || "{}");
+      if (parsed && parsed.clarifiedQuestion) {
+        return res.json(parsed);
+      }
+    } catch (aiErr) {
+      console.warn("AI clarification call failed, using graceful fallback:", aiErr);
+    }
+
+    // High-availability fallback if AI model is unreachable or returns malformed text
+    return res.json({
+      clarifiedQuestion: `In simpler terms: ${question}`,
+      helpfulHints: [
+        "Focus on giving a real example from your projects or experience.",
+        "Structure your response: Problem statement -> Your approach -> Results achieved.",
+        `Key area the interviewer is checking: ${expectedFocus || "Logical problem solving and clear communication"}`
+      ]
+    });
   } catch (error) {
     handleApiError(res, error);
   }
