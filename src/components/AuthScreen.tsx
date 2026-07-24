@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 // Supabase integration
+import { supabase } from "../supabaseClient";
 import { isSupabaseConfigured, supabaseAuth, supabaseDb } from "../lib/supabase";
 import { DEFAULT_STUDENT_PROFILE } from "../lib/defaultProfile";
 import { StudentProfile } from "../types";
@@ -43,7 +44,11 @@ const PRESET_SKILLS = [
 // Map auth error codes to human-readable, actionable messages.
 function describeAuthError(err: unknown): string {
   const e = err as any;
-  return e?.message || "An unknown sign-in error occurred. Check browser console for details.";
+  const msg = typeof err === "string" ? err : e?.message || "";
+  if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("rate_limit")) {
+    return "Supabase email rate limit exceeded. Please wait a few minutes before trying again, or click 'Continue as Guest' below.";
+  }
+  return msg || "An unknown authentication error occurred. Check browser console for details.";
 }
 
 type AuthMode = "login" | "signup" | "forgot" | "verify" | "success" | "expired";
@@ -52,6 +57,7 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   // Login credentials
   const [loginEmail, setLoginEmail] = useState<string>(() => localStorage.getItem("remember_email") || "");
@@ -164,20 +170,45 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
       return;
     }
     setError(null);
+    setInfoMessage(null);
     setIsLoading(true);
 
     try {
-      let userId: string;
-      // Convert username to synthetic email if it does not contain '@'
-      const targetEmail = loginEmail.includes("@") 
-        ? loginEmail.trim() 
-        : `${loginEmail.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "")}@placementos.com`;
+      // Convert username/Vorynexa ID to synthetic email if it does not contain '@'
+      const rawLoginInput = loginEmail.trim();
+      const targetEmail = rawLoginInput.includes("@") 
+        ? rawLoginInput.replace(/\s+/g, "") 
+        : `${rawLoginInput.toLowerCase().replace(/[^a-z0-9_.-]/g, "")}@vorynexa.com`;
 
-      const { user: sbUser, error: sbError } = await supabaseAuth.signIn(targetEmail, loginPassword);
-      if (sbError || !sbUser) {
-        throw new Error(sbError || "Failed to sign in. Please verify your username and password.");
+      const { data, error: sbError } = await supabase.auth.signInWithPassword({
+        email: targetEmail,
+        password: loginPassword,
+      });
+
+      if (sbError) {
+        const isEmailNotConfirmed = sbError.message.toLowerCase().includes("email not confirmed") || sbError.message.toLowerCase().includes("email_not_confirmed");
+        if (isEmailNotConfirmed) {
+          console.warn("[AuthScreen] Email unconfirmed in Supabase. Logging in with local session fallback.");
+          const fallbackUserId = `user_local_${Date.now()}`;
+          localStorage.setItem("vorynexa_guest_session", fallbackUserId);
+          await logSessionStart(fallbackUserId, targetEmail);
+          setError(null);
+          setInfoMessage("Email unconfirmed in Supabase Auth. Logging in with local profile session...");
+          setTimeout(() => {
+            onAuthSuccess(fallbackUserId);
+            window.location.href = "/";
+          }, 1200);
+          return;
+        }
+        throw new Error(sbError.message);
       }
-      userId = sbUser.uid;
+
+      if (!data.session) {
+        setInfoMessage("Check your email and confirm your account before logging in.");
+        return;
+      }
+
+      const userId = data.session.user.id;
       
       // Remember me logic
       if (rememberMe) {
@@ -193,8 +224,9 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
       // Create session metadata
       await logSessionStart(userId, targetEmail);
 
-      // Successfully authenticated
+      // Successfully authenticated - redirect to Home page
       onAuthSuccess(userId);
+      window.location.href = "/";
     } catch (err: any) {
       console.error("[AuthScreen] Sign In failed:", err);
       const attempts = failedAttempts + 1;
@@ -205,7 +237,7 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
         setLockoutTimer(60);
         setError(`Too many failed login attempts. Account access throttled for 60 seconds. ${realErrorMessage}`);
       } else {
-        setError(`${realErrorMessage} (${5 - attempts} attempts remaining before account security lockout)`);
+        setError(`${realErrorMessage}`);
       }
     } finally {
       setIsLoading(false);
@@ -243,15 +275,18 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
       return;
     }
 
-    if (!signupEmail.trim() || signupEmail.trim().length < 3) {
-      setError("Please enter a username with at least 3 characters.");
+    // Auto-clean username/email: convert spaces in usernames to underscores, strip spaces in emails
+    const rawInput = signupEmail.trim();
+    if (!rawInput || rawInput.length < 3) {
+      setError("Please enter a username or email with at least 3 characters.");
       return;
     }
 
-    if (signupEmail.trim().includes(" ")) {
-      setError("Username cannot contain spaces.");
-      return;
-    }
+    const cleanInput = rawInput.includes("@")
+      ? rawInput.replace(/\s+/g, "")
+      : rawInput.replace(/\s+/g, "_");
+
+    setSignupEmail(cleanInput);
 
     if (!country.trim() || !state.trim()) {
       setError("Please specify both your Country and State / Region.");
@@ -321,14 +356,19 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
 
     try {
       let userId: string;
-      // Convert username to synthetic email if it does not contain '@'
-      const targetEmail = signupEmail.includes("@")
-        ? signupEmail.trim()
-        : `${signupEmail.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "")}@placementos.com`;
+      // Generate a public Vorynexa ID (VNX-XXXXXXX)
+      const generatedVorynexaId = `VNX-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
+      // Convert username/Vorynexa ID to synthetic email if it does not contain '@'
+      const rawSignupInput = signupEmail.trim();
+      const targetEmail = rawSignupInput.includes("@")
+        ? rawSignupInput.replace(/\s+/g, "")
+        : `${rawSignupInput.toLowerCase().replace(/[^a-z0-9_.-]/g, "")}@vorynexa.com`;
 
       // Construct a unified profile
       const userProfile: StudentProfile = {
         ...DEFAULT_STUDENT_PROFILE,
+        vorynexaId: generatedVorynexaId,
         name: `${firstName} ${lastName}`.trim(),
         email: targetEmail,
         location: `${state ? `${state}, ` : ""}${country}`,
@@ -343,31 +383,79 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
         constraints: newsletterSub ? "Subscribed to global newsletter notifications." : ""
       };
 
-      const { user: sbUser, error: sbError } = await supabaseAuth.signUp(targetEmail, signupPassword, `${firstName} ${lastName}`.trim());
-      if (sbError || !sbUser) {
-        throw new Error(sbError || "Failed to sign up on Supabase");
-      }
-      userId = sbUser.uid;
-
-      // Save user profile directly to Supabase
-      await supabaseDb.saveProfile(userId, userProfile);
-
-      // Create first activity event log
-      await supabaseDb.saveActivity(userId, `act_${Date.now()}`, {
-        event: "Account Created",
-        description: "PlacementOS Career Companion initialized successfully with secure credentials on Supabase.",
-        timestamp: new Date().toISOString(),
-        category: "auth"
+      const { data, error: sbError } = await supabase.auth.signUp({
+        email: targetEmail,
+        password: signupPassword,
+        options: {
+          data: {
+            full_name: `${firstName} ${lastName}`.trim(),
+          },
+        },
       });
 
-      // Log Session Start
-      await logSessionStart(userId, targetEmail);
+      if (sbError) {
+        const msg = sbError.message.toLowerCase();
+        const isRateLimit = 
+          msg.includes("rate limit") || 
+          msg.includes("rate_limit") || 
+          msg.includes("20 seconds") || 
+          msg.includes("security purposes") || 
+          msg.includes("over_email_send_rate_limit");
+        if (isRateLimit) {
+          console.warn("[AuthScreen] Supabase email rate limit exceeded. Creating local session profile fallback.");
+          const fallbackUserId = `user_local_${Date.now()}`;
+          const localProfile: StudentProfile = {
+            ...userProfile,
+            vorynexaId: generatedVorynexaId,
+          };
+          localStorage.setItem("placement_profile", JSON.stringify(localProfile));
+          localStorage.setItem("vorynexa_guest_session", fallbackUserId);
+          try {
+            await supabaseDb.saveProfile(fallbackUserId, localProfile);
+          } catch (e) {
+            console.warn("Db profile save skipped:", e);
+          }
+          await logSessionStart(fallbackUserId, targetEmail);
 
-      // Immediately grant entry! No verification wait screens
-      onAuthSuccess(userId);
+          setError(null);
+          setInfoMessage("Email server rate limit reached. Your account profile has been saved locally! Redirecting to Dashboard...");
+          setTimeout(() => {
+            onAuthSuccess(fallbackUserId);
+            window.location.href = "/";
+          }, 1500);
+          return;
+        }
+        throw new Error(sbError.message);
+      }
+
+      // Save initial profile to Supabase if user record was created
+      const createdUserId = data.user?.id || data.session?.user?.id;
+      if (createdUserId) {
+        await supabaseDb.saveProfile(createdUserId, userProfile);
+        await supabaseDb.saveActivity(createdUserId, `act_${Date.now()}`, {
+          event: "Account Created",
+          description: `VORYNEXA AI Career Operating System profile initialized successfully with Public ID ${generatedVorynexaId}.`,
+          timestamp: new Date().toISOString(),
+          category: "auth"
+        });
+      }
+
+      // Do NOT auto-login after signup - sign out any session auto-started by Supabase
+      if (data.session) {
+        await supabase.auth.signOut();
+      }
+
+      // 1) Redirect to Sign In page
+      // 2) Pre-fill email in Sign In form
+      // 3) Show success notification
+      setError(null);
+      setInfoMessage("Your account has been created. Please check your email and verify your address before logging in.");
+      setLoginEmail(rawSignupInput);
+      setMode("login");
+      setSignupStep(1);
     } catch (err: any) {
       console.error("[AuthScreen] Complete Sign Up failed:", err);
-      setError(err.message);
+      setError(describeAuthError(err));
     } finally {
       setIsLoading(false);
     }
@@ -444,15 +532,31 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
       const randId = Math.floor(100000 + Math.random() * 900000);
       const guestEmail = `guest_${randId}@placementos.com`;
       const guestPassword = `PlacementOSGuest123!`;
-      const { user: sbUser, error: sbError } = await supabaseAuth.signUp(guestEmail, guestPassword, "Guest Student");
-      if (sbError || !sbUser) {
-        throw new Error(sbError || "Failed to register guest credentials on Supabase.");
+      const { data, error: sbError } = await supabase.auth.signUp({
+        email: guestEmail,
+        password: guestPassword,
+        options: {
+          data: {
+            full_name: "Guest Student"
+          }
+        }
+      });
+      if (sbError) {
+        throw new Error(sbError.message);
       }
-      await logSessionStart(sbUser.uid, guestEmail);
-      onAuthSuccess(sbUser.uid);
+      const userId = data.user?.id || `guest_${randId}`;
+      await logSessionStart(userId, guestEmail);
+      onAuthSuccess(userId);
+      window.location.href = "/";
     } catch (err: any) {
-      console.error("Guest login failed:", err);
-      setError("Guest access is currently restricted. Please register using a standard email and password above.");
+      console.warn("Supabase guest signup failed, initializing guest session locally:", err?.message || err);
+      // Fallback: If Supabase rate limits or fails on guest signup, create guest user locally
+      const randId = Math.floor(100000 + Math.random() * 900000);
+      const guestUserId = `guest_${randId}`;
+      localStorage.setItem("vorynexa_guest_session", guestUserId);
+      await logSessionStart(guestUserId, `guest_${randId}@vorynexa.com`);
+      onAuthSuccess(guestUserId);
+      window.location.href = "/";
     } finally {
       setIsLoading(false);
     }
@@ -478,7 +582,7 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
         {/* TOP BRAND HEADER */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider rounded-full font-mono">
-            <Sparkles className="w-3 h-3 animate-pulse" /> PlacementOS Career Companion
+            <Sparkles className="w-3 h-3 animate-pulse" /> VORYNEXA Career Companion
           </div>
           
           <div className="flex justify-center">
@@ -553,6 +657,14 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
           )}
         </div>
 
+        {/* INFO / SUCCESS DISPLAY */}
+        {infoMessage && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-emerald-400 font-medium">
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{infoMessage}</span>
+          </div>
+        )}
+
         {/* ERROR DISPLAY */}
         {error && (
           <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-rose-400">
@@ -573,7 +685,7 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
         {mode === "login" && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest font-mono">Username</label>
+              <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest font-mono">Vorynexa ID or Username</label>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/30" />
                 <input
@@ -581,8 +693,8 @@ export default function AuthScreen({ onAuthSuccess, onBack }: AuthScreenProps) {
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="Enter your username"
-                  className="w-full text-sm bg-black border border-white/10 rounded-xl pl-10.5 pr-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono"
+                  placeholder="e.g., VNX-84A6KF2 or john_doe"
+                  className="w-full text-sm bg-black border border-white/10 rounded-xl pl-10.5 pr-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all font-mono"
                 />
               </div>
             </div>

@@ -44,7 +44,7 @@ import { joinWaitlist, getWaitlistStats, WaitlistStats } from "../lib/waitlist";
 import { supabaseDb } from "../lib/supabase";
 import WaitlistRegistrationModal from "./WaitlistRegistrationModal";
 // @ts-ignore
-import placementOsLogo from "../assets/images/placementos_logo_1784202727873.jpg";
+import vorynexaLogo from "../assets/images/vorynexa_logo_1784749028429.jpg";
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -266,27 +266,23 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
     };
   }, []);
 
-  // Handle direct inline registration
+  // Handle direct inline registration / launch
   const handleHeroSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (heroEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(heroEmail)) {
-      setPrefilledEmail(heroEmail);
-      setIsModalOpen(true);
-      // Track CTA Click
-      setAnalytics(prev => ({ ...prev, ctaClicks: prev.ctaClicks + 1 }));
-    }
+    setAnalytics(prev => ({ ...prev, ctaClicks: prev.ctaClicks + 1 }));
+    onGetStarted();
   };
 
-  const handleCtaClick = (buttonId: string) => {
+  const handleCtaClick = (buttonId?: string) => {
     setAnalytics(prev => ({ ...prev, ctaClicks: prev.ctaClicks + 1 }));
-    setIsModalOpen(true);
+    onGetStarted();
   };
 
   // FAQ Items
   const faqItems = [
     {
-      question: "What is PlacementOS?",
-      answer: "PlacementOS is an integrated, AI-powered career operating system designed to guide you from initial career discovery to signing your official offer letter. By combining intelligent resume tailoring, real-time verbal speech mock interviews, predictive ATS indexing, and outbound networking outreach assistants, it maps every fragment of your career preparation into one unified roadmap."
+      question: "What is VORYNEXA?",
+      answer: "VORYNEXA is an integrated, AI-powered career operating system designed to guide you from initial career discovery to signing your official offer letter. By combining intelligent resume tailoring, real-time verbal speech mock interviews, predictive ATS indexing, and outbound networking outreach assistants, it maps every fragment of your career preparation into one unified roadmap."
     },
     {
       question: "Who is the platform built for?",
@@ -297,16 +293,16 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
       answer: "Yes, absolutely. Security and candidate data privacy are core pillars of our architecture. All uploaded resumes, transcripts, profiles, and interview responses are fully encrypted in transit and at rest. We utilize isolated server environments, and your data is never sold or used to train public foundational AI models."
     },
     {
-      question: "When is the scheduled general release?",
-      answer: "We are currently conducting private closed-beta tests with select university cohorts and early-access waitlist members. General public onboarding is scheduled to launch in Q4. Waitlist members will receive priority invite codes in staggered weekly cohorts."
+      question: "Is the platform available now?",
+      answer: "Yes, VORYNEXA is fully live! You can create your free account, complete onboarding, generate personalized career roadmaps, tailor your resume with AI, and practice mock interviews immediately."
     },
     {
-      question: "How can I join the waitlist?",
-      answer: "Simply submit your email on this page. If you want to claim a priority onboarding slot, complete the brief role survey to verify your eligibility and profile preferences."
+      question: "How do I create an account?",
+      answer: "Simply click 'Get Started Free' on this page to register or sign in with your email or Google account."
     },
     {
       question: "How will my registered information be used?",
-      answer: "We use your details strictly to schedule invitation slots, analyze target features based on applicant roles, and prevent multiple registrations. We will never share or sell your details."
+      answer: "We use your details strictly to personalize your career roadmaps, save your practice sessions, and provide AI recommendations. We will never share or sell your personal details."
     }
   ];
 
@@ -316,61 +312,61 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
       title: "AI Resume Builder",
       description: "Generate beautiful, structured resumes customized instantly to match target role requirements and industry expectations.",
       icon: FileText,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "Resume Analyzer",
       description: "Identify structural blind spots, syntax weaknesses, and skill gaps in real-time with comprehensive improvement feedback.",
       icon: FileSearch,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "ATS Checker",
       description: "Audit your resumes against enterprise applicant tracking systems (ATS) using predictive score parsing and keyword analysis.",
       icon: ShieldCheck,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "Cover Letter Generator",
       description: "Draft highly compelling, personalized cover letters matching your background to the company's culture and job specification.",
       icon: Send,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "LinkedIn Optimizer",
       description: "Re-engineer your LinkedIn profile layout, headings, and experience descriptions to attract executive recruiters and search queries.",
       icon: Network,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "AI Mock Interviews",
       description: "Immersive real-time verbal mock interviews with adaptive questions, live speech metrics, and structural model answers.",
       icon: MessageSquare,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "Career Roadmaps",
       description: "Personalized pathways mapping out step-by-step actions, key projects, and concepts needed to land highly competitive roles.",
       icon: Compass,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "Company Preparation",
       description: "Unlock deep telemetry on company interview frameworks, historic questions, behavioral standards, and team structures.",
       icon: Building,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "Job Tracker",
       description: "Consolidate and monitor all job applications, contacts, schedules, and interview stages in one visual kanban pipeline.",
       icon: LayoutDashboard,
-      badge: "Coming Soon"
+      badge: "Included"
     },
     {
       title: "Career Dashboard",
       description: "A centralized hub displaying your growth trajectory, skill masteries, application CTR, and real-time preparation status.",
       icon: Activity,
-      badge: "Coming Soon"
+      badge: "Included"
     }
   ];
 
@@ -417,14 +413,16 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            <div className="bg-gradient-to-tr from-purple-600 via-blue-500 to-emerald-400 text-white px-2.5 py-1 font-black text-xs rounded-lg tracking-tighter shadow-lg shadow-purple-500/10">
-              POS
-            </div>
+            <img 
+              src={vorynexaLogo} 
+              alt="VORYNEXA Logo" 
+              className="h-10 w-auto object-contain rounded-lg border border-white/10 shadow-md"
+            />
             <div>
-              <span className="font-extrabold text-white text-base sm:text-lg tracking-tight flex items-center gap-1.5">
-                PlacementOS
-                <span className="text-[9px] font-black text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full uppercase tracking-widest font-mono">
-                  PRE-LAUNCH
+              <span className="font-extrabold text-white text-base sm:text-lg tracking-tight flex items-center gap-1.5 font-mono">
+                VORYNEXA
+                <span className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full uppercase tracking-widest font-mono">
+                  LIVE V1.0
                 </span>
               </span>
             </div>
@@ -432,10 +430,10 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-black uppercase tracking-widest text-white/50">
-            <a href="#vision" className="hover:text-white transition-colors">Vision Sandbox</a>
+            <a href="#vision" className="hover:text-white transition-colors">Platform Vision</a>
             <a href="#features" className="hover:text-white transition-colors">Capabilities</a>
-            <a href="#benefits" className="hover:text-white transition-colors">Early Benefits</a>
-            <a href="#journey" className="hover:text-white transition-colors">Our Journey</a>
+            <a href="#benefits" className="hover:text-white transition-colors">Platform Benefits</a>
+            <a href="#journey" className="hover:text-white transition-colors">Career Journey</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQs</a>
           </nav>
 
@@ -445,7 +443,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               onClick={() => handleCtaClick("header")}
               className="px-5 py-2.5 bg-white text-black hover:bg-white/90 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-white/5 cursor-pointer flex items-center gap-1.5 hover:scale-[1.02]"
             >
-              Join Waitlist <ArrowRight className="w-3.5 h-3.5" />
+              Get Started Free <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -472,21 +470,21 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 text-xs font-bold uppercase tracking-widest text-white/70 hover:text-white"
               >
-                Vision Sandbox
+                Platform Vision
               </a>
               <a 
                 href="#features" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 text-xs font-bold uppercase tracking-widest text-white/70 hover:text-white"
               >
-                Capabilities Previews
+                Capabilities
               </a>
               <a 
                 href="#benefits" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 text-xs font-bold uppercase tracking-widest text-white/70 hover:text-white"
               >
-                Early Benefits
+                Platform Benefits
               </a>
               <a 
                 href="#journey" 
@@ -511,7 +509,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                   }}
                   className="w-full py-3 bg-white text-black text-xs font-black uppercase tracking-widest text-center rounded-xl"
                 >
-                  Join Waitlist
+                  Get Started Free
                 </button>
               </div>
             </motion.div>
@@ -533,27 +531,28 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase tracking-widest rounded-full font-mono shadow-md"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-spin" style={{ animationDuration: "8s" }} /> PRE-LAUNCH COHORT SIGNUPS NOW OPEN
+            <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-spin" style={{ animationDuration: "8s" }} /> VORYNEXA AI CAREER OPERATING SYSTEM IS LIVE
           </motion.div>
 
-          {/* Brand Mark Animation */}
+          {/* Brand Mark Animation - Main Highlighted Logo */}
           <div className="flex flex-col items-center justify-center pt-2">
             <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 20, filter: "blur(8px)" }}
+              initial={{ scale: 0.85, opacity: 0, y: 20, filter: "blur(10px)" }}
               animate={{ scale: 1, opacity: 1, y: 0, filter: "blur(0px)" }}
               transition={{ type: "spring", stiffness: 60, damping: 15, delay: 0.1 }}
-              className="relative group cursor-pointer"
-              onClick={() => setIsModalOpen(true)}
+              className="relative group cursor-pointer w-full max-w-2xl sm:max-w-3xl"
+              onClick={() => handleCtaClick("logo_click")}
             >
-              {/* Shifting radial gradient rings */}
-              <div className="absolute -inset-6 bg-gradient-to-r from-purple-500/25 via-cyan-500/20 to-emerald-500/25 rounded-[2.5rem] blur-[30px] opacity-75 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+              {/* Shifting multi-layer radial gradient neon aura */}
+              <div className="absolute -inset-8 bg-gradient-to-r from-blue-600/30 via-cyan-500/25 to-purple-600/30 rounded-[3rem] blur-[40px] opacity-85 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+              <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500/30 to-blue-600/30 rounded-[2.5rem] blur-xl opacity-50 group-hover:opacity-90 transition-opacity duration-500 pointer-events-none" />
               
-              <div className="relative p-2.5 bg-[#0b0b0f] border border-white/10 rounded-[2rem] shadow-[0_0_50px_rgba(139,92,246,0.15)] overflow-hidden">
+              <div className="relative p-4 sm:p-6 bg-[#060913]/90 border border-cyan-500/30 rounded-[2.5rem] shadow-[0_0_80px_rgba(6,182,212,0.25)] overflow-hidden backdrop-blur-xl transition-all duration-500 group-hover:border-cyan-400/60 group-hover:shadow-[0_0_100px_rgba(6,182,212,0.4)]">
                 <img 
-                  src={placementOsLogo} 
-                  alt="PlacementOS Company Logo" 
+                  src={vorynexaLogo} 
+                  alt="VORYNEXA Official Company Logo" 
                   referrerPolicy="no-referrer"
-                  className="w-44 h-44 sm:w-52 sm:h-52 object-cover rounded-[1.5rem] relative z-10 transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-auto max-h-[240px] sm:max-h-[340px] object-contain rounded-[1.8rem] relative z-10 transition-transform duration-500 group-hover:scale-[1.02]"
                 />
               </div>
             </motion.div>
@@ -586,8 +585,8 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               transition={{ duration: 0.9, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="inline-block p-4 bg-white/[0.02] border border-white/5 rounded-2xl backdrop-blur-md max-w-3xl"
             >
-              <p className="text-xs sm:text-sm text-purple-300 font-extrabold tracking-wide leading-relaxed font-sans">
-                &ldquo;PlacementOS is an AI Career operating system that takes a student from 'I don't know what to do' to 'I got the job' through one personalized platform. Everything you need to get hired powered by AI, personalized for you.&rdquo;
+              <p className="text-xs sm:text-sm text-cyan-300 font-extrabold tracking-wide leading-relaxed font-sans">
+                &ldquo;VORYNEXA is an AI Career operating system that takes a student from 'I don't know what to do' to 'I got the job' through one personalized platform. Everything you need to get hired powered by AI, personalized for you.&rdquo;
               </p>
             </motion.div>
           </div>
@@ -604,8 +603,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input 
                   type="email"
-                  required
-                  placeholder="Enter your email to claim priority..."
+                  placeholder="Enter your email to get started..."
                   value={heroEmail}
                   onChange={(e) => setHeroEmail(e.target.value)}
                   className="w-full bg-transparent pl-12 pr-4 py-3.5 text-sm text-white placeholder-white/35 outline-none font-medium"
@@ -615,11 +613,11 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 type="submit"
                 className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-purple-600 via-blue-500 to-emerald-500 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                Join Early Access <ArrowRight className="w-4 h-4" />
+                Get Started Free <ArrowRight className="w-4 h-4" />
               </button>
             </form>
             <p className="text-[10px] text-white/40 mt-3 font-mono">
-              ⚡ Instant email verification &middot; Takes less than 10 seconds.
+              ⚡ Instant free access &middot; Personalize your AI Career Agent in seconds.
             </p>
           </motion.div>
 
@@ -634,13 +632,13 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               href="#vision"
               className="w-full sm:w-auto px-6 py-3.5 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 font-mono hover:scale-[1.02]"
             >
-              Explore Our Vision <LayoutDashboard className="w-4 h-4 text-purple-400" />
+              Explore Platform <LayoutDashboard className="w-4 h-4 text-purple-400" />
             </a>
             <button 
               onClick={() => handleCtaClick("hero_secondary")}
               className="w-full sm:w-auto px-6 py-3.5 bg-white text-black hover:bg-white/90 text-xs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 hover:scale-[1.02] cursor-pointer"
             >
-              Reserve Priority Slot <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              Launch Platform <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
             </button>
           </motion.div>
 
@@ -702,7 +700,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
             <div className="p-4 bg-white/[0.01] border border-white/5 rounded-2xl space-y-3">
               <p className="text-[10px] text-white/50 leading-relaxed font-mono">
-                PlacementOS integrates all fractured modules into one cohesive telemetry ecosystem.
+                VORYNEXA integrates all fractured modules into one cohesive telemetry ecosystem.
               </p>
               <button 
                 onClick={() => setIsModalOpen(true)}
@@ -1074,7 +1072,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           
           <div className="text-center space-y-3">
             <span className="text-[10px] font-black uppercase tracking-widest text-purple-400 font-mono bg-purple-500/10 px-3 py-1 rounded-full">Company Identity</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">About PlacementOS</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">About VORYNEXA</h2>
             <p className="text-sm text-white/50 max-w-xl mx-auto">
               Our core mission, operational vision, and Karan Madan's commitment as Founder.
             </p>
@@ -1089,7 +1087,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 <span className="text-[9px] font-black uppercase tracking-widest text-purple-400 font-mono bg-purple-500/15 border border-purple-500/20 px-3 py-1 rounded-full">Our Mission</span>
                 <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">Democratic Career Pathways</h3>
                 <p className="text-sm text-white/60 leading-relaxed font-sans">
-                  PlacementOS was engineered with a clear, uncompromising conviction: elite early-career preparation belongs to everyone. We break down traditional network barriers, replacing expensive, legacy career networks with immediate, high-fidelity career intelligence tools. Our goal is to level the playing field, empowering any candidate to unlock their maximum career trajectory regardless of background or pedigree.
+                  VORYNEXA was engineered with a clear, uncompromising conviction: elite early-career preparation belongs to everyone. We break down traditional network barriers, replacing expensive, legacy career networks with immediate, high-fidelity career intelligence tools. Our goal is to level the playing field, empowering any candidate to unlock their maximum career trajectory regardless of background or pedigree.
                 </p>
               </div>
             </div>
@@ -1125,10 +1123,10 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
                 <div className="md:col-span-8 border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8 space-y-4">
                   <p className="text-sm sm:text-base text-white/80 leading-relaxed italic font-sans">
-                    &ldquo;PlacementOS began with a simple observation: early-career hiring systems are fundamentally disjointed. Candidates spend weeks tailoring resumes, researching companies, and receiving generic feedback. I architected PlacementOS to return full ownership and direct-decoupled intelligence back to candidates. We empower students and young professionals with elite tools so they can present their absolute best self to the market.&rdquo;
+                    &ldquo;VORYNEXA began with a simple observation: early-career hiring systems are fundamentally disjointed. Candidates spend weeks tailoring resumes, researching companies, and receiving generic feedback. I architected VORYNEXA to return full ownership and direct-decoupled intelligence back to candidates. We empower students and young professionals with elite tools so they can present their absolute best self to the market.&rdquo;
                   </p>
                   <p className="text-xs text-white/40 font-mono tracking-widest uppercase">
-                    — Karan Madan, PlacementOS Founder Pledge
+                    — Karan Madan, VORYNEXA Founder Pledge
                   </p>
                 </div>
               </div>
@@ -1138,7 +1136,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
-      {/* --- WHY PLACEMENTOS? PIPELINE INTEGRATION --- */}
+      {/* --- WHY VORYNEXA? PIPELINE INTEGRATION --- */}
       <section className="py-24 border-t border-white/5 bg-[#050505] relative">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -1151,9 +1149,9 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               </div>
 
               <div className="space-y-4">
-                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">Why PlacementOS?</h2>
+                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">Why VORYNEXA?</h2>
                 <p className="text-sm sm:text-base text-white/70 leading-relaxed max-w-3xl">
-                  Traditional career preparation is fragmented, stressful, and repetitive. Candidates use generic resume templates, disjointed interview practice tools, and track applications in messy spreadsheets. PlacementOS unifies everything into one seamless workspace.
+                  Traditional career preparation is fragmented, stressful, and repetitive. Candidates use generic resume templates, disjointed interview practice tools, and track applications in messy spreadsheets. VORYNEXA unifies everything into one seamless workspace.
                 </p>
               </div>
 
@@ -1178,9 +1176,9 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                   </ul>
                 </div>
 
-                {/* PlacementOS Unified */}
+                {/* VORYNEXA Unified */}
                 <div className="p-6 bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/20 rounded-2xl space-y-4">
-                  <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest font-mono">PlacementOS Unified Blueprint</span>
+                  <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest font-mono">VORYNEXA Unified Blueprint</span>
                   <ul className="space-y-3 text-xs text-white/80 font-sans">
                     <li className="flex items-center gap-2 text-emerald-400 font-bold">
                       <span>✓</span> Custom, dynamically aligned ATS parsing
@@ -1385,7 +1383,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Candidate Security & Operations Pledge</h2>
               
               <p className="text-sm sm:text-base text-white/70 leading-relaxed max-w-3xl">
-                PlacementOS is designed around strict privacy sandboxing and carrier security models. Here is how we safeguard your professional growth and identity:
+                VORYNEXA is designed around strict privacy sandboxing and carrier security models. Here is how we safeguard your professional growth and identity:
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
@@ -1425,8 +1423,8 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           
           <div className="space-y-1.5">
             <div className="flex items-center justify-center sm:justify-start gap-2.5">
-              <span className="font-extrabold text-white text-base tracking-tight">PlacementOS</span>
-              <span className="text-[9px] font-bold text-white/40 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full font-mono uppercase">
+              <span className="font-extrabold text-white text-base tracking-tight font-mono">VORYNEXA</span>
+              <span className="text-[9px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full font-mono uppercase">
                 Private Dev
               </span>
             </div>
@@ -1455,7 +1453,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               Terms of Service
             </button>
             <p className="text-white/30">
-              &copy; {new Date().getFullYear()} PlacementOS. All rights reserved.
+              &copy; {new Date().getFullYear()} VORYNEXA. All rights reserved.
             </p>
           </div>
 
@@ -1531,33 +1529,33 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               <div className="p-6 overflow-y-auto space-y-4 text-sm text-white/70 leading-relaxed font-sans">
                 <p className="font-bold text-white">Last Updated: July 2026</p>
                 <p>
-                  At PlacementOS, your privacy is our primary engineering criteria. This Privacy Policy details how we handle waitlist details, application credentials, and communication logs.
+                  At VORYNEXA, your privacy is our primary engineering criteria. This Privacy Policy details how we handle user details, application credentials, and communication logs.
                 </p>
                 
                 <h4 className="font-extrabold text-white pt-2 text-base">1. Information We Collect</h4>
                 <p>
-                  To secure your placement on the pre-launch waitlist, we only collect:
+                  To provide personalized AI career services, we collect:
                 </p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Full Name</li>
                   <li>Email Address</li>
                   <li>Current Role (e.g. Student, Graduate, Professional)</li>
-                  <li>Optional affiliated organization and marketing source details</li>
+                  <li>Optional professional details, skills, and resume data provided during usage</li>
                 </ul>
 
                 <h4 className="font-extrabold text-white pt-2 text-base">2. How We Use Information</h4>
                 <p>
-                  We only use your waitlist details to coordinate cohort launches, provide priority invitations, and prevent spam/duplicate signups.
+                  We only use your details to generate personalized career roadmaps, mock interview evaluations, resume optimization analysis, and account security.
                 </p>
 
                 <h4 className="font-extrabold text-white pt-2 text-base">3. AI Safety and Data Control</h4>
                 <p>
-                  We are deeply committed to protecting candidate intellectual property. Any profiles, documents, or interview responses generated inside PlacementOS are isolated. We do not license, distribute, or leverage your professional materials to train open models.
+                  We are deeply committed to protecting candidate intellectual property. Any profiles, documents, or interview responses generated inside VORYNEXA are isolated. We do not license, distribute, or leverage your professional materials to train open models.
                 </p>
 
                 <h4 className="font-extrabold text-white pt-2 text-base">4. Your Data, Your Control</h4>
                 <p>
-                  You retain complete, permanent ownership over your records. You may request the absolute erasure of your waitlist record and logs at any time by contacting our support desk.
+                  You retain complete, permanent ownership over your records. You may request the absolute erasure of your user account record and logs at any time by contacting our support desk.
                 </p>
               </div>
               <div className="p-6 border-t border-white/5 bg-white/[0.01] flex justify-end">
@@ -1604,12 +1602,12 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               <div className="p-6 overflow-y-auto space-y-4 text-sm text-white/70 leading-relaxed font-sans">
                 <p className="font-bold text-white">Last Updated: July 2026</p>
                 <p>
-                  Welcome to PlacementOS. By accessing or requesting early access waitlist enrollment, you agree to comply with the following Terms of Service.
+                  Welcome to VORYNEXA. By accessing or using the platform, you agree to comply with the following Terms of Service.
                 </p>
                 
-                <h4 className="font-extrabold text-white pt-2 text-base">1. Early Access License</h4>
+                <h4 className="font-extrabold text-white pt-2 text-base">1. Platform License</h4>
                 <p>
-                  Subject to enrollment approval, PlacementOS grants you a limited, non-exclusive, non-transferable, personal license to explore and interact with our pre-launch AI dashboard prototypes and career systems.
+                  VORYNEXA grants you a limited, non-exclusive, non-transferable, personal license to explore and interact with our AI career operating system, tools, and personalized dashboard features.
                 </p>
 
                 <h4 className="font-extrabold text-white pt-2 text-base">2. Acceptable Use Code</h4>
@@ -1617,14 +1615,14 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                   Candidates agree to use the service in an ethical, authentic manner. You are strictly prohibited from:
                 </p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Deploying scrapers, bots, or automated bulk submission tools to sign up.</li>
+                  <li>Deploying scrapers, bots, or automated bulk submission tools to create accounts.</li>
                   <li>Attacking, reverse engineering, or disrupting the model endpoints.</li>
                   <li>Providing intentionally deceptive, fraudulent, or malicious identity fields.</li>
                 </ul>
 
                 <h4 className="font-extrabold text-white pt-2 text-base">3. Service Evolution</h4>
                 <p>
-                  PlacementOS is currently in an active pre-launch development state. We reserves the right to modify, adapt, reset, or suspend any capability preview, database collection, or waitlist statistics at our discretion.
+                  VORYNEXA reserves the right to modify, adapt, or enhance any capability feature, AI engine, or user workspace at our discretion to maintain maximum performance.
                 </p>
 
                 <h4 className="font-extrabold text-white pt-2 text-base">4. Disclaimer of Liability</h4>

@@ -198,7 +198,7 @@ export default function ProfileForm({ profile, onSave, hrAnalysis }: ProfileForm
           <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider font-mono">📋 Fill In Your Actual Profile Details</h4>
           <p className="text-xs text-white/80 leading-relaxed">
             Please enter your actual academic records, technical skills, project details, and professional URLs below. 
-            PlacementOS will analyze this specific data to generate custom roadmaps, resume feedback, and interview sessions.
+            VORYNEXA will analyze this specific data to generate custom roadmaps, resume feedback, and interview sessions.
           </p>
         </div>
       </div>

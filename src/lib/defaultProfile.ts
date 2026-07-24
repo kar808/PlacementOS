@@ -33,5 +33,6 @@ export const DEFAULT_STUDENT_PROFILE: StudentProfile = {
   linkedinUrl: "",
   githubUrl: "",
   email: "",
-  phone: ""
+  phone: "",
+  vorynexaId: "VNX-DEMO88"
 };

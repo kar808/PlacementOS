@@ -1,6 +1,6 @@
 {
-  "name": "PlacementOS",
-  "description": "A super-premium AI-powered career co-pilot and placement intelligence suite for students of all colleges and backgrounds.",
+  "name": "VORYNEXA",
+  "description": "VORYNEXA - AI Career Agent and AI Career Operating System for personalized roadmaps, interview simulation, resume optimization, and decision support.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

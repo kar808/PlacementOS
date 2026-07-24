@@ -46,7 +46,7 @@ Dear Hiring Team,
 
 My name is ${profile.name}, and I am a final-year student specializing in ${profile.branch || "Computer Science"} at ${profile.college || "my college"}. 
 
-I recently completed an HR Socials Screen using PlacementOS, scoring ${analysis?.ratings.professionalism || 85}% in Professionalism and ${analysis?.ratings.githubActivity || 80}% in Technical Maturity. 
+I recently completed an HR Socials Screen using VORYNEXA, scoring ${analysis?.ratings.professionalism || 85}% in Professionalism and ${analysis?.ratings.githubActivity || 80}% in Technical Maturity. 
 
 Over the past semesters, I've honed skills in ${profile.technicalSkills?.slice(0, 5).join(", ") || "various technologies"} and built portfolio-worthy applications. You can view my public profiles below:
 - LinkedIn: ${linkedinUrl || "[LinkedIn Link]"}

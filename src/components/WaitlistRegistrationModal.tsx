@@ -147,7 +147,7 @@ export default function WaitlistRegistrationModal({ isOpen, onClose, initialEmai
                     <Sparkles className="w-3 h-3 animate-pulse" /> Early Access Form
                   </div>
                   <h3 className="text-2xl font-extrabold text-white tracking-tight" id="modal-title">
-                    Join PlacementOS Waitlist
+                    Join VORYNEXA Waitlist
                   </h3>
                   <p className="text-xs text-white/50 leading-relaxed">
                     Be part of an exclusive group to test-drive automated resume building, high-fidelity mock interviews, and personalized career roadmaps before public release.
@@ -323,7 +323,7 @@ export default function WaitlistRegistrationModal({ isOpen, onClose, initialEmai
                     Position Secured &bull; Premium Waitlist
                   </div>
                   <p className="text-xs sm:text-sm text-white/60 leading-relaxed max-w-sm mx-auto pt-2">
-                    Thank you for joining the PlacementOS Early Access waitlist. We have recorded your registration successfully!
+                    Thank you for joining the VORYNEXA Early Access waitlist. We have recorded your registration successfully!
                   </p>
                   <p className="text-xs text-white/40 leading-relaxed max-w-xs mx-auto">
                     We will notify you immediately via email when we begin onboarding users for our initial private release blocks.

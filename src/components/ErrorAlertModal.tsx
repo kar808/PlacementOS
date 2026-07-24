@@ -48,7 +48,7 @@ export default function ErrorAlertModal({
   };
 
   const steps = getActionableSteps();
-  const mailToUrl = `mailto:${supportEmail}?subject=PlacementOS%20System%20Error%20Report&body=Hi%20Support,%0D%0A%0D%0AI%20encountered%20an%20error%20on%20PlacementOS.%0D%0A%0D%0AError%20Details:%0D%0A${encodeURIComponent(error)}%0D%0A%0D%0AUser%20Agent:%0D%0A${encodeURIComponent(navigator.userAgent)}`;
+  const mailToUrl = `mailto:${supportEmail}?subject=VORYNEXA%20System%20Error%20Report&body=Hi%20Support,%0D%0A%0D%0AI%20encountered%20an%20error%20on%20VORYNEXA.%0D%0A%0D%0AError%20Details:%0D%0A${encodeURIComponent(error)}%0D%0A%0D%0AUser%20Agent:%0D%0A${encodeURIComponent(navigator.userAgent)}`;
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-[fadeIn_0.2s_ease-out]">

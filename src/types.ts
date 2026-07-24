@@ -32,6 +32,7 @@ export interface StudentProfile {
   githubUrl?: string;
   email?: string;
   phone?: string;
+  vorynexaId?: string;
 }
 
 export interface IntelligenceMap {
@@ -100,6 +101,10 @@ export interface JobSearchStrategy {
 }
 
 export interface ResumeLinkedInSuggestion {
+  optimizationScore?: number;
+  keywordMatchScore?: number;
+  atsReadabilityScore?: number;
+  uploadedText?: string;
   atsBulletImprovements: { before: string; after: string; explanation: string }[];
   weakPhrasesDetected: string[];
   suggestedHeadline: string;
@@ -133,6 +138,43 @@ export interface MockInterviewSession {
   currentQuestionIndex: number;
   chatHistory: MockInterviewChatHistoryItem[];
   status: 'idle' | 'ongoing' | 'completed';
+}
+
+export interface UploadedFileItem {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: number;
+  base64Data?: string;
+  linkUrl?: string;
+  category: 'resume_photo' | 'document_pdf' | 'portfolio_link' | 'certificate_photo' | 'transcript' | 'other';
+  previewUrl?: string;
+}
+
+export interface FileAnalysisResult {
+  overallScore: number;
+  fileTypeDetected: string;
+  extractedText: string;
+  documentQualityScore: number;
+  atsCompatibilityScore: number;
+  extractedDetails: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    college?: string;
+    degree?: string;
+    technicalSkills?: string[];
+    projects?: string[];
+    internships?: string[];
+    certifications?: string[];
+  };
+  keyStrengths: string[];
+  criticalFlawsAndRisks: string[];
+  missingKeywords: string[];
+  formattingSuggestions: string[];
+  atsBulletImprovements: { before: string; after: string; explanation: string }[];
+  overallVerdict: string;
+  recommendedActionableSteps: string[];
 }
 
 export interface PastInterviewSession {

@@ -39,7 +39,7 @@ export default function ProjectAdvisor({
           <h3 className="font-bold text-white text-sm">Resume Project Advisor</h3>
         </div>
         <p className="text-white/60 text-xs leading-relaxed">
-          Select your target role and click below. PlacementOS will generate resume-worthy projects tailored directly to your coding capability.
+          Select your target role and click below. VORYNEXA will generate resume-worthy projects tailored directly to your coding capability.
           {isCodingLevelLow && (
             <span className="block mt-2 font-mono text-[11px] text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 p-2 rounded">
               💡 Detected Non-Coding / Beginner profile: Generating business plans, analytic case studies, or process optimization blueprints.

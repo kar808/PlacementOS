@@ -108,7 +108,7 @@ export default function IntelligenceDashboard({
         <AlertCircle className="w-10 h-10 text-emerald-400 mb-3 animate-pulse" />
         <h3 className="font-extrabold text-white text-lg font-mono">No Analysis Cache Found</h3>
         <p className="text-xs text-white/50 max-w-md text-center mt-1 leading-relaxed px-4">
-          Click the "Update Co-Pilot" button on your Profile Blueprint or click below to launch the PlacementOS Intelligence Map.
+          Click the "Update Co-Pilot" button on your Profile Blueprint or click below to launch the VORYNEXA Intelligence Map.
         </p>
       </div>
     );

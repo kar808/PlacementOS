@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StudentProfile, ReadinessScores, PastInterviewSession } from "../types";
 import { 
   LayoutDashboard, 
@@ -19,7 +19,14 @@ import {
   ShieldCheck,
   ChevronRight,
   RefreshCw,
-  FolderGit
+  FolderGit,
+  Target,
+  Flame,
+  Trophy,
+  Compass,
+  BookOpen,
+  Dumbbell,
+  Wrench
 } from "lucide-react";
 
 interface UserDashboardProps {
@@ -50,6 +57,30 @@ export default function UserDashboard({
   userId
 }: UserDashboardProps) {
   const [showAllNotifications, setShowAllNotifications] = useState<boolean>(false);
+  const [isMissionCompleted, setIsMissionCompleted] = useState<boolean>(() => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    return localStorage.getItem(`vorynexa_mission_completed_${todayStr}`) === "true";
+  });
+  const [streakCount, setStreakCount] = useState<number>(() => {
+    return parseInt(localStorage.getItem("vorynexa_daily_streak") || "4", 10);
+  });
+
+  const handleToggleMission = () => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const newStatus = !isMissionCompleted;
+    setIsMissionCompleted(newStatus);
+    localStorage.setItem(`vorynexa_mission_completed_${todayStr}`, newStatus ? "true" : "false");
+    
+    if (newStatus) {
+      const updatedStreak = streakCount + 1;
+      setStreakCount(updatedStreak);
+      localStorage.setItem("vorynexa_daily_streak", updatedStreak.toString());
+    } else {
+      const updatedStreak = Math.max(1, streakCount - 1);
+      setStreakCount(updatedStreak);
+      localStorage.setItem("vorynexa_daily_streak", updatedStreak.toString());
+    }
+  };
 
   // Compute profile completion rate
   const calculateProfileCompletion = (): number => {
@@ -113,6 +144,189 @@ export default function UserDashboard({
               <span>Refresh Metrics</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* TODAY'S DAILY CAREER MISSION CARD (NORTH STAR METRIC) */}
+      <div className={`border rounded-2xl p-5 relative overflow-hidden transition-all ${
+        isMissionCompleted 
+          ? "bg-emerald-950/20 border-emerald-500/30" 
+          : "bg-gradient-to-r from-cyan-950/30 via-slate-900 to-emerald-950/20 border-cyan-500/30 shadow-lg shadow-cyan-500/5"
+      }`}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-wider rounded-full font-mono">
+                <Target className="w-3 h-3 animate-pulse" /> Today's Career Mission
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-wider rounded-full font-mono">
+                <Flame className="w-3 h-3 text-amber-500" /> {streakCount} Day Streak
+              </span>
+              {isMissionCompleted && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-black uppercase tracking-wider rounded-full font-mono">
+                  <CheckCircle2 className="w-3 h-3" /> Mission Completed (+25 XP)
+                </span>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black text-white flex items-center gap-2 font-mono">
+                {isMissionCompleted ? "Daily Mission Accomplished!" : `Execute 15-Min Sprint for ${profile.targetRoles[0] || "Software Engineer"}`}
+              </h3>
+              <p className="text-xs text-white/60 leading-relaxed mt-0.5">
+                {isMissionCompleted 
+                  ? "Great work! You have completed today's career mission and maintained your streak. Come back tomorrow for your next mission."
+                  : `Complete 1 AI Mock Interview Session or Optimize 2 ATS Resume bullets for ${profile.targetRoles[0] || "Software Engineer"}.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
+            {!isMissionCompleted && (
+              <button
+                onClick={() => onNavigateToSection("interview")}
+                className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-cyan-500/10 flex items-center gap-1.5 cursor-pointer font-mono"
+              >
+                <span>Launch Sprint</span> <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            <button
+              onClick={handleToggleMission}
+              className={`px-4 py-2.5 font-bold text-xs rounded-xl border transition-all flex items-center gap-2 cursor-pointer font-mono ${
+                isMissionCompleted
+                  ? "bg-emerald-500 text-black border-emerald-400 hover:bg-emerald-400"
+                  : "bg-white/5 hover:bg-white/10 text-white border-white/20"
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{isMissionCompleted ? "Completed Today ✓" : "Mark Complete"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* VORYNEXA DECISION SUPPORT MATRIX (THE 5 CORE QUESTIONS) */}
+      <div className="bg-[#111] border border-white/10 rounded-2xl p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-white/5 pb-3">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase tracking-wider rounded-full font-mono">
+              <Compass className="w-3 h-3" /> Decision Support Engine
+            </div>
+            <h3 className="text-base font-black text-white font-mono mt-1">
+              Your Daily Career Decision Matrix
+            </h3>
+          </div>
+          <p className="text-[10px] text-white/40 font-mono">
+            Vorynexa AI Operating System &middot; Target Role: <strong className="text-emerald-400">{profile.targetRoles[0] || "Software Engineer"}</strong>
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {/* Question 1: What should I learn? */}
+          <div className="bg-white/5 border border-white/5 hover:border-cyan-500/30 p-4 rounded-xl flex flex-col justify-between space-y-3 transition-all group">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-cyan-400 text-[10px] font-bold uppercase tracking-wider font-mono">
+                <BookOpen className="w-3.5 h-3.5" /> 1. What to Learn?
+              </div>
+              <h4 className="text-xs font-bold text-white leading-snug">
+                {profile.technicalSkills.length > 0 ? `Master ${profile.technicalSkills[0]} & System Architecture` : "Core Technical Gaps"}
+              </h4>
+              <p className="text-[10px] text-white/40 leading-relaxed line-clamp-2">
+                Focused week-by-week execution path closing target role skill gaps.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigateToSection("roadmap")}
+              className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono cursor-pointer pt-1"
+            >
+              <span>View Roadmap</span> <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+
+          {/* Question 2: What should I practice? */}
+          <div className="bg-white/5 border border-white/5 hover:border-purple-500/30 p-4 rounded-xl flex flex-col justify-between space-y-3 transition-all group">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-purple-400 text-[10px] font-bold uppercase tracking-wider font-mono">
+                <Dumbbell className="w-3.5 h-3.5" /> 2. What to Practice?
+              </div>
+              <h4 className="text-xs font-bold text-white leading-snug">
+                AI Mock Interview & Speech Fluency
+              </h4>
+              <p className="text-[10px] text-white/40 leading-relaxed line-clamp-2">
+                Real-time technical Q&A, STAR behavioral drills & verbal metrics.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigateToSection("interview")}
+              className="text-[10px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 font-mono cursor-pointer pt-1"
+            >
+              <span>Practice Now</span> <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+
+          {/* Question 3: What should I improve? */}
+          <div className="bg-white/5 border border-white/5 hover:border-amber-500/30 p-4 rounded-xl flex flex-col justify-between space-y-3 transition-all group">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-amber-400 text-[10px] font-bold uppercase tracking-wider font-mono">
+                <Wrench className="w-3.5 h-3.5" /> 3. What to Improve?
+              </div>
+              <h4 className="text-xs font-bold text-white leading-snug">
+                {scores?.resume?.score ? `ATS Score: ${scores.resume.score}% — Bullet Optimization` : "Resume & LinkedIn HR Rating"}
+              </h4>
+              <p className="text-[10px] text-white/40 leading-relaxed line-clamp-2">
+                Elevate impact verbs, quantifiable metrics, and LinkedIn visibility.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigateToSection("resume")}
+              className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 font-mono cursor-pointer pt-1"
+            >
+              <span>Improve Resume</span> <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+
+          {/* Question 4: How close am I to my goal? */}
+          <div className="bg-white/5 border border-white/5 hover:border-emerald-500/30 p-4 rounded-xl flex flex-col justify-between space-y-3 transition-all group">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-bold uppercase tracking-wider font-mono">
+                <Target className="w-3.5 h-3.5" /> 4. Goal Readiness?
+              </div>
+              <h4 className="text-xs font-bold text-white leading-snug">
+                Readiness Index: <span className="text-emerald-400 font-mono font-black">{scores?.overall ? `${scores.overall}%` : "Calculated"}</span>
+              </h4>
+              <p className="text-[10px] text-white/40 leading-relaxed line-clamp-2">
+                Target Deadline: {profile.placementDeadline || "3 Months"}.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigateToSection("dashboard")}
+              className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-mono cursor-pointer pt-1"
+            >
+              <span>View Audit</span> <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+
+          {/* Question 5: What should I do today? */}
+          <div className="bg-emerald-950/30 border border-emerald-500/30 p-4 rounded-xl flex flex-col justify-between space-y-3 transition-all group">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-emerald-300 text-[10px] font-black uppercase tracking-wider font-mono">
+                <Zap className="w-3.5 h-3.5" /> 5. What to Do Today?
+              </div>
+              <h4 className="text-xs font-bold text-white leading-snug">
+                {isMissionCompleted ? "Daily Mission Complete! ✓" : "15-Min Daily Career Sprint"}
+              </h4>
+              <p className="text-[10px] text-emerald-300/60 leading-relaxed line-clamp-2">
+                Streak: {streakCount} Days &middot; Maintain execution momentum.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigateToSection("interview")}
+              className="text-[10px] font-black text-emerald-300 hover:text-emerald-200 flex items-center gap-1 font-mono cursor-pointer pt-1 uppercase"
+            >
+              <span>{isMissionCompleted ? "Review Sprints" : "Launch Sprint"}</span> <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -308,6 +522,19 @@ export default function UserDashboard({
           <div className="bg-[#111] border border-white/10 rounded-2xl p-5 space-y-4">
             <h3 className="text-sm font-black text-white uppercase tracking-wider font-mono">Employability Quick Sprint Matrix</h3>
             <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => onNavigateToSection("resume")}
+                className="p-4 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-left rounded-xl space-y-2 group transition-all cursor-pointer col-span-2 md:col-span-1"
+              >
+                <div className="p-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-lg w-fit group-hover:scale-105 transition-transform">
+                  <FileText className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-emerald-300">Upload Files, Photos & Links</h4>
+                  <p className="text-[10px] text-emerald-400/80 leading-normal mt-0.5">Upload photographs of your resume, marksheets, certificates, or portfolio links for instant AI OCR analysis.</p>
+                </div>
+              </button>
+
               <button
                 onClick={() => onNavigateToSection("resume")}
                 className="p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-emerald-500/20 text-left rounded-xl space-y-2 group transition-all cursor-pointer"

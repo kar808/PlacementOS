@@ -149,7 +149,7 @@ export default function AdminDashboard({ currentLogsCount = 0 }: AdminDashboardP
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `placementos_waitlist_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute("download", `vorynexa_waitlist_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -169,9 +169,9 @@ export default function AdminDashboard({ currentLogsCount = 0 }: AdminDashboardP
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-bold uppercase tracking-wider rounded-full font-mono">
-              <ShieldAlert className="w-3.5 h-3.5 animate-pulse" /> PlacementOS Pre-Launch Control
+              <ShieldAlert className="w-3.5 h-3.5" /> VORYNEXA Platform & User Control
             </div>
-            <h2 className="text-2xl font-black text-white tracking-tight">Waitlist Performance & Lead Analytics</h2>
+            <h2 className="text-2xl font-black text-white tracking-tight">User Registration & Growth Analytics</h2>
             <p className="text-xs text-white/50 leading-relaxed max-w-xl">
               Track real-time registrations, channel conversion sources, and campaign duplicates securely synchronized inside Google Cloud Firestore.
             </p>

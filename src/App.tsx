@@ -17,6 +17,7 @@ import {
 import { DEFAULT_STUDENT_PROFILE } from "./lib/defaultProfile";
 
 // Supabase integration
+import { supabase } from "./supabaseClient";
 import { getSupabase, isSupabaseConfigured, supabaseAuth, supabaseDb, AdaptedUser } from "./lib/supabase";
 
 // Import modular sub-components
@@ -71,24 +72,49 @@ const clientRequestHistory: { [userId: string]: number[] } = {};
 import { getCanonicalString, computeRequestIntegrity } from "./lib/apiUtils";
 import { startCall, endCall } from "./lib/apiMonitoring";
 
+const GUEST_USER: AdaptedUser = {
+  uid: "guest_sandbox_user",
+  email: "candidate@vorynexa.com",
+  displayName: "Vorynexa Candidate",
+  emailVerified: true,
+  isSupabase: false,
+};
+
 export default function App() {
   // Auth and Profile states
   const [user, setUser] = useState<AdaptedUser | null>(null);
   const [showAuth, setShowAuth] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const [hasProfile, setHasProfile] = useState<boolean>(false);
+  const [hasProfile, setHasProfile] = useState<boolean>(true);
 
   // Online status and database sync states
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [syncFailed, setSyncFailed] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
-  // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<string>("home");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-
   // Core profile & cache states (persisted via localStorage)
-  const [profile, setProfile] = useState<StudentProfile>(DEFAULT_STUDENT_PROFILE);
+  const [profile, setProfile] = useState<StudentProfile>(() => {
+    const saved = localStorage.getItem("placement_profile");
+    return saved ? JSON.parse(saved) : DEFAULT_STUDENT_PROFILE;
+  });
+
+  // Navigation Tabs: land directly on home if profile completed, otherwise landing
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const isCompleted = localStorage.getItem("placement_profile_completed") === "true";
+    const savedProfile = localStorage.getItem("placement_profile");
+    if (isCompleted || (savedProfile && JSON.parse(savedProfile).name?.trim() && JSON.parse(savedProfile).name !== "Student Candidate")) {
+      return "home";
+    }
+    return "landing";
+  });
+
+  const isProfileCompleted = Boolean(
+    localStorage.getItem("placement_profile_completed") === "true" ||
+    (profile.name && profile.name.trim() !== "" && profile.name.trim() !== "Student Candidate" && profile.targetRoles?.length > 0)
+  );
+
+  const showWorkspaceNav = isProfileCompleted && activeTab !== "landing";
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   const [intelligenceMap, setIntelligenceMap] = useState<IntelligenceMap | null>(() => {
     const saved = localStorage.getItem("placement_intelligence");
@@ -183,7 +209,7 @@ export default function App() {
     return [
       {
         id: "notif_1",
-        title: "Welcome to PlacementOS Core!",
+        title: "Welcome to VORYNEXA Core!",
         body: "Your secure cloud sandboxed student profile has been mounted successfully.",
         timestamp: "09:00 AM",
         read: false
@@ -258,75 +284,161 @@ export default function App() {
     };
   }, []);
 
-  // Listen to Auth state and fetch user details from Supabase
+  // Listen to Auth state with getSession() to protect private pages
   useEffect(() => {
-    const handleNoUser = () => {
-      setHasProfile(false);
-    };
+    let isMounted = true;
 
-    setAuthLoading(true);
-    const unsubscribe = supabaseAuth.onAuthStateChange(async (sbUser) => {
-      setUser(sbUser);
-      if (sbUser) {
-        try {
-          const savedProfile = await supabaseDb.getProfile(sbUser.uid);
-          if (savedProfile) {
-            setProfile(savedProfile);
-            const isComplete = !!(savedProfile.college && savedProfile.degree && savedProfile.branch);
-            setHasProfile(isComplete);
+    const loadUserData = async (uid: string) => {
+      try {
+        const savedProfile = await supabaseDb.getProfile(uid);
+        if (savedProfile && isMounted) {
+          setProfile(savedProfile);
+          setHasProfile(true);
 
-            // Fetch analytical modules from Supabase
-            const intelligenceData = await supabaseDb.getAnalytics(sbUser.uid, "intelligence");
-            if (intelligenceData) setIntelligenceMap(intelligenceData);
+          const intelligenceData = await supabaseDb.getAnalytics(uid, "intelligence");
+          if (intelligenceData && isMounted) setIntelligenceMap(intelligenceData);
 
-            const scoresData = await supabaseDb.getAnalytics(sbUser.uid, "scores");
-            if (scoresData) setScores(scoresData);
+          const scoresData = await supabaseDb.getAnalytics(uid, "scores");
+          if (scoresData && isMounted) setScores(scoresData);
 
-            const rolesData = await supabaseDb.getAnalytics(sbUser.uid, "roles");
-            if (rolesData?.list) setRecommendedRoles(rolesData.list);
+          const rolesData = await supabaseDb.getAnalytics(uid, "roles");
+          if (rolesData?.list && isMounted) setRecommendedRoles(rolesData.list);
 
-            const hrData = await supabaseDb.getAnalytics(sbUser.uid, "hrAnalysis");
-            if (hrData) setHrAnalysis(hrData);
+          const hrData = await supabaseDb.getAnalytics(uid, "hrAnalysis");
+          if (hrData && isMounted) setHrAnalysis(hrData);
 
-            // Fetch interviews from Supabase
-            try {
-              const history = await supabaseDb.getInterviews(sbUser.uid);
+          try {
+            const history = await supabaseDb.getInterviews(uid);
+            if (history.length > 0 && isMounted) {
               setInterviewHistory(history);
               localStorage.setItem("placement_interview_history", JSON.stringify(history));
-            } catch (err) {
-              console.error("Error reading interviews from Supabase:", err);
             }
+          } catch (err) {
+            console.error("Error reading interviews from Supabase:", err);
+          }
 
-            // Fetch activities from Supabase
-            try {
-              const historyList = await supabaseDb.getActivities(sbUser.uid);
+          try {
+            const historyList = await supabaseDb.getActivities(uid);
+            if (historyList.length > 0 && isMounted) {
               setActivities(historyList);
               localStorage.setItem("placement_activities", JSON.stringify(historyList));
-            } catch (err) {
-              console.error("Error reading activity log from Supabase:", err);
             }
-          } else {
-            // Pre-populate profile with basic metadata if no saved profile exists yet
-            const initialProfile: StudentProfile = {
-              ...DEFAULT_STUDENT_PROFILE,
-              email: sbUser.email || "",
-              name: sbUser.displayName || sbUser.email?.split("@")[0] || "New Student",
-              location: "Bengaluru, India"
-            };
-            setProfile(initialProfile);
-            setHasProfile(false);
+          } catch (err) {
+            console.error("Error reading activity log from Supabase:", err);
           }
-        } catch (error: any) {
-          console.error("Supabase read error:", error);
-          setApiError(`Supabase Profile Initialization Failure: ${error?.message || error}`);
-          setHasProfile(false);
+        } else if (isMounted) {
+          setHasProfile(true);
         }
-      } else {
-        handleNoUser();
+      } catch (error: any) {
+        console.error("Supabase read error:", error);
+        if (isMounted) setHasProfile(true);
       }
-      setAuthLoading(false);
+    };
+
+    const checkSessionAndProtectPages = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session && session.user) {
+          const activeUser: AdaptedUser = {
+            uid: session.user.id,
+            email: session.user.email || null,
+            displayName: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
+            emailVerified: !!session.user.email_confirmed_at,
+            isSupabase: true,
+          };
+          if (isMounted) {
+            setUser(activeUser);
+            setShowAuth(false);
+          }
+          await loadUserData(activeUser.uid);
+        } else {
+          let guestSessionId = localStorage.getItem("vorynexa_guest_session");
+          if (!guestSessionId) {
+            guestSessionId = `candidate_${Date.now().toString(36)}`;
+            localStorage.setItem("vorynexa_guest_session", guestSessionId);
+          }
+          const activeUser: AdaptedUser = {
+            uid: guestSessionId,
+            email: `${guestSessionId}@vorynexa.com`,
+            displayName: "Active Candidate",
+            emailVerified: true,
+            isSupabase: false,
+          };
+          if (isMounted) {
+            setUser(activeUser);
+            setShowAuth(false);
+          }
+          await loadUserData(activeUser.uid);
+        }
+      } catch (err) {
+        console.error("Error in checkSessionAndProtectPages:", err);
+        let guestSessionId = localStorage.getItem("vorynexa_guest_session");
+        if (!guestSessionId) {
+          guestSessionId = `candidate_${Date.now().toString(36)}`;
+          localStorage.setItem("vorynexa_guest_session", guestSessionId);
+        }
+        const activeUser: AdaptedUser = {
+          uid: guestSessionId,
+          email: `${guestSessionId}@vorynexa.com`,
+          displayName: "Active Candidate",
+          emailVerified: true,
+          isSupabase: false,
+        };
+        if (isMounted) {
+          setUser(activeUser);
+          setShowAuth(false);
+        }
+      } finally {
+        if (isMounted) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    checkSessionAndProtectPages();
+
+    // Listen to Auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        localStorage.removeItem("vorynexa_guest_session");
+        const activeUser: AdaptedUser = {
+          uid: session.user.id,
+          email: session.user.email || null,
+          displayName: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
+          emailVerified: !!session.user.email_confirmed_at,
+          isSupabase: true,
+        };
+        setUser(activeUser);
+        setShowAuth(false);
+        loadUserData(activeUser.uid);
+      } else {
+        const guestSessionId = localStorage.getItem("vorynexa_guest_session");
+        if (guestSessionId) {
+          const activeUser: AdaptedUser = {
+            uid: guestSessionId,
+            email: `${guestSessionId}@vorynexa.com`,
+            displayName: "Guest Student",
+            emailVerified: true,
+            isSupabase: false,
+          };
+          setUser(activeUser);
+          setShowAuth(false);
+          loadUserData(activeUser.uid);
+        } else {
+          setUser(null);
+          setShowAuth(true);
+          if (window.location.pathname !== "/login") {
+            window.history.pushState({}, "", "/login");
+          }
+        }
+      }
     });
-    return unsubscribe;
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Sync profile edits with local cache and Supabase
@@ -347,11 +459,12 @@ export default function App() {
 
   const handleSignOut = async () => {
     try {
-      await supabaseAuth.signOut();
+      await supabase.auth.signOut();
     } catch (err) {
       console.error("SignOut error:", err);
     }
     // Clear all localStorage and state variables
+    localStorage.removeItem("vorynexa_guest_session");
     localStorage.removeItem("placement_profile");
     localStorage.removeItem("placement_intelligence");
     localStorage.removeItem("placement_scores");
@@ -366,8 +479,13 @@ export default function App() {
     localStorage.removeItem("placement_interview_history");
     localStorage.removeItem("placement_active_interview_role");
     
+    setUser(null);
+    setShowAuth(true);
+    if (window.location.pathname !== "/login") {
+      window.history.pushState({}, "", "/login");
+    }
     setProfile(DEFAULT_STUDENT_PROFILE);
-    setHasProfile(false);
+    setHasProfile(true);
     setIntelligenceMap(null);
     setScores(null);
     setRecommendedRoles(null);
@@ -380,7 +498,7 @@ export default function App() {
     setHrAnalysis(null);
     setInterviewHistory([]);
     setActiveInterviewRole("");
-    setActiveTab("blueprint");
+    setActiveTab("home");
   };
 
   const handleOnboardingComplete = async (completedProfile: StudentProfile) => {
@@ -602,6 +720,8 @@ export default function App() {
   // Save profile and trigger audit
   const handleSaveProfile = async (updated: StudentProfile) => {
     await saveProfileUpdate(updated);
+    localStorage.setItem("placement_profile_completed", "true");
+    setActiveTab("home");
     await runCoreAudit(updated);
   };
 
@@ -951,6 +1071,7 @@ export default function App() {
     { id: "outreach", name: "Job Strategy", icon: Search },
     { id: "negotiate", name: "Offer & Negotiation", icon: Scale },
     { id: "communication", name: "Confidence Coach", icon: MessageCircleCode },
+    { id: "landing", name: "Platform Overview", icon: Sparkles },
     { id: "settings", name: "Settings", icon: Settings },
   ];
 
@@ -959,18 +1080,17 @@ export default function App() {
   }
 
   if (!user) {
-    if (showAuth) {
-      return (
-        <AuthScreen 
-          onAuthSuccess={() => {}} 
-          onBack={() => setShowAuth(false)}
-        />
-      );
-    }
-
     return (
-      <LandingPage 
-        onGetStarted={() => setShowAuth(true)}
+      <AuthScreen 
+        onAuthSuccess={() => {
+          setShowAuth(false);
+          if (window.location.pathname === "/login") {
+            window.history.pushState({}, "", "/");
+          }
+        }} 
+        onBack={() => {
+          setShowAuth(false);
+        }}
       />
     );
   }
@@ -980,13 +1100,13 @@ export default function App() {
       {/* Top Header */}
       <header className="bg-[#111] border border-white/10 rounded-xl px-6 py-4 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3">
-          <div className="bg-emerald-500 text-black px-2.5 py-1 font-black text-sm rounded">
-            POS
+          <div className="bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 text-white px-2.5 py-1 font-black text-xs rounded tracking-wider shadow-md">
+            VX
           </div>
           <div>
-            <h1 className="font-extrabold text-white text-lg tracking-tight flex items-center gap-1.5">
-              PlacementOS
-              <span className="text-[10px] font-bold text-white/60 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
+            <h1 className="font-extrabold text-white text-lg tracking-tight flex items-center gap-1.5 font-mono">
+              VORYNEXA
+              <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
                 AI Co-Pilot
               </span>
             </h1>
@@ -996,31 +1116,46 @@ export default function App() {
 
         {/* Global summary badge & Auth state */}
         <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-white/60">
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Active Student: <strong className="text-white">{profile.name || "Wizard Profile"}</strong></span>
-          </div>
-          {scores?.overall && (
-            <div className="flex items-center gap-1 px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
-              <span>Readiness Index: <strong className="text-emerald-400 font-mono">{scores.overall}%</strong></span>
+          {isProfileCompleted ? (
+            <>
+              <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Active Student: <strong className="text-white">{profile.name || "Wizard Profile"}</strong></span>
+                <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-[10px] rounded uppercase font-bold tracking-wider">
+                  {profile.vorynexaId || "VNX-84A6KF2"}
+                </span>
+              </div>
+              {scores?.overall && (
+                <div className="flex items-center gap-1 px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
+                  <span>Readiness Index: <strong className="text-emerald-400 font-mono">{scores.overall}%</strong></span>
+                </div>
+              )}
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg transition-colors cursor-pointer"
+                title="Reset active candidate profile"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Reset Profile</span>
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 text-xs font-bold font-mono">
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              <span>Candidate Onboarding Phase</span>
             </div>
           )}
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
-          </button>
         </div>
 
         {/* Mobile menu button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors border border-white/10"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        {showWorkspaceNav && (
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors border border-white/10"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        )}
       </header>
 
       {/* Persistent Offline & Sync Failure Banner */}
@@ -1063,59 +1198,61 @@ export default function App() {
       {/* Main Workspace Body */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Navigation Sidebar for Large Screens */}
-        <aside className="hidden md:flex flex-col w-64 bg-[#111] border border-white/10 rounded-xl p-4 justify-between shrink-0 mr-4">
-          <div className="space-y-1">
-            <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest block px-3 mb-2">Workspace Navigation</span>
-            {navigationTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  id={`nav-${tab.id}`}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                    activeTab === tab.id
-                      ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/10"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {tab.name}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="space-y-2">
-            <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
-              <span className="text-[9px] font-bold text-white/40 uppercase block tracking-wider font-mono">Placement Target</span>
-              <p className="text-xs font-bold text-emerald-400 mt-1 truncate font-mono">
-                {profile.targetRoles[0] || "Select Target Role"}
-              </p>
-              <p className="text-[10px] text-white/40 leading-normal mt-0.5">
-                Deadline: {profile.placementDeadline}
-              </p>
+        {showWorkspaceNav && (
+          <aside className="hidden md:flex flex-col w-64 bg-[#111] border border-white/10 rounded-xl p-4 justify-between shrink-0 mr-4">
+            <div className="space-y-1">
+              <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest block px-3 mb-2">Workspace Navigation</span>
+              {navigationTabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    id={`nav-${tab.id}`}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                      activeTab === tab.id
+                        ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/10"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {tab.name}
+                  </button>
+                );
+              })}
             </div>
-            <button
-              onClick={handleSignOut}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg transition-colors text-xs font-bold cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </aside>
+
+            <div className="space-y-2">
+              <div className="p-3 bg-white/5 border border-white/10 rounded-lg">
+                <span className="text-[9px] font-bold text-white/40 uppercase block tracking-wider font-mono">Placement Target</span>
+                <p className="text-xs font-bold text-emerald-400 mt-1 truncate font-mono">
+                  {profile.targetRoles[0] || "Select Target Role"}
+                </p>
+                <p className="text-[10px] text-white/40 leading-normal mt-0.5">
+                  Deadline: {profile.placementDeadline}
+                </p>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg transition-colors text-xs font-bold cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Reset Profile</span>
+              </button>
+            </div>
+          </aside>
+        )}
 
         {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
+        {showWorkspaceNav && mobileMenuOpen && (
           <div className="absolute inset-0 z-50 bg-black/65 md:hidden flex rounded-xl" onClick={() => setMobileMenuOpen(false)}>
             <div className="w-64 bg-[#111] border border-white/10 p-4 flex flex-col justify-between h-full" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-1">
                 <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">PlacementOS Drawer</span>
+                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">VORYNEXA Navigation</span>
                   <button onClick={() => setMobileMenuOpen(false)} className="p-1 rounded-md hover:bg-white/5">
                     <X className="w-4 h-4" />
                   </button>
@@ -1151,10 +1288,10 @@ export default function App() {
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg transition-colors text-xs font-bold cursor-pointer"
+                  className="w-full flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-lg transition-colors text-xs font-bold cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4 shrink-0" />
-                  <span>Sign Out</span>
+                  <RefreshCw className="w-4 h-4 shrink-0" />
+                  <span>Reset Profile</span>
                 </button>
               </div>
             </div>
@@ -1217,6 +1354,10 @@ export default function App() {
               />
             )}
 
+            {activeTab === "landing" && (
+              <LandingPage onGetStarted={() => setActiveTab("blueprint")} />
+            )}
+
 
 
             {activeTab === "settings" && (
@@ -1230,7 +1371,27 @@ export default function App() {
             )}
 
             {activeTab === "blueprint" && (
-              <ProfileForm profile={profile} onSave={handleSaveProfile} hrAnalysis={hrAnalysis} />
+              <div className="space-y-4">
+                {!isProfileCompleted && (
+                  <div className="bg-gradient-to-r from-cyan-500/10 via-emerald-500/10 to-purple-500/10 border border-emerald-500/30 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-400 shrink-0">
+                        <Sparkles className="w-6 h-6 animate-pulse" />
+                      </div>
+                      <div>
+                        <span className="px-2.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-extrabold uppercase font-mono rounded-full tracking-wider">
+                          Step 1 of 1 • Profile Onboarding
+                        </span>
+                        <h3 className="font-extrabold text-white text-base mt-1">Complete & Save Your Candidate Profile</h3>
+                        <p className="text-xs text-white/60 font-medium leading-relaxed">
+                          Fill in your target roles, skills, and education details below. Saving your profile automatically syncs your data to Supabase and unlocks all workspace navigation!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <ProfileForm profile={profile} onSave={handleSaveProfile} hrAnalysis={hrAnalysis} />
+              </div>
             )}
 
             {activeTab === "dashboard" && (
@@ -1249,6 +1410,8 @@ export default function App() {
                 suggestions={resumeSuggestions}
                 onOptimize={handleOptimizeResume}
                 isOptimizing={isOptimizingResume}
+                callServerEndpoint={callServerEndpoint}
+                onUpdateProfile={(updated) => setProfile((prev) => ({ ...prev, ...updated }))}
               />
             )}
 

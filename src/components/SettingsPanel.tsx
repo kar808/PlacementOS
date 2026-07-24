@@ -196,7 +196,7 @@ export default function SettingsPanel({
       )}`;
       const downloadAnchor = document.createElement("a");
       downloadAnchor.setAttribute("href", jsonString);
-      downloadAnchor.setAttribute("download", `placementos_personal_export_${activeUid.substring(0, 8)}.json`);
+      downloadAnchor.setAttribute("download", `vorynexa_personal_export_${activeUid.substring(0, 8)}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -588,7 +588,7 @@ export default function SettingsPanel({
           <div className="space-y-2">
             <h3 className="text-xs font-black text-white uppercase tracking-wider font-mono border-b border-white/5 pb-2">GDPR Data Privacy Rights</h3>
             <p className="text-[11px] text-white/50 leading-relaxed font-semibold">
-              PlacementOS supports full data sovereignty. In accordance with zero-trust principles, you are entitled to download the entirety of your sandboxed metadata or request total profile scrubbing.
+              VORYNEXA supports full data sovereignty. In accordance with zero-trust principles, you are entitled to download the entirety of your sandboxed metadata or request total profile scrubbing.
             </p>
           </div>
 

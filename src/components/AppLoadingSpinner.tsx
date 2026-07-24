@@ -13,7 +13,7 @@ export default function AppLoadingSpinner({ phase, message }: AppLoadingSpinnerP
         return {
           tag: "Security Gateway",
           title: "Authenticating Session",
-          desc: "Establishing secure cryptographic connection with PlacementOS core...",
+          desc: "Establishing secure cryptographic connection with VORYNEXA core...",
         };
       case "profile":
         return {
@@ -29,7 +29,7 @@ export default function AppLoadingSpinner({ phase, message }: AppLoadingSpinnerP
         };
       default:
         return {
-          tag: "PlacementOS Optimizer",
+          tag: "VORYNEXA Optimizer",
           title: "Processing Command",
           desc: "Synchronizing state vectors across all distributed nodes...",
         };

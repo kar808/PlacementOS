@@ -521,7 +521,7 @@ export default function PlacementSchedule({ profile }: PlacementScheduleProps) {
     let icsContent = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//PlacementOS//Tactical Placement Schedule//EN",
+      "PRODID:-//VORYNEXA//Tactical Placement Schedule//EN",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH"
     ];
@@ -544,7 +544,7 @@ export default function PlacementSchedule({ profile }: PlacementScheduleProps) {
         `DTSTAMP:${year}${month}${day}T090000Z`,
         `DTSTART;VALUE=DATE:${dateStr}`,
         `DTEND;VALUE=DATE:${dateStr}`,
-        `SUMMARY:PlacementOS Day ${task.day}: ${task.title}`,
+        `SUMMARY:VORYNEXA Day ${task.day}: ${task.title}`,
         `DESCRIPTION:${task.description.replace(/,/g, '\\,')}\\n\\nDuration: ${task.duration}\\nDeliverable: ${task.deliverable.replace(/,/g, '\\,')}\\nRequired Skill Gaps: ${gapsStr.replace(/,/g, '\\,')}`,
         `CATEGORIES:${task.category}`,
         "STATUS:CONFIRMED",
@@ -580,7 +580,7 @@ export default function PlacementSchedule({ profile }: PlacementScheduleProps) {
     
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `PlacementOS_30_Day_Schedule_${profile.name.replace(/\s+/g, '_')}.ics`);
+    link.setAttribute("download", `VORYNEXA_30_Day_Schedule_${profile.name.replace(/\s+/g, '_')}.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -853,7 +853,7 @@ export default function PlacementSchedule({ profile }: PlacementScheduleProps) {
                 const isStudyTask = task.category === "Study";
                 
                 return (
-                  <button
+                  <div
                     key={task.day}
                     draggable={isStudyTask}
                     onDragStart={(e) => handleDragStart(e, task.day)}
@@ -924,7 +924,7 @@ export default function PlacementSchedule({ profile }: PlacementScheduleProps) {
                         )}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
