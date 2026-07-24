@@ -30,7 +30,6 @@ import InterviewSimulator from "./components/InterviewSimulator";
 import JobOutreach from "./components/JobOutreach";
 import NegotiationCoach from "./components/NegotiationCoach";
 import CommunicationCoach from "./components/CommunicationCoach";
-import AuthScreen from "./components/AuthScreen";
 import LandingPage from "./components/LandingPage";
 import OnboardingWizard from "./components/OnboardingWizard";
 import HRProfileRating from "./components/HRProfileRating";
@@ -82,9 +81,15 @@ const GUEST_USER: AdaptedUser = {
 
 export default function App() {
   // Auth and Profile states
-  const [user, setUser] = useState<AdaptedUser | null>(null);
+  const [user, setUser] = useState<AdaptedUser>({
+    uid: localStorage.getItem("vorynexa_guest_session") || "candidate_active",
+    email: "candidate@vorynexa.com",
+    displayName: "Active Candidate",
+    emailVerified: true,
+    isSupabase: false,
+  });
   const [showAuth, setShowAuth] = useState<boolean>(false);
-  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [authLoading, setAuthLoading] = useState<boolean>(false);
   const [hasProfile, setHasProfile] = useState<boolean>(true);
 
   // Online status and database sync states
@@ -337,6 +342,11 @@ export default function App() {
 
     const checkSessionAndProtectPages = async () => {
       try {
+        let guestSessionId = localStorage.getItem("vorynexa_guest_session");
+        if (!guestSessionId) {
+          guestSessionId = `candidate_${Date.now().toString(36)}`;
+          localStorage.setItem("vorynexa_guest_session", guestSessionId);
+        }
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session && session.user) {
@@ -344,7 +354,7 @@ export default function App() {
             uid: session.user.id,
             email: session.user.email || null,
             displayName: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
-            emailVerified: !!session.user.email_confirmed_at,
+            emailVerified: true,
             isSupabase: true,
           };
           if (isMounted) {
@@ -353,11 +363,6 @@ export default function App() {
           }
           await loadUserData(activeUser.uid);
         } else {
-          let guestSessionId = localStorage.getItem("vorynexa_guest_session");
-          if (!guestSessionId) {
-            guestSessionId = `candidate_${Date.now().toString(36)}`;
-            localStorage.setItem("vorynexa_guest_session", guestSessionId);
-          }
           const activeUser: AdaptedUser = {
             uid: guestSessionId,
             email: `${guestSessionId}@vorynexa.com`,
@@ -401,37 +406,32 @@ export default function App() {
     // Listen to Auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        localStorage.removeItem("vorynexa_guest_session");
         const activeUser: AdaptedUser = {
           uid: session.user.id,
           email: session.user.email || null,
           displayName: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
-          emailVerified: !!session.user.email_confirmed_at,
+          emailVerified: true,
           isSupabase: true,
         };
         setUser(activeUser);
         setShowAuth(false);
         loadUserData(activeUser.uid);
       } else {
-        const guestSessionId = localStorage.getItem("vorynexa_guest_session");
-        if (guestSessionId) {
-          const activeUser: AdaptedUser = {
-            uid: guestSessionId,
-            email: `${guestSessionId}@vorynexa.com`,
-            displayName: "Guest Student",
-            emailVerified: true,
-            isSupabase: false,
-          };
-          setUser(activeUser);
-          setShowAuth(false);
-          loadUserData(activeUser.uid);
-        } else {
-          setUser(null);
-          setShowAuth(true);
-          if (window.location.pathname !== "/login") {
-            window.history.pushState({}, "", "/login");
-          }
+        let guestSessionId = localStorage.getItem("vorynexa_guest_session");
+        if (!guestSessionId) {
+          guestSessionId = `candidate_${Date.now().toString(36)}`;
+          localStorage.setItem("vorynexa_guest_session", guestSessionId);
         }
+        const activeUser: AdaptedUser = {
+          uid: guestSessionId,
+          email: `${guestSessionId}@vorynexa.com`,
+          displayName: "Active Candidate",
+          emailVerified: true,
+          isSupabase: false,
+        };
+        setUser(activeUser);
+        setShowAuth(false);
+        loadUserData(activeUser.uid);
       }
     });
 
@@ -479,10 +479,18 @@ export default function App() {
     localStorage.removeItem("placement_interview_history");
     localStorage.removeItem("placement_active_interview_role");
     
-    setUser(null);
-    setShowAuth(true);
-    if (window.location.pathname !== "/login") {
-      window.history.pushState({}, "", "/login");
+    const newSessionId = `candidate_${Date.now().toString(36)}`;
+    localStorage.setItem("vorynexa_guest_session", newSessionId);
+    setUser({
+      uid: newSessionId,
+      email: `${newSessionId}@vorynexa.com`,
+      displayName: "Active Candidate",
+      emailVerified: true,
+      isSupabase: false,
+    });
+    setShowAuth(false);
+    if (window.location.pathname === "/login") {
+      window.history.pushState({}, "", "/");
     }
     setProfile(DEFAULT_STUDENT_PROFILE);
     setHasProfile(true);
@@ -1077,22 +1085,6 @@ export default function App() {
 
   if (authLoading) {
     return <AppLoadingSpinner phase="auth" />;
-  }
-
-  if (!user) {
-    return (
-      <AuthScreen 
-        onAuthSuccess={() => {
-          setShowAuth(false);
-          if (window.location.pathname === "/login") {
-            window.history.pushState({}, "", "/");
-          }
-        }} 
-        onBack={() => {
-          setShowAuth(false);
-        }}
-      />
-    );
   }
 
   return (

@@ -4,7 +4,12 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
   return {
+    define: {
+      'process.env.GEMINI_API_KEY': JSON.stringify(geminiApiKey),
+      'process.env.VITE_GEMINI_API_KEY': JSON.stringify(geminiApiKey),
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

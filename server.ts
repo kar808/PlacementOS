@@ -565,9 +565,18 @@ let aiInstance: GoogleGenAI | null = null;
 
 function getAI(): GoogleGenAI {
   if (!aiInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = 
+      process.env.GEMINI_API_KEY || 
+      process.env.VITE_GEMINI_API_KEY || 
+      process.env.GOOGLE_API_KEY || 
+      process.env.API_KEY;
+
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is not configured. Please add it via the Secrets panel in AI Studio.");
+      throw new Error(
+        "GEMINI_API_KEY environment variable is not configured. " +
+        "If deploying on Vercel: Go to Vercel Project Settings > Environment Variables, add GEMINI_API_KEY (or VITE_GEMINI_API_KEY) with your Google AI Studio API key, then redeploy. " +
+        "If running in AI Studio: Configure your API key via the Secrets panel in the Settings menu."
+      );
     }
     aiInstance = new GoogleGenAI({
       apiKey,

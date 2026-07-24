@@ -28,9 +28,9 @@ export default function ErrorAlertModal({
     }
     if (errText.includes("api_key") || errText.includes("key") || errText.includes("unconfigured") || errText.includes("gemini")) {
       return [
-        "The Gemini API key is missing or unauthorized. Provide process.env.GEMINI_API_KEY in .env.",
-        "Verify that your API keys are registered under AI Studio Settings menu.",
-        "Double-check that the Express server's .env matches .env.example settings."
+        "For Vercel Deployment: Go to Vercel Dashboard -> Project Settings -> Environment Variables. Add GEMINI_API_KEY (or VITE_GEMINI_API_KEY) with your key from https://aistudio.google.com/app/apikey, then redeploy.",
+        "For AI Studio / Local: Ensure GEMINI_API_KEY is configured in your .env file or the Secrets panel.",
+        "Check that your Gemini API key is active and has permission for generative models."
       ];
     }
     if (errText.includes("permission") || errText.includes("insufficient") || errText.includes("supabase")) {
