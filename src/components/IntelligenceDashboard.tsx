@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { IntelligenceMap, ReadinessScores, RecommendedRole } from "../types";
+import CareerIntelligenceView from "./CareerIntelligenceView";
 import { 
   Award, ShieldAlert, Sparkles, AlertCircle, ArrowUpRight, TrendingUp, CheckCircle2, 
-  Lock, CheckSquare, FileText, BookOpen, MessageSquare, Volume2, ShieldCheck, Compass, Zap
+  Lock, CheckSquare, FileText, BookOpen, MessageSquare, Volume2, ShieldCheck, Compass, Zap, Cpu
 } from "lucide-react";
 
 interface IntelligenceDashboardProps {
@@ -30,6 +31,9 @@ export default function IntelligenceDashboard({
   onNavigateToSection,
   isAnalyzing
 }: IntelligenceDashboardProps) {
+  const [viewMode, setViewMode] = useState<"index" | "career_intelligence">(
+    intelligenceMap?.careerIntelligence ? "career_intelligence" : "index"
+  );
   if (isAnalyzing) {
     return (
       <div className="space-y-8 animate-pulse">
@@ -208,7 +212,53 @@ export default function IntelligenceDashboard({
 
   return (
     <div className="space-y-8 relative">
-      
+      {/* Top Engine View Mode Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#111]/80 border border-white/10 p-4 rounded-2xl backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <Cpu className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-extrabold text-white tracking-tight">VORYNEXA Intelligence Engine</h3>
+            <p className="text-[11px] text-white/50">Multi-signal career classification, market positioning & readiness matrix</p>
+          </div>
+        </div>
+
+        <div className="flex items-center bg-black/60 p-1 border border-white/10 rounded-xl gap-1 self-start sm:self-auto">
+          {intelligenceMap.careerIntelligence && (
+            <button
+              onClick={() => setViewMode("career_intelligence")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                viewMode === "career_intelligence"
+                  ? "bg-emerald-500 text-black font-black shadow-lg"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Career Intelligence Engine
+            </button>
+          )}
+
+          <button
+            onClick={() => setViewMode("index")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              viewMode === "index"
+                ? "bg-emerald-500 text-black font-black shadow-lg"
+                : "text-white/60 hover:text-white"
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5" /> Employability Index & Badges
+          </button>
+        </div>
+      </div>
+
+      {/* Render Career Intelligence Engine View */}
+      {viewMode === "career_intelligence" && intelligenceMap.careerIntelligence ? (
+        <CareerIntelligenceView
+          data={intelligenceMap.careerIntelligence}
+          onNavigateToSection={onNavigateToSection}
+        />
+      ) : (
+        <>
       {/* Bento Grid Layout - Row 1 (Core dial + Summary) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
@@ -536,6 +586,8 @@ export default function IntelligenceDashboard({
           Fix Hurdles <Sparkles className="w-3.5 h-3.5 text-black" />
         </button>
       </div>
+      </>
+      )}
 
     </div>
   );

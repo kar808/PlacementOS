@@ -6,6 +6,7 @@ import {
   RecommendedRole,
   ResumeLinkedInSuggestion,
   RoadmapPlan,
+  EnterpriseRoadmapParams,
   ProjectIdea,
   JobSearchStrategy,
   MockInterviewSession,
@@ -25,7 +26,7 @@ import { getSupabase, isSupabaseConfigured, supabaseAuth, supabaseDb, AdaptedUse
 import ProfileForm from "./components/ProfileForm";
 import IntelligenceDashboard from "./components/IntelligenceDashboard";
 import ResumeBuilder from "./components/ResumeBuilder";
-import RoadmapView from "./components/RoadmapView";
+import RoadmapView, { generateDefaultEnterpriseRoadmap } from "./components/RoadmapView";
 import ProjectAdvisor from "./components/ProjectAdvisor";
 import InterviewSimulator from "./components/InterviewSimulator";
 import JobOutreach from "./components/JobOutreach";
@@ -65,7 +66,9 @@ import {
   Activity,
   Settings,
   Zap,
-  EyeOff
+  EyeOff,
+  Sun,
+  Moon
 } from "lucide-react";
 
 // Client-side rate-limiting rolling window tracking
@@ -99,6 +102,24 @@ export default function App() {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [syncFailed, setSyncFailed] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  // Theme state (Dark/Light Mode)
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("vorynexa_theme") as "dark" | "light") || "dark";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("vorynexa_theme", theme);
+    if (theme === "light") {
+      document.documentElement.classList.add("light-theme");
+    } else {
+      document.documentElement.classList.remove("light-theme");
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === "dark" ? "light" : "dark"));
+  };
 
   // Core profile & cache states (persisted via localStorage)
   const [profile, setProfile] = useState<StudentProfile>(() => {
@@ -759,14 +780,26 @@ export default function App() {
   };
 
   // 3. Generate Skill Gaps Roadmap
-  const handleGenerateRoadmap = async () => {
+  const handleGenerateRoadmap = async (customParams?: EnterpriseRoadmapParams) => {
     setIsGeneratingRoadmap(true);
     try {
-      const data = await callServerEndpoint("/api/placement/roadmap", profile);
+      const payload = customParams ? { profile, ...customParams } : profile;
+      const data = await callServerEndpoint("/api/placement/roadmap", payload);
       setRoadmapPlan(data);
       localStorage.setItem("placement_roadmap", JSON.stringify(data));
+      logActivity("Enterprise AI Career Roadmap Generated", `Computed 4-stage execution matrix for ${customParams?.targetRole || profile.targetRoles?.[0] || "Target Role"}.`, "career_plan");
+      addNotification("Enterprise Career Roadmap Ready", "Your personalized 4-stage execution matrix and diagnostic skill gaps have been computed.");
     } catch (err) {
-      // Handled globally
+      console.error("Roadmap generation error:", err);
+      // Fallback local generation so UI never breaks
+      const fallbackRoadmap = {
+        plan7Day: [],
+        plan30Day: [],
+        plan90Day: [],
+        enterpriseRoadmap: generateDefaultEnterpriseRoadmap(profile, customParams)
+      };
+      setRoadmapPlan(fallbackRoadmap);
+      localStorage.setItem("placement_roadmap", JSON.stringify(fallbackRoadmap));
     } finally {
       setIsGeneratingRoadmap(false);
     }
@@ -803,8 +836,14 @@ export default function App() {
     }
   };
 
-  // 6. Generate Mock Interview Questions
-  const handleGenerateInterviewQuestions = async (role: string) => {
+  // 6. Generate mock interview questions
+  const handleGenerateInterviewQuestions = async (
+    role: string,
+    interviewType: string = "Technical",
+    experienceLevel: string = "Experienced Professional",
+    domain: string = "Software Engineering",
+    questionCount: number = 3
+  ) => {
     setIsGeneratingInterview(true);
     try {
       const excludeQuestions = [
@@ -812,20 +851,12 @@ export default function App() {
         ...interviewHistory.flatMap((h) => h.questionsAndAnswers.map((qa) => qa.question))
       ];
 
-      // Calculate candidate specific performance trends from completed historical sessions
       const pastSessions = interviewHistory || [];
       const performanceTrends = {
         totalSessions: pastSessions.length,
         averageOverallScore: pastSessions.length > 0 
           ? Math.round(pastSessions.reduce((sum, s) => sum + s.overallScore, 0) / pastSessions.length)
           : null,
-        averageTechnicalDepth: pastSessions.length > 0 
-          ? Math.round(pastSessions.reduce((sum, s) => sum + (s.metrics?.technicalDepth || 0), 0) / pastSessions.length)
-          : null,
-        averageCommunicationClarity: pastSessions.length > 0 
-          ? Math.round(pastSessions.reduce((sum, s) => sum + (s.metrics?.communicationClarity || 0), 0) / pastSessions.length)
-          : null,
-        recentScores: pastSessions.slice(0, 5).map(s => s.overallScore),
         suggestedDifficulty: "Intermediate"
       };
 
@@ -843,6 +874,10 @@ export default function App() {
       const data = await callServerEndpoint("/api/placement/interview/questions", {
         profile,
         role,
+        interviewType,
+        experienceLevel,
+        domain,
+        questionCount,
         excludeQuestions,
         sessionContext: {
           sessionId,
@@ -858,6 +893,10 @@ export default function App() {
         currentQuestionIndex: 0,
         chatHistory: [],
         status: "ongoing",
+        category: interviewType,
+        experienceLevel,
+        domain,
+        role,
       });
     } catch (err) {
       // Handled globally
@@ -872,7 +911,10 @@ export default function App() {
     answer: string,
     type: string,
     focus: string,
-    verbalMetrics?: any
+    verbalMetrics?: any,
+    interviewType?: string,
+    experienceLevel?: string,
+    domain?: string
   ) => {
     setIsEvaluatingInterview(true);
     try {
@@ -882,7 +924,21 @@ export default function App() {
         type,
         expectedFocus: focus,
         verbalMetrics,
+        interviewType,
+        experienceLevel,
+        domain,
       });
+
+      const dimensions = {
+        communication: data.communication ?? data.communicationClarity ?? 75,
+        technicalAccuracy: data.technicalAccuracy ?? data.technicalDepth ?? 75,
+        confidence: data.confidence ?? 75,
+        grammar: data.grammar ?? 75,
+        professionalism: data.professionalism ?? 75,
+        problemSolving: data.problemSolving ?? 75,
+        depthOfKnowledge: data.depthOfKnowledge ?? 75,
+        behaviour: data.behaviour ?? 75,
+      };
 
       setInterviewSession((prev) => ({
         ...prev,
@@ -894,9 +950,15 @@ export default function App() {
             score: data.score,
             feedback: data.feedback,
             suggestedStarAnswer: data.suggestedStarAnswer,
-            technicalDepth: data.technicalDepth,
-            communicationClarity: data.communicationClarity,
-            confidence: data.confidence,
+            dimensions,
+            technicalDepth: dimensions.technicalAccuracy,
+            communicationClarity: dimensions.communication,
+            confidence: dimensions.confidence,
+            grammar: dimensions.grammar,
+            professionalism: dimensions.professionalism,
+            problemSolving: dimensions.problemSolving,
+            depthOfKnowledge: dimensions.depthOfKnowledge,
+            behaviour: dimensions.behaviour,
             hesitationDuration: verbalMetrics?.hesitationDuration || 0,
             wordsPerMinute: verbalMetrics?.wordsPerMinute || 0,
             totalFillerCount: verbalMetrics?.totalFillerCount || 0,
@@ -917,30 +979,58 @@ export default function App() {
     );
     if (studentAnswers.length === 0) return;
 
+    const count = studentAnswers.length;
+
     const overallScore = Math.round(
-      studentAnswers.reduce((sum, item) => sum + (item.score || 0), 0) / studentAnswers.length
-    );
-    const technicalDepth = Math.round(
-      studentAnswers.reduce((sum, item) => sum + (item.technicalDepth || 0), 0) / studentAnswers.length
-    );
-    const communicationClarity = Math.round(
-      studentAnswers.reduce((sum, item) => sum + (item.communicationClarity || 0), 0) / studentAnswers.length
-    );
-    const confidence = Math.round(
-      studentAnswers.reduce((sum, item) => sum + (item.confidence || 0), 0) / studentAnswers.length
+      studentAnswers.reduce((sum, item) => sum + (item.score || 0), 0) / count
     );
 
-    // NEW: Calculate speech fluency averages across the session
+    const communication = Math.round(
+      studentAnswers.reduce((sum, item) => sum + (item.dimensions?.communication ?? item.communicationClarity ?? 75), 0) / count
+    );
+    const technicalAccuracy = Math.round(
+      studentAnswers.reduce((sum, item) => sum + (item.dimensions?.technicalAccuracy ?? item.technicalDepth ?? 75), 0) / count
+    );
+    const confidence = Math.round(
+      studentAnswers.reduce((sum, item) => sum + (item.dimensions?.confidence ?? item.confidence ?? 75), 0) / count
+    );
+    const grammar = Math.round(
+      studentAnswers.reduce((sum, item) => sum + (item.dimensions?.grammar ?? item.grammar ?? 75), 0) / count
+    );
+    const professionalism = Math.round(
+      studentAnswers.reduce((sum, item) => sum + (item.dimensions?.professionalism ?? item.professionalism ?? 75), 0) / count
+    );
+    const problemSolving = Math.round(
+      studentAnswers.reduce((sum, item) => sum + (item.dimensions?.problemSolving ?? item.problemSolving ?? 75), 0) / count
+    );
+    const depthOfKnowledge = Math.round(
+      studentAnswers.reduce((sum, item) => sum + (item.dimensions?.depthOfKnowledge ?? item.depthOfKnowledge ?? 75), 0) / count
+    );
+    const behaviour = Math.round(
+      studentAnswers.reduce((sum, item) => sum + (item.dimensions?.behaviour ?? item.behaviour ?? 75), 0) / count
+    );
+
     const averageHesitationDuration = Math.round(
-      studentAnswers.reduce((sum, item) => sum + (item.hesitationDuration || 0), 0) / studentAnswers.length
+      studentAnswers.reduce((sum, item) => sum + (item.hesitationDuration || 0), 0) / count
     );
     const averageWordsPerMinute = Math.round(
-      studentAnswers.reduce((sum, item) => sum + (item.wordsPerMinute || 0), 0) / studentAnswers.length
+      studentAnswers.reduce((sum, item) => sum + (item.wordsPerMinute || 0), 0) / count
     );
     const totalFillerCount = studentAnswers.reduce((sum, item) => sum + (item.totalFillerCount || 0), 0);
 
     const questionsAndAnswers = completedSession.questions.map((q, idx) => {
       const ans = studentAnswers[idx];
+      const dims = ans?.dimensions || {
+        communication: ans?.communicationClarity || 75,
+        technicalAccuracy: ans?.technicalDepth || 75,
+        confidence: ans?.confidence || 75,
+        grammar: 75,
+        professionalism: 75,
+        problemSolving: 75,
+        depthOfKnowledge: ans?.technicalDepth || 75,
+        behaviour: 75
+      };
+
       return {
         question: q.question,
         answer: ans?.text || "No response.",
@@ -949,10 +1039,18 @@ export default function App() {
         suggestedStarAnswer: ans?.suggestedStarAnswer || "",
         type: q.type,
         audioUrl: ans?.audioUrl || undefined,
+        dimensions: dims,
         metrics: {
-          technicalDepth: ans?.technicalDepth || 0,
-          communicationClarity: ans?.communicationClarity || 0,
-          confidence: ans?.confidence || 0,
+          communication: dims.communication,
+          technicalAccuracy: dims.technicalAccuracy,
+          confidence: dims.confidence,
+          grammar: dims.grammar,
+          professionalism: dims.professionalism,
+          problemSolving: dims.problemSolving,
+          depthOfKnowledge: dims.depthOfKnowledge,
+          behaviour: dims.behaviour,
+          technicalDepth: dims.technicalAccuracy,
+          communicationClarity: dims.communication,
           hesitationDuration: ans?.hesitationDuration || 0,
           wordsPerMinute: ans?.wordsPerMinute || 0,
           totalFillerCount: ans?.totalFillerCount || 0,
@@ -962,13 +1060,24 @@ export default function App() {
 
     const pastSession: PastInterviewSession = {
       id: `interview_${Date.now()}`,
-      role: activeInterviewRole || "Target Role",
+      role: activeInterviewRole || completedSession.role || "Target Role",
+      category: completedSession.category || "Technical",
+      experienceLevel: completedSession.experienceLevel || "Experienced Professional",
+      domain: completedSession.domain || "Software Engineering",
       timestamp: new Date().toISOString(),
       overallScore,
+      hiringRecommendation: completedSession.hiringRecommendation || (overallScore >= 80 ? "Strongly Recommend Hire" : overallScore >= 65 ? "Hire with Coaching" : "Needs Improvement"),
       metrics: {
-        technicalDepth,
-        communicationClarity,
+        communication,
+        technicalAccuracy,
         confidence,
+        grammar,
+        professionalism,
+        problemSolving,
+        depthOfKnowledge,
+        behaviour,
+        technicalDepth: technicalAccuracy,
+        communicationClarity: communication,
         averageHesitationDuration,
         averageWordsPerMinute,
         totalFillerCount,
@@ -1115,7 +1224,18 @@ export default function App() {
         </div>
 
         {/* Global summary badge & Auth state */}
-        <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-white/60">
+        <div className="hidden md:flex items-center gap-3 text-xs font-semibold text-white/60">
+          {/* Theme Toggle Button */}
+          <button
+            type="button"
+            id="theme-toggle-btn"
+            onClick={toggleTheme}
+            className="flex items-center justify-center p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white transition-all cursor-pointer"
+            title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+          </button>
+
           {isProfileCompleted ? (
             <>
               <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
@@ -1162,15 +1282,25 @@ export default function App() {
           )}
         </div>
 
-        {/* Mobile menu button */}
-        {showWorkspaceNav && (
+        {/* Mobile controls */}
+        <div className="flex items-center gap-2 md:hidden">
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors border border-white/10"
+            type="button"
+            onClick={toggleTheme}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 transition-all cursor-pointer"
+            title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {theme === "dark" ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-indigo-400" />}
           </button>
-        )}
+          {showWorkspaceNav && (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors border border-white/10"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Persistent Offline & Sync Failure Banner */}

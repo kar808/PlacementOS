@@ -699,46 +699,52 @@ const handleApiError = (res: express.Response, error: any) => {
 };
 
 // ------------------------------------------------------------------------
-// API ENDPOINT 1: Full placement analysis (Intelligence map, Scores, Recommended roles)
+// API ENDPOINT 1: Full placement analysis & Enterprise Career Intelligence Engine
 // ------------------------------------------------------------------------
 app.post("/api/placement/analyze", async (req, res) => {
   try {
     const profile = req.body;
     const ai = getAI();
 
-    const prompt = `You are the core intelligence engine of "PlacementOS", an elite AI co-pilot for student employability.
-Analyze the following student profile and return a structured JSON response.
+    const prompt = `You are Vorynexa's Enterprise Career Intelligence Engine—an elite Senior Executive Recruiter, Industrial Psychologist, and Career Architect.
+Analyze the candidate's complete multi-signal profile and generate a comprehensive, truth-verified, explainable Career Intelligence analysis.
 
-STUDENT PROFILE:
+CANDIDATE MULTI-SIGNAL PROFILE:
 - Name: ${profile.name}
 - College: ${profile.college}
 - Degree & Branch: ${profile.degree} in ${profile.branch}
-- Year: ${profile.year}
-- GPA: ${profile.gpa}
-- Active Backlogs: ${profile.backlogs}
+- Year / Graduation: ${profile.year} | Placement Deadline: ${profile.placementDeadline}
+- GPA: ${profile.gpa} | Active Backlogs: ${profile.backlogs}
 - Location: ${profile.location} (Preferred: ${profile.preferredLocation})
-- Technical Skills: ${profile.technicalSkills?.join(", ") || "None specified"}
-- Non-Technical Skills: ${profile.nonTechnicalSkills?.join(", ") || "None specified"}
-- Projects: ${profile.projects || "None"}
-- Internships: ${profile.internships || "None"}
-- Certifications: ${profile.certifications || "None"}
-- Extracurriculars: ${profile.extracurriculars || "None"}
+- Technical & Domain Skills: ${profile.technicalSkills?.join(", ") || "None specified"}
+- Non-Technical & Leadership Skills: ${profile.nonTechnicalSkills?.join(", ") || "None specified"}
+- Projects & Work: ${profile.projects || "None specified"}
+- Internships & Experience: ${profile.internships || "None specified"}
+- Certifications: ${profile.certifications || "None specified"}
+- Extracurriculars & Portfolio: ${profile.extracurriculars || "None"} | Portfolio Status: ${profile.portfolioStatus}
 - Communication Level: ${profile.communicationLevel}
-- Career Goals: ${profile.careerGoals}
+- Career Goals & Aspirations: ${profile.careerGoals}
 - Target Roles: ${profile.targetRoles?.join(", ") || "None specified"}
 - Target Companies: ${profile.targetCompanies?.join(", ") || "None specified"}
 - Expected Salary: ${profile.salaryExpectation}
 - Work Mode: ${profile.workMode}
-- Time available daily for prep: ${profile.timeAvailable}
-- Placement Deadline: ${profile.placementDeadline}
-- Resume Status: ${profile.resumeStatus}
-- LinkedIn Status: ${profile.linkedInStatus}
-- Portfolio Status: ${profile.portfolioStatus}
-- Coding Level: ${profile.codingLevel}
+- Daily Available Prep Time: ${profile.timeAvailable}
+- Resume / LinkedIn Status: ${profile.resumeStatus} | ${profile.linkedInStatus}
+- Coding / Technical Depth Level: ${profile.codingLevel}
 - Confidence Level: ${profile.confidenceLevel}
-- Specific constraints: ${profile.constraints || "None"}
+- Specific Constraints / Notes: ${profile.constraints || "None"}
 
-Please evaluate and return a single cohesive JSON object conforming to the required schema. Ensure scores are numbers from 0 to 100. Be honest, strict but constructive, and deeply personalized. Avoid generic platitudes.
+DIRECTIVES FOR ENTERPRISE CAREER INTELLIGENCE:
+1. CONCEPTUAL CAREER UNDERSTANDING: Understand industry taxonomies, skill transferability, and career trajectories instead of shallow keyword matching.
+2. ACCURATE MULTI-DIMENSIONAL CLASSIFICATION:
+   - Classify candidate into Industry, Profession, Specialization, Career Level, Future Goal, Target Company & Tier, Target Salary, Skill Gap, and Career Transition details.
+3. EXPLAINABLE REASONING & TRUTH GUARANTEE:
+   - Provide clear, objective reasons for every rating and recommendation based ONLY on the candidate's real data.
+   - Do NOT invent fake qualifications, degrees, or experience.
+4. HIGH-VALUE ACTIONABLE OUTPUTS:
+   - Generate deep Career Analysis, Resume Quality, Interview Readiness, Learning Plan, Career Growth Opportunities, Recommended Certifications, Recommended Projects, Recommended Technologies, Recommended Soft Skills, Target Companies, Future Career Paths, Alternative Career Options, and Salary Growth Suggestions (high-level guidance only).
+
+Provide a single cohesive JSON object matching the required schema. Ensure all numerical scores are integers between 0 and 100.
 `;
 
     const response = await generateWithFallback(ai, {
@@ -753,18 +759,198 @@ Please evaluate and return a single cohesive JSON object conforming to the requi
               type: Type.OBJECT,
               required: ["summary", "hiddenStrengths", "missingAssets", "roleMismatchRisk"],
               properties: {
-                summary: { type: Type.STRING, description: "A high-impact recruiter-level summary of who they are and their core value." },
-                hiddenStrengths: { 
-                  type: Type.ARRAY, 
-                  items: { type: Type.STRING },
-                  description: "2-3 undetected strengths derived from their profile, projects, or background." 
-                },
-                missingAssets: { 
-                  type: Type.ARRAY, 
-                  items: { type: Type.STRING },
-                  description: "Missing placement essentials (e.g. ATS compliance, portfolio, specific certifications, Github, LinkedIn, custom projects)." 
-                },
-                roleMismatchRisk: { type: Type.STRING, description: "Honest analysis of whether their goals/target roles align with their skills & constraints, and how to mitigate." }
+                summary: { type: Type.STRING, description: "Recruiter-level summary of candidate value proposition." },
+                hiddenStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+                missingAssets: { type: Type.ARRAY, items: { type: Type.STRING } },
+                roleMismatchRisk: { type: Type.STRING },
+                careerIntelligence: {
+                  type: Type.OBJECT,
+                  required: [
+                    "classification",
+                    "careerAnalysis",
+                    "resumeQuality",
+                    "interviewReadiness",
+                    "learningPlan",
+                    "careerGrowthOpportunities",
+                    "recommendedCertifications",
+                    "recommendedProjects",
+                    "recommendedTechnologies",
+                    "recommendedSoftSkills",
+                    "targetCompanies",
+                    "futureCareerPaths",
+                    "alternativeCareerOptions",
+                    "salaryGrowthSuggestions"
+                  ],
+                  properties: {
+                    classification: {
+                      type: Type.OBJECT,
+                      required: ["industry", "profession", "specialization", "careerLevel", "futureGoal", "targetCompany", "targetCompanyTier", "targetSalary", "skillGapSummary", "careerTransition"],
+                      properties: {
+                        industry: { type: Type.STRING },
+                        profession: { type: Type.STRING },
+                        specialization: { type: Type.STRING },
+                        careerLevel: { type: Type.STRING },
+                        futureGoal: { type: Type.STRING },
+                        targetCompany: { type: Type.STRING },
+                        targetCompanyTier: { type: Type.STRING },
+                        targetSalary: { type: Type.STRING },
+                        skillGapSummary: { type: Type.STRING },
+                        careerTransition: {
+                          type: Type.OBJECT,
+                          required: ["transitionType", "complexityLevel", "feasibilityScore", "explainableReasoning"],
+                          properties: {
+                            transitionType: { type: Type.STRING },
+                            complexityLevel: { type: Type.STRING },
+                            feasibilityScore: { type: Type.INTEGER },
+                            explainableReasoning: { type: Type.STRING }
+                          }
+                        }
+                      }
+                    },
+                    careerAnalysis: {
+                      type: Type.OBJECT,
+                      required: ["overallMarketPositioning", "explainableReasoning", "truthVerifiedAssessment", "coreValueProposition", "competitiveMoat"],
+                      properties: {
+                        overallMarketPositioning: { type: Type.STRING },
+                        explainableReasoning: { type: Type.STRING },
+                        truthVerifiedAssessment: { type: Type.STRING },
+                        coreValueProposition: { type: Type.STRING },
+                        competitiveMoat: { type: Type.ARRAY, items: { type: Type.STRING } }
+                      }
+                    },
+                    resumeQuality: {
+                      type: Type.OBJECT,
+                      required: ["overallScore", "atsScore", "bulletImpactScore", "formattingScore", "keyStrengths", "criticalFlaws", "actionableImprovements"],
+                      properties: {
+                        overallScore: { type: Type.INTEGER },
+                        atsScore: { type: Type.INTEGER },
+                        bulletImpactScore: { type: Type.INTEGER },
+                        formattingScore: { type: Type.INTEGER },
+                        keyStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        criticalFlaws: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        actionableImprovements: { type: Type.ARRAY, items: { type: Type.STRING } }
+                      }
+                    },
+                    interviewReadiness: {
+                      type: Type.OBJECT,
+                      required: ["overallReadiness", "technicalReadiness", "behavioralReadiness", "hrReadiness", "keyStrengths", "recommendedFocusAreas"],
+                      properties: {
+                        overallReadiness: { type: Type.INTEGER },
+                        technicalReadiness: { type: Type.INTEGER },
+                        behavioralReadiness: { type: Type.INTEGER },
+                        hrReadiness: { type: Type.INTEGER },
+                        keyStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        recommendedFocusAreas: { type: Type.ARRAY, items: { type: Type.STRING } }
+                      }
+                    },
+                    learningPlan: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        required: ["phase", "timeframe", "coreSkillFocus", "milestones", "actionItems"],
+                        properties: {
+                          phase: { type: Type.STRING },
+                          timeframe: { type: Type.STRING },
+                          coreSkillFocus: { type: Type.ARRAY, items: { type: Type.STRING } },
+                          milestones: { type: Type.ARRAY, items: { type: Type.STRING } },
+                          actionItems: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        }
+                      }
+                    },
+                    careerGrowthOpportunities: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        required: ["opportunityTitle", "description", "impactMultiplier", "actionRequired"],
+                        properties: {
+                          opportunityTitle: { type: Type.STRING },
+                          description: { type: Type.STRING },
+                          impactMultiplier: { type: Type.STRING },
+                          actionRequired: { type: Type.STRING }
+                        }
+                      }
+                    },
+                    recommendedCertifications: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        required: ["name", "issuingBody", "relevance", "roiScore"],
+                        properties: {
+                          name: { type: Type.STRING },
+                          issuingBody: { type: Type.STRING },
+                          relevance: { type: Type.STRING },
+                          roiScore: { type: Type.STRING }
+                        }
+                      }
+                    },
+                    recommendedProjects: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        required: ["title", "objective", "technologiesOrTools", "keyDeliverables", "resumeImpactLine"],
+                        properties: {
+                          title: { type: Type.STRING },
+                          objective: { type: Type.STRING },
+                          technologiesOrTools: { type: Type.ARRAY, items: { type: Type.STRING } },
+                          keyDeliverables: { type: Type.ARRAY, items: { type: Type.STRING } },
+                          resumeImpactLine: { type: Type.STRING }
+                        }
+                      }
+                    },
+                    recommendedTechnologies: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    recommendedSoftSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    targetCompanies: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        required: ["companyName", "tier", "whyFit", "keyHiringCriteria"],
+                        properties: {
+                          companyName: { type: Type.STRING },
+                          tier: { type: Type.STRING },
+                          whyFit: { type: Type.STRING },
+                          keyHiringCriteria: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        }
+                      }
+                    },
+                    futureCareerPaths: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        required: ["timeframe", "roleTitle", "expectedScope", "keyMilestones"],
+                        properties: {
+                          timeframe: { type: Type.STRING },
+                          roleTitle: { type: Type.STRING },
+                          expectedScope: { type: Type.STRING },
+                          keyMilestones: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        }
+                      }
+                    },
+                    alternativeCareerOptions: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        required: ["roleTitle", "industry", "skillOverlapPercentage", "transitionEffort", "whyConsider"],
+                        properties: {
+                          roleTitle: { type: Type.STRING },
+                          industry: { type: Type.STRING },
+                          skillOverlapPercentage: { type: Type.INTEGER },
+                          transitionEffort: { type: Type.STRING },
+                          whyConsider: { type: Type.STRING }
+                        }
+                      }
+                    },
+                    salaryGrowthSuggestions: {
+                      type: Type.OBJECT,
+                      required: ["marketRangeGuidance", "keySalaryMultipliers", "negotiationLeveragePoints", "disclaimer"],
+                      properties: {
+                        marketRangeGuidance: { type: Type.STRING },
+                        keySalaryMultipliers: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        negotiationLeveragePoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        disclaimer: { type: Type.STRING }
+                      }
+                    }
+                  }
+                }
               }
             },
             scores: {
@@ -834,12 +1020,12 @@ Please evaluate and return a single cohesive JSON object conforming to the requi
                 type: Type.OBJECT,
                 required: ["role", "type", "probability", "salaryUpside", "learningFit", "reason"],
                 properties: {
-                  role: { type: Type.STRING, description: "Specific role name" },
-                  type: { type: Type.STRING, description: "Must be 'dream', 'safe', or 'alternative'" },
-                  probability: { type: Type.INTEGER, description: "Probability of getting placed in this role in their current condition (0-100)" },
-                  salaryUpside: { type: Type.STRING, description: "Expected range (e.g. ₹6-8 LPA or $80k-$100k)" },
-                  learningFit: { type: Type.STRING, description: "Rating and description of growth potential" },
-                  reason: { type: Type.STRING, description: "Concrete why this fits their profile background" }
+                  role: { type: Type.STRING },
+                  type: { type: Type.STRING },
+                  probability: { type: Type.INTEGER },
+                  salaryUpside: { type: Type.STRING },
+                  learningFit: { type: Type.STRING },
+                  reason: { type: Type.STRING }
                 }
               }
             }
@@ -866,12 +1052,18 @@ app.post("/api/placement/resume-optimize", async (req, res) => {
     const parts: any[] = [];
 
     if (fileBase64 && mimeType) {
-      parts.push({
-        inlineData: {
-          data: fileBase64,
-          mimeType: mimeType,
-        },
-      });
+      let rawBase64 = typeof fileBase64 === "string" ? fileBase64 : "";
+      if (rawBase64.includes(";base64,")) {
+        rawBase64 = rawBase64.split(";base64,")[1];
+      }
+      if (rawBase64) {
+        parts.push({
+          inlineData: {
+            data: rawBase64,
+            mimeType: mimeType,
+          },
+        });
+      }
     }
 
     let promptText = `You are the super-premium Resume & LinkedIn Engine of "PlacementOS".
@@ -950,43 +1142,47 @@ Please evaluate and provide:
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
 });
 
 // ------------------------------------------------------------------------
-// API ENDPOINT 2B: Automatic AI Resume Builder ("Bestest AI")
+// API ENDPOINT 2A: Universal Profession Classification & Intelligence Engine (UPIE)
 // ------------------------------------------------------------------------
-app.post("/api/placement/resume-autobuild", async (req, res) => {
+app.post("/api/placement/profession-classify", async (req, res) => {
   try {
-    const { profile, targetRole } = req.body;
+    const { targetRole, profile, domainHint, customDescription, userAnswers } = req.body;
     const ai = getAI();
 
-    const selectedRole = targetRole || profile?.targetRoles?.[0] || "Software Engineer";
+    const roleToClassify = targetRole || profile?.targetRoles?.[0] || domainHint || "Software Engineer";
 
-    const promptText = `You are the world's most elite AI Resume Architect and ATS Optimizer ("Bestest AI").
-Generate a complete, pristine, industry-grade professional resume tailored specifically for the candidate based on their profile data and target role.
+    const promptText = `You are Vorynexa's Universal Profession Intelligence Engine (UPIE).
+Your mandate is to accurately classify ANY human profession or career domain across all major fields (Engineering, Medicine, Law, Finance, Marketing, Sales, HR, Design, Architecture, Research, Education, Hospitality, Government, Defence, Agriculture, Media, Sports, Arts, Skilled Trades, Entrepreneurship, Freelancing, AI, Cybersecurity, Cloud, Data Science, Biotechnology, Manufacturing, Future Professions, etc.).
 
-CANDIDATE PROFILE:
-- Name: ${profile?.name || "Candidate"}
-- Email: ${profile?.email || "candidate@vorynexa.com"}
-- College / University: ${profile?.collegeName || "State University"}
-- Graduation Year: ${profile?.graduationYear || "2025"}
-- Target Role: ${selectedRole}
-- Technical Skills: ${profile?.technicalSkills?.join(", ") || "TypeScript, React, Node.js, Python, SQL"}
-- Non-Technical Skills: ${profile?.nonTechnicalSkills?.join(", ") || "Problem Solving, Agile, Technical Communication"}
-- Existing Projects / Achievements: ${profile?.projects || "Full-stack Web App with Real-time Data Sync and REST API"}
-- Internship / Work Experience: ${profile?.internships || "Software Engineering Intern - Developed scalable backend services"}
-- Career Aspirations: ${profile?.careerAspirations || "To build resilient cloud-native software products"}
+Analyze the target role, candidate profile, and optional user input:
+- Target Role / Input: "${roleToClassify}"
+- Domain Hint: "${domainHint || "None"}"
+- Custom Notes/Description: "${customDescription || "None"}"
+- Candidate Degree/Branch: "${profile?.degree || "N/A"} in ${profile?.branch || "N/A"}"
+- Existing Technical/Hard Skills: "${profile?.technicalSkills?.join(", ") || "N/A"}"
+- Clarification Answers: ${JSON.stringify(userAnswers || {})}
 
-INSTRUCTIONS:
-1. Craft a high-powered 2-3 sentence Professional Summary tailored for ${selectedRole}.
-2. Group technical skills logically (Languages, Frameworks/Libraries, Tools & Cloud, Core Engineering).
-3. Synthesize 3-4 detailed project/experience entries using the STAR method with metrics (e.g. "reduced latency by 35%", "scaled API to 10k requests/sec").
-4. Provide 10+ high-value ATS industry keywords embedded in the resume.
-5. Generate a complete, beautifully structured Markdown text version suitable for export as plain text or PDF.
+CLASSIFICATION INSTRUCTIONS:
+1. Determine the Industry Sector and exact Primary Profession & Specialization.
+2. Evaluate AI Confidence Score (0-100) based on how specific and clear the role is.
+   - If confidenceScore < 80, set needsClarification = true and generate 2-3 precise clarification questions to narrow down the specialization or sub-field.
+   - Otherwise, set needsClarification = false and leave clarificationQuestions empty or optional.
+3. DOMAIN TERMINOLOGY: Provide 6-10 authentic, industry-standard terms, abbreviations, standards, or jargon for this exact profession (e.g., ICD-10, Triage, Clinical Rounds for Doctor/Nurse; Tort, Briefs, Discovery for Lawyer; GAAP, EBITDA for Accountant; CAD, Revit, BIM for Architect; Kubernetes, Terraform for Cloud Architect; PLC, SCADA, Six Sigma for Manufacturing).
+4. ATS KEYWORDS: Provide 8-12 high-priority ATS search keywords used by recruiters in this exact profession.
+5. RECOMMENDED TEMPLATE: Choose the best layout style from: ["Modern", "Corporate", "Minimal", "Executive", "Academic", "Research", "Creative"].
+6. RECOMMENDED SKILLS: Group into hardSkills, toolsAndSoftware, domainKnowledge, softSkills.
+7. RECOMMENDED PROJECTS: Provide 2-3 authentic, realistic projects suited for this profession (e.g., a Lawyer gets a Legal Precedent Audit / Contract Risk Matrix; a Nurse gets a Patient Care Protocol & Triage Workflow Audit).
+8. RECOMMENDED CERTIFICATIONS: Provide 2-4 industry-recognized credentials/certifications.
+9. CAREER ROADMAP: Provide a 4-phase career progression path (Phase 1: Entry/Foundational -> Phase 2: Core Practitioner -> Phase 3: Senior Specialist -> Phase 4: Executive/Partner/Principal).
+
+CRITICAL RULE: MAINTAIN STRICT ROLE CONSISTENCY. NEVER CONFUSE ONE PROFESSION WITH ANOTHER. Do NOT add software coding or Git to non-software roles like Doctor, Chef, Electrician, Lawyer, or Civil Engineer unless explicitly mentioned.
 `;
 
     const response = await generateWithFallback(ai, {
@@ -996,13 +1192,230 @@ INSTRUCTIONS:
         responseSchema: {
           type: Type.OBJECT,
           required: [
+            "industry",
+            "primaryProfession",
+            "specialization",
+            "careerStage",
+            "confidenceScore",
+            "needsClarification",
+            "clarificationQuestions",
+            "domainTerminology",
+            "atsKeywords",
+            "recommendedTemplateStyle",
+            "recommendedSkills",
+            "recommendedProjects",
+            "recommendedCertifications",
+            "careerRoadmap",
+          ],
+          properties: {
+            industry: { type: Type.STRING, description: "e.g. Healthcare & Medicine, Legal Services, Financial Services, Skilled Trades" },
+            primaryProfession: { type: Type.STRING, description: "Standardized title of the profession" },
+            specialization: { type: Type.STRING, description: "Specific sub-discipline or focus area" },
+            careerStage: { type: Type.STRING, description: "e.g. Entry Level, Mid-Career Specialist, Senior Lead" },
+            confidenceScore: { type: Type.INTEGER, description: "Classification confidence score 0-100" },
+            needsClarification: { type: Type.BOOLEAN },
+            clarificationQuestions: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+            },
+            domainTerminology: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Authentic jargon, abbreviations, and domain terminology"
+            },
+            atsKeywords: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "High-weight ATS keywords for recruiters"
+            },
+            recommendedTemplateStyle: {
+              type: Type.STRING,
+              description: "Modern, Corporate, Minimal, Executive, Academic, Research, or Creative"
+            },
+            recommendedSkills: {
+              type: Type.OBJECT,
+              required: ["hardSkills", "toolsAndSoftware", "domainKnowledge", "softSkills"],
+              properties: {
+                hardSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                toolsAndSoftware: { type: Type.ARRAY, items: { type: Type.STRING } },
+                domainKnowledge: { type: Type.ARRAY, items: { type: Type.STRING } },
+                softSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+              }
+            },
+            recommendedProjects: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                required: ["title", "objective", "toolsOrMethods", "deliverables", "resumeImpact"],
+                properties: {
+                  title: { type: Type.STRING },
+                  objective: { type: Type.STRING },
+                  toolsOrMethods: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  deliverables: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  resumeImpact: { type: Type.STRING }
+                }
+              }
+            },
+            recommendedCertifications: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                required: ["name", "issuingBody", "relevance"],
+                properties: {
+                  name: { type: Type.STRING },
+                  issuingBody: { type: Type.STRING },
+                  relevance: { type: Type.STRING }
+                }
+              }
+            },
+            careerRoadmap: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                required: ["phase", "timeframe", "focusMilestone", "keySkillsToMaster"],
+                properties: {
+                  phase: { type: Type.STRING },
+                  timeframe: { type: Type.STRING },
+                  focusMilestone: { type: Type.STRING },
+                  keySkillsToMaster: { type: Type.ARRAY, items: { type: Type.STRING } }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const text = response.text || "{}";
+    res.json(parseGeminiJson(text));
+  } catch (error) {
+    handleApiError(res, error);
+  }
+});
+
+// ------------------------------------------------------------------------
+// API ENDPOINT 2B: Enterprise AI Resume Intelligence Engine
+// ------------------------------------------------------------------------
+app.post("/api/placement/resume-autobuild", async (req, res) => {
+  try {
+    const { profile, targetRole, strategy, userAnswers } = req.body;
+    const ai = getAI();
+
+    const selectedRole = targetRole || profile?.targetRoles?.[0] || "Software Engineer";
+    const selectedStrategy = strategy || "Hybrid STAR";
+
+    const promptText = `You are Vorynexa's Universal AI Resume Intelligence Engine—acting simultaneously as a Fortune 500 Senior Executive Recruiter, Principal Resume Architect, Universal Profession Classification Specialist (UPCS), and ATS Compliance Auditor.
+
+Your task is to generate a pristine, truth-verified, ATS-optimized, high-impact professional resume tailored specifically for ANY candidate profession (Software/IT, Healthcare, Law, Teaching, Finance, Creative, Trades, Executive, Government, Research, Skilled Trades, Defence, etc.) based on multi-signal profile data, target role, and chosen strategy.
+
+CANDIDATE MULTI-SIGNAL DATA:
+- Candidate Name: ${profile?.name || "Candidate"}
+- Contact Email: ${profile?.email || "candidate@vorynexa.com"}
+- Phone/Location: ${profile?.phone || "Mobile"} | ${profile?.location || "Remote / Hybrid"}
+- College / University: ${profile?.collegeName || profile?.college || "State University"}
+- Degree & Branch: ${profile?.degree || "Bachelor Degree"} in ${profile?.branch || "Field of Study"}
+- Graduation Year / CGPA: ${profile?.graduationYear || "2025"} | CGPA: ${profile?.cgpa || "N/A"}
+- Target Role: ${selectedRole}
+- Resume Strategy: ${selectedStrategy}
+- Technical / Core Skills: ${profile?.technicalSkills?.join(", ") || "Core Domain Competencies"}
+- Non-Technical / Leadership Skills: ${profile?.nonTechnicalSkills?.join(", ") || "Communication, Agile, Team Leadership"}
+- Existing Projects / Portfolio: ${profile?.projects || "Key achievements and domain projects"}
+- Internship / Work Experience: ${profile?.internships || "Relevant professional experience and roles"}
+- Certifications / Achievements: ${profile?.certifications || "Industry Certifications"}
+- Career Aspirations: ${profile?.careerAspirations || "To excel and drive impact in target field"}
+- User Clarification Answers (if provided): ${JSON.stringify(userAnswers || {})}
+
+UNIVERSAL PROFESSION & TRUTHFULNESS DIRECTIVES:
+1. UNIVERSAL DOMAIN ADAPTATION: Adapt terminology strictly to the candidate's profession. If non-technical (e.g., Nurse, Teacher, Lawyer, Chef, Accountant), do NOT invent software code or engineering terms. Map skills to:
+   - Primary Competencies / Languages
+   - Industry Tools / Software / Specialized Equipment
+   - Core Domain Knowledge / Methodologies
+2. TRUTHFULNESS GUARANTEE: Never invent fake employers, degrees, or unverified certifications. Synthesize, quantify, and elevate ONLY the candidate's actual provided background.
+3. PROFESSION CLASSIFICATION (UPCS): Classify primary domain, specialization, experience level, industry sector, target role, career stage, and calculate an AI confidence score (0-100). If confidence is below 80, generate 2-3 precise clarification questions.
+4. ATS BREAKDOWN: Provide granular 0-100 scores for overall optimization, keyword match, readability, terminology, chronology, and grammar. Include bullet rewrites and missing keywords.
+5. PRINT-READY MARKDOWN: Output a clean, beautifully formatted Markdown text suitable for ATS text parsing and multi-style print exports.
+`;
+
+    const response = await generateWithFallback(ai, {
+      contents: [{ text: promptText }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          required: [
+            "professionClassification",
+            "selectedStrategy",
+            "atsBreakdown",
             "professionalSummary",
             "skillsGrouped",
             "experienceAndProjects",
+            "educationDetails",
             "atsKeywordsIncluded",
             "fullMarkdownText"
           ],
           properties: {
+            professionClassification: {
+              type: Type.OBJECT,
+              required: [
+                "primaryDomain",
+                "secondarySpecialization",
+                "experienceLevel",
+                "industry",
+                "targetRole",
+                "careerStage",
+                "confidenceScore",
+                "clarificationQuestions"
+              ],
+              properties: {
+                primaryDomain: { type: Type.STRING, description: "e.g., Software Engineering, Data Science, Product Management" },
+                secondarySpecialization: { type: Type.STRING, description: "e.g., Cloud Backend, Frontend UI/UX, AI/ML Infrastructure" },
+                experienceLevel: { type: Type.STRING, description: "Entry-Level / Mid-Level / Senior Executive" },
+                industry: { type: Type.STRING, description: "Target Industry sector" },
+                targetRole: { type: Type.STRING },
+                careerStage: { type: Type.STRING, description: "e.g., Recent Graduate, Early Career Specialist, Career Switcher" },
+                confidenceScore: { type: Type.INTEGER, description: "AI confidence score 0-100" },
+                clarificationQuestions: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: "Targeted clarification questions if confidence < 80 or details sparse"
+                }
+              }
+            },
+            selectedStrategy: { type: Type.STRING },
+            atsBreakdown: {
+              type: Type.OBJECT,
+              required: [
+                "overallScore",
+                "keywordMatchScore",
+                "readabilityScore",
+                "terminologyScore",
+                "chronologyScore",
+                "grammarScore",
+                "missingKeywords",
+                "bulletRewrites"
+              ],
+              properties: {
+                overallScore: { type: Type.INTEGER },
+                keywordMatchScore: { type: Type.INTEGER },
+                readabilityScore: { type: Type.INTEGER },
+                terminologyScore: { type: Type.INTEGER },
+                chronologyScore: { type: Type.INTEGER },
+                grammarScore: { type: Type.INTEGER },
+                missingKeywords: { type: Type.ARRAY, items: { type: Type.STRING } },
+                bulletRewrites: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    required: ["before", "after", "explanation"],
+                    properties: {
+                      before: { type: Type.STRING },
+                      after: { type: Type.STRING },
+                      explanation: { type: Type.STRING }
+                    }
+                  }
+                }
+              }
+            },
             professionalSummary: { type: Type.STRING },
             skillsGrouped: {
               type: Type.OBJECT,
@@ -1025,6 +1438,16 @@ INSTRUCTIONS:
                 }
               }
             },
+            educationDetails: {
+              type: Type.OBJECT,
+              required: ["institution", "degree", "graduationYear"],
+              properties: {
+                institution: { type: Type.STRING },
+                degree: { type: Type.STRING },
+                graduationYear: { type: Type.STRING },
+                highlights: { type: Type.ARRAY, items: { type: Type.STRING } }
+              }
+            },
             atsKeywordsIncluded: { type: Type.ARRAY, items: { type: Type.STRING } },
             fullMarkdownText: { type: Type.STRING }
           }
@@ -1033,14 +1456,14 @@ INSTRUCTIONS:
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
 });
 
 // ------------------------------------------------------------------------
-// API ENDPOINT 2C: Multimodal Document, Resume Photograph, File & Link Analyzer
+// API ENDPOINT 2C: Universal Enterprise Resume & Multimodal Document Analysis Engine
 // ------------------------------------------------------------------------
 app.post("/api/placement/analyze-file", async (req, res) => {
   try {
@@ -1048,51 +1471,61 @@ app.post("/api/placement/analyze-file", async (req, res) => {
     const ai = getAI();
 
     const parts: any[] = [];
-    let promptText = `You are the Lead Recruiter and Multimodal Resume/Document OCR Auditor at PlacementOS.
-Analyze the provided document(s), resume photographs/scans, certificates, transcripts, or web links attached by the candidate.
+    let promptText = `You are Vorynexa's Enterprise Resume Analysis & Audit Engine—acting as a Senior Talent Acquisition Director, ATS Machine Parser Specialist, and Multimodal Document Classifier.
 
-Candidate Target Role: ${targetRole || profile?.targetRoles?.[0] || "Software Engineer"}
-Candidate Profile Details:
-- Name: ${profile?.name || "Candidate"}
-- Degree & Branch: ${profile?.degree || "Degree"} in ${profile?.branch || "Field"}
-- College: ${profile?.college || "University"}
-- Existing Technical Skills: ${profile?.technicalSkills?.join(", ") || "None"}
-- Target Companies: ${profile?.targetCompanies?.join(", ") || "Tech Companies"}
+Task: Analyze the attached document(s), resume scans/photographs, or text files (PDF, DOCX, TXT, PNG, JPG).
 
-FOR ANY ATTACHED RESUME PHOTOGRAPHS, SCANS, OR PDF DOCUMENTS:
-1. Perform high-precision OCR to read and extract ALL text verbatim (contact info, degree, dates, company names, projects, tools, bullet points).
-2. Evaluate document quality: contrast, resolution, visual alignment, typography, margins, section dividers, and ATS readability.
+Candidate Context:
+- Target Role: ${targetRole || profile?.targetRoles?.[0] || "Target Profession"}
+- Candidate Name (if known): ${profile?.name || "Candidate"}
 
-FOR ANY ATTACHED LINKS (Portfolio URL, Google Drive PDF, GitHub Repo, LinkedIn):
-1. Evaluate link structure, domain reputation, public presentation, and recruiter appeal.
+CRITICAL STEP 1: VALIDATION CHECK (IS THIS A RESUME?)
+- Evaluate whether the uploaded document is a valid resume, CV, curriculum vitae, professional bio, or candidate work profile.
+- IF THE DOCUMENT IS NOT A RESUME (e.g. it is a textbook page, invoice, code snippet, assignment, recipe, general news article, random photo, or unrelated document):
+  - Set "isResume": false
+  - Set "nonResumeReason": "This document does not appear to be a resume. Please upload a valid resume. (Detected: [Brief description of what was detected])"
+  - Set "overallScore": 0, "atsScore": 0, "professionalismScore": 0
+  - Provide empty arrays/objects for extracted details. DO NOT HALLUCINATE OR INVENT APPLICANT PROFILE DATA.
 
-PROVIDE A DEEP, HONEST, RECRUITER-GRADE MULTIMODAL EVALUATION:
-- "overallScore": 0 to 100 overall employability/quality rating.
-- "fileTypeDetected": Human-readable descriptor of uploaded items.
-- "extractedText": Complete OCR or extracted text from the photographs/documents/links.
-- "documentQualityScore": 0 to 100 visual/formatting/readability score.
-- "atsCompatibilityScore": 0 to 100 ATS machine parser compatibility score.
-- "extractedDetails": Object containing extracted profile parameters (name, email, phone, college, degree, technicalSkills, projects, internships, certifications).
-- "keyStrengths": Array of 3-5 major positive highlights.
-- "criticalFlawsAndRisks": Array of 3-5 major red flags or formatting flaws.
-- "missingKeywords": Array of 5-10 critical missing skills or keywords for the target role.
-- "formattingSuggestions": Array of layout and design recommendations.
-- "atsBulletImprovements": Array of before/after bullet rewrites with explanations.
-- "overallVerdict": Direct, honest recruiter verdict.
-- "recommendedActionableSteps": Step-by-step immediate improvement actions.
+CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": true)
+- Set "isResume": true, "nonResumeReason": null
+- Extract: Full Name, Email, Phone, Location, LinkedIn, GitHub, Portfolio URL, Education (Degree, Institution, Year), Experience, Projects, Skills (Technical & Soft), Certifications, Achievements, and Career Summary.
+- Calculate:
+  1. "overallScore": 0-100 comprehensive resume quality score.
+  2. "atsScore": 0-100 machine parser compatibility score.
+  3. "professionalismScore": 0-100 formatting, tone, grammar, and layout consistency rating.
+- Perform:
+  - "grammarAnalysis": Detail any typos, grammatical errors, or passive voice usage.
+  - "formattingAnalysis": Audit visual margins, density, bullet consistency, and typography.
+  - "keywordAnalysis": Identify strong present keywords and missing target role keywords.
+  - "resumeStrengthAnalysis": Highlight top competitive advantages.
+  - "industryFitAnalysis": Assess alignment with the target industry/field.
+  - "roleSuitability": Evaluate readiness for the specified target role.
+  - "skillGapAnalysis": List critical missing skills or certifications.
+  - "atsBulletImprovements": Provide 3-5 high-impact before/after bullet rewrites using the STAR method with metrics.
+  - "overallVerdict": Direct, constructive senior recruiter evaluation.
+  - "recommendedActionableSteps": 3-5 prioritized immediate improvement actions.
 `;
 
     if (Array.isArray(items)) {
       for (const item of items) {
         if (item.base64Data && item.mimeType) {
-          parts.push({
-            inlineData: {
-              data: item.base64Data,
-              mimeType: item.mimeType,
-            },
-          });
+          let rawBase64 = typeof item.base64Data === "string" ? item.base64Data : "";
+          if (rawBase64.includes(";base64,")) {
+            rawBase64 = rawBase64.split(";base64,")[1];
+          }
+          if (rawBase64) {
+            parts.push({
+              inlineData: {
+                data: rawBase64,
+                mimeType: item.mimeType,
+              },
+            });
+          }
+        } else if (item.textContent) {
+          promptText += `\n\nATTACHED FILE CONTENT (${item.name || "document.txt"}):\n${item.textContent}`;
         } else if (item.linkUrl) {
-          promptText += `\n\nATTACHED WEB LINK (${item.category || "web_link"}): ${item.linkUrl}`;
+          promptText += `\n\nATTACHED LINK (${item.category || "web_link"}): ${item.linkUrl}`;
         }
       }
     }
@@ -1106,11 +1539,13 @@ PROVIDE A DEEP, HONEST, RECRUITER-GRADE MULTIMODAL EVALUATION:
         responseSchema: {
           type: Type.OBJECT,
           required: [
+            "isResume",
+            "nonResumeReason",
             "overallScore",
+            "atsScore",
+            "professionalismScore",
             "fileTypeDetected",
             "extractedText",
-            "documentQualityScore",
-            "atsCompatibilityScore",
             "extractedDetails",
             "keyStrengths",
             "criticalFlawsAndRisks",
@@ -1119,31 +1554,68 @@ PROVIDE A DEEP, HONEST, RECRUITER-GRADE MULTIMODAL EVALUATION:
             "atsBulletImprovements",
             "overallVerdict",
             "recommendedActionableSteps",
+            "grammarAnalysis",
+            "industryFitAnalysis",
+            "roleSuitability",
+            "skillGapAnalysis",
           ],
           properties: {
+            isResume: { type: Type.BOOLEAN },
+            nonResumeReason: { type: Type.STRING },
             overallScore: { type: Type.INTEGER },
+            atsScore: { type: Type.INTEGER },
+            professionalismScore: { type: Type.INTEGER },
             fileTypeDetected: { type: Type.STRING },
             extractedText: { type: Type.STRING },
-            documentQualityScore: { type: Type.INTEGER },
-            atsCompatibilityScore: { type: Type.INTEGER },
             extractedDetails: {
               type: Type.OBJECT,
               properties: {
                 name: { type: Type.STRING },
                 email: { type: Type.STRING },
                 phone: { type: Type.STRING },
+                location: { type: Type.STRING },
+                linkedin: { type: Type.STRING },
+                github: { type: Type.STRING },
+                portfolio: { type: Type.STRING },
                 college: { type: Type.STRING },
                 degree: { type: Type.STRING },
+                careerSummary: { type: Type.STRING },
                 technicalSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                projects: { type: Type.ARRAY, items: { type: Type.STRING } },
-                internships: { type: Type.ARRAY, items: { type: Type.STRING } },
+                projects: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      title: { type: Type.STRING },
+                      description: { type: Type.STRING },
+                      techUsed: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    },
+                  },
+                },
+                experience: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      company: { type: Type.STRING },
+                      role: { type: Type.STRING },
+                      duration: { type: Type.STRING },
+                      highlights: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    },
+                  },
+                },
                 certifications: { type: Type.ARRAY, items: { type: Type.STRING } },
+                achievements: { type: Type.ARRAY, items: { type: Type.STRING } },
               },
             },
             keyStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
             criticalFlawsAndRisks: { type: Type.ARRAY, items: { type: Type.STRING } },
             missingKeywords: { type: Type.ARRAY, items: { type: Type.STRING } },
             formattingSuggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            grammarAnalysis: { type: Type.STRING },
+            industryFitAnalysis: { type: Type.STRING },
+            roleSuitability: { type: Type.STRING },
+            skillGapAnalysis: { type: Type.ARRAY, items: { type: Type.STRING } },
             atsBulletImprovements: {
               type: Type.ARRAY,
               items: {
@@ -1163,40 +1635,181 @@ PROVIDE A DEEP, HONEST, RECRUITER-GRADE MULTIMODAL EVALUATION:
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
 });
 
 // ------------------------------------------------------------------------
-// API ENDPOINT 3: Day-Wise / Week-Wise Roadmap & Skill-Gaps
+// API ENDPOINT 3: Enterprise AI Career Roadmap Engine
 // ------------------------------------------------------------------------
 app.post("/api/placement/roadmap", async (req, res) => {
   try {
-    const profile = req.body;
+    const reqData = req.body || {};
+    const profile = reqData.profile || reqData;
     const ai = getAI();
 
-    const prompt = `You are the dynamic Skill-gap and Roadmap Engine of "PlacementOS".
-Create highly personalized placement roadmaps.
-Determine missing skills and produce structured 7-day, 30-day, and 90-day roadmaps based on their available time.
+    // Extract parameters or fallback to profile values
+    const education = reqData.education || `${profile.degree || "Bachelor Degree"} in ${profile.branch || "Computer Science"} (${profile.college || "University"})`;
+    const currentSkills = reqData.currentSkills || profile.technicalSkills || ["Programming", "Problem Solving"];
+    const experience = reqData.experience || profile.internships || profile.projects || "Student / Entry-level Experience";
+    const careerGoal = reqData.careerGoal || profile.careerGoals || "Achieve long-term engineering leadership and domain mastery";
+    const targetRole = reqData.targetRole || profile.targetRoles?.[0] || "Software Engineer";
+    const country = reqData.country || profile.location || profile.preferredLocation || "United States / Global";
+    const preferredIndustry = reqData.preferredIndustry || "Technology & Software";
+    const learningSpeed = reqData.learningSpeed || "Standard (1x)";
+    const availableTime = reqData.availableTime || profile.timeAvailable || "2-3 hours/day";
+    const budget = reqData.budget || "$0 (Free / Open Source)";
+    const existingResumeText = reqData.existingResumeText || profile.resumeStatus || "";
 
-STUDENT PROFILE:
-- Technical Skills: ${profile.technicalSkills?.join(", ")}
-- Non-Technical Skills: ${profile.nonTechnicalSkills?.join(", ")}
-- Career Goals: ${profile.careerGoals}
-- Target Roles: ${profile.targetRoles?.join(", ")}
-- Time Available Daily: ${profile.timeAvailable}
-- Placement Deadline: ${profile.placementDeadline}
-- Coding Level: ${profile.codingLevel}
+    const prompt = `You are the Chief Career Intelligence Officer, HR Director, Principal AI Engineer, and Career Coach at Vorynexa.
+Generate a deeply personalized, ultra-rigorous, non-generic Enterprise Career Roadmap tailored specifically for this candidate.
 
-Output exactly three distinct arrays representing:
-- plan7Day: Crucial sprint tasks to fix urgent issues (e.g. resume, resume projects, basic interview intro)
-- plan30Day: Core preparation (solving aptitude, practicing mock rounds, core DSA/technical domain knowledge, mock tests)
-- plan90Day: Mastering off-campus networking, referrals, advanced projects, continuous application pipelines.
+CANDIDATE INPUT PROFILE:
+- Education: ${education}
+- Current Skills: ${Array.isArray(currentSkills) ? currentSkills.join(", ") : currentSkills}
+- Non-Technical Skills: ${profile.nonTechnicalSkills?.join(", ") || "Communication, Teamwork"}
+- Experience & Projects: ${experience}
+- Long-Term Career Goal: ${careerGoal}
+- Target Role: ${targetRole}
+- Country / Market: ${country}
+- Preferred Industry: ${preferredIndustry}
+- Learning Pace: ${learningSpeed}
+- Available Time: ${availableTime}
+- Budget Tier: ${budget}
+- Existing Resume Snapshot: ${existingResumeText}
 
-Provide highly actionable tasks. Each task must specify a 'priority' of High, Medium, or Low.
+INSTRUCTIONS:
+1. STEP 1: Perform candidate diagnostic analysis:
+   - Identify current career stage, current verified skills, top missing skills, target profession, skill gap summary + gap score (0-100), resume strength score (0-100) + summary, interview readiness score (0-100) + summary, and a personalized executive mentor verdict.
+2. STEP 2: Generate a complete 4-Stage Roadmap covering ALL 4 STAGES:
+   - "Beginner Stage" (Foundations, core tools, fundamental theory)
+   - "Intermediate Stage" (Architectures, real-world development, framework mastery)
+   - "Advanced Stage" (Enterprise scalability, system design, specialized domain skills)
+   - "Expert Stage" (Production optimization, leadership, executive interview prep, industry impact)
+
+FOR EVERY SINGLE STAGE (Beginner, Intermediate, Advanced, Expert), YOU MUST PROVIDE:
+- stageName
+- stageTitle
+- timeline (e.g. "Weeks 1-4 / 60 Hours")
+- mentorAdvice (Personalized direct coaching advice)
+- learningTopics (5+ specific topics)
+- recommendedProjects (2 detailed projects with title, description, keyDeliverables array, portfolioImpact)
+- recommendedCertifications (2 certifications with name, issuer, relevance, estimatedCost)
+- recommendedTools (5+ specific tools/frameworks)
+- books (2 top books with title, author, whyRead)
+- courses (2 courses with title, platform, urlOrProvider, type)
+- practicePlatforms (2 platforms with name, focus)
+- interviewPreparation (2 interview topics with topic, keyQuestions array, strategy)
+- portfolioTasks (3 portfolio tasks)
+- networkingSuggestions (3 actionable networking steps)
+- jobApplicationStrategy (3 job search tactics)
+- milestones (4-6 milestones with id, title, description, completed: false, priority: 'High'|'Medium'|'Low', userNotes)
+
+Also synthesize plan7Day, plan30Day, and plan90Day arrays from the milestones for backward compatibility.
 `;
+
+    const stageProperties = {
+      stageName: { type: Type.STRING },
+      stageTitle: { type: Type.STRING },
+      timeline: { type: Type.STRING },
+      mentorAdvice: { type: Type.STRING },
+      learningTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+      recommendedProjects: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          required: ["title", "description", "keyDeliverables", "portfolioImpact"],
+          properties: {
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            keyDeliverables: { type: Type.ARRAY, items: { type: Type.STRING } },
+            portfolioImpact: { type: Type.STRING }
+          }
+        }
+      },
+      recommendedCertifications: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          required: ["name", "issuer", "relevance", "estimatedCost"],
+          properties: {
+            name: { type: Type.STRING },
+            issuer: { type: Type.STRING },
+            relevance: { type: Type.STRING },
+            estimatedCost: { type: Type.STRING }
+          }
+        }
+      },
+      recommendedTools: { type: Type.ARRAY, items: { type: Type.STRING } },
+      books: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          required: ["title", "author", "whyRead"],
+          properties: {
+            title: { type: Type.STRING },
+            author: { type: Type.STRING },
+            whyRead: { type: Type.STRING }
+          }
+        }
+      },
+      courses: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          required: ["title", "platform", "urlOrProvider", "type"],
+          properties: {
+            title: { type: Type.STRING },
+            platform: { type: Type.STRING },
+            urlOrProvider: { type: Type.STRING },
+            type: { type: Type.STRING }
+          }
+        }
+      },
+      practicePlatforms: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          required: ["name", "focus"],
+          properties: {
+            name: { type: Type.STRING },
+            focus: { type: Type.STRING }
+          }
+        }
+      },
+      interviewPreparation: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          required: ["topic", "keyQuestions", "strategy"],
+          properties: {
+            topic: { type: Type.STRING },
+            keyQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            strategy: { type: Type.STRING }
+          }
+        }
+      },
+      portfolioTasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+      networkingSuggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+      jobApplicationStrategy: { type: Type.ARRAY, items: { type: Type.STRING } },
+      milestones: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          required: ["id", "title", "description", "completed", "priority"],
+          properties: {
+            id: { type: Type.STRING },
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            completed: { type: Type.BOOLEAN },
+            priority: { type: Type.STRING },
+            userNotes: { type: Type.STRING }
+          }
+        }
+      }
+    };
 
     const response = await generateWithFallback(ai, {
       contents: prompt,
@@ -1204,45 +1817,45 @@ Provide highly actionable tasks. Each task must specify a 'priority' of High, Me
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
-          required: ["plan7Day", "plan30Day", "plan90Day"],
+          required: ["userAnalysis", "stages"],
           properties: {
-            plan7Day: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ["dayOrWeek", "taskName", "priority", "description"],
-                properties: {
-                  dayOrWeek: { type: Type.STRING, description: "e.g., 'Day 1-2', 'Day 3', etc." },
-                  taskName: { type: Type.STRING },
-                  priority: { type: Type.STRING, description: "Must be 'High', 'Medium', or 'Low'" },
-                  description: { type: Type.STRING, description: "Actionable details with resource/strategy recommendations" }
-                }
+            userAnalysis: {
+              type: Type.OBJECT,
+              required: [
+                "currentCareerStage",
+                "currentSkills",
+                "missingSkills",
+                "targetProfession",
+                "skillGapSummary",
+                "skillGapScore",
+                "resumeStrengthScore",
+                "resumeStrengthSummary",
+                "interviewReadinessScore",
+                "interviewReadinessSummary",
+                "mentorExecutiveVerdict"
+              ],
+              properties: {
+                currentCareerStage: { type: Type.STRING },
+                currentSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                missingSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                targetProfession: { type: Type.STRING },
+                skillGapSummary: { type: Type.STRING },
+                skillGapScore: { type: Type.INTEGER },
+                resumeStrengthScore: { type: Type.INTEGER },
+                resumeStrengthSummary: { type: Type.STRING },
+                interviewReadinessScore: { type: Type.INTEGER },
+                interviewReadinessSummary: { type: Type.STRING },
+                mentorExecutiveVerdict: { type: Type.STRING }
               }
             },
-            plan30Day: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ["dayOrWeek", "taskName", "priority", "description"],
-                properties: {
-                  dayOrWeek: { type: Type.STRING, description: "e.g., 'Week 1', 'Week 2', etc." },
-                  taskName: { type: Type.STRING },
-                  priority: { type: Type.STRING },
-                  description: { type: Type.STRING }
-                }
-              }
-            },
-            plan90Day: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ["dayOrWeek", "taskName", "priority", "description"],
-                properties: {
-                  dayOrWeek: { type: Type.STRING, description: "e.g., 'Month 2', 'Month 3', etc." },
-                  taskName: { type: Type.STRING },
-                  priority: { type: Type.STRING },
-                  description: { type: Type.STRING }
-                }
+            stages: {
+              type: Type.OBJECT,
+              required: ["beginner", "intermediate", "advanced", "expert"],
+              properties: {
+                beginner: { type: Type.OBJECT, properties: stageProperties },
+                intermediate: { type: Type.OBJECT, properties: stageProperties },
+                advanced: { type: Type.OBJECT, properties: stageProperties },
+                expert: { type: Type.OBJECT, properties: stageProperties }
               }
             }
           }
@@ -1251,7 +1864,72 @@ Provide highly actionable tasks. Each task must specify a 'priority' of High, Me
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    const parsedData = parseGeminiJson(text);
+
+    // Build enterprise roadmap structure
+    const enterpriseRoadmap = {
+      generatedAt: new Date().toISOString(),
+      inputs: {
+        education,
+        currentSkills: Array.isArray(currentSkills) ? currentSkills : [currentSkills],
+        experience,
+        careerGoal,
+        targetRole,
+        country,
+        preferredIndustry,
+        learningSpeed,
+        availableTime,
+        budget,
+        existingResumeText
+      },
+      userAnalysis: parsedData.userAnalysis || {
+        currentCareerStage: "Early Career Specialist",
+        currentSkills: Array.isArray(currentSkills) ? currentSkills : ["Software Fundamentals"],
+        missingSkills: ["System Design", "Cloud Infrastructure", "CI/CD"],
+        targetProfession: `${targetRole} in ${preferredIndustry}`,
+        skillGapSummary: "Identified minor gaps in distributed systems and cloud production tools.",
+        skillGapScore: 35,
+        resumeStrengthScore: 78,
+        resumeStrengthSummary: "Strong educational foundation with relevant project highlights.",
+        interviewReadinessScore: 72,
+        interviewReadinessSummary: "Good technical concepts; practice structured STAR behavioral responses.",
+        mentorExecutiveVerdict: `Your profile for ${targetRole} in ${country} shows high potential. Focus on executing the 4-stage milestones.`
+      },
+      stages: parsedData.stages || {}
+    };
+
+    // Synthesize plan7Day, plan30Day, plan90Day for legacy compatibility
+    const begMilestones = parsedData.stages?.beginner?.milestones || [];
+    const intMilestones = parsedData.stages?.intermediate?.milestones || [];
+    const advMilestones = parsedData.stages?.advanced?.milestones || [];
+
+    const plan7Day = begMilestones.map((m: any, i: number) => ({
+      dayOrWeek: `Day ${i + 1}`,
+      taskName: m.title || "Beginner Milestone Task",
+      priority: m.priority || "High",
+      description: m.description || ""
+    }));
+
+    const plan30Day = intMilestones.map((m: any, i: number) => ({
+      dayOrWeek: `Week ${i + 1}`,
+      taskName: m.title || "Intermediate Milestone Task",
+      priority: m.priority || "High",
+      description: m.description || ""
+    }));
+
+    const plan90Day = advMilestones.map((m: any, i: number) => ({
+      dayOrWeek: `Month ${i + 1}`,
+      taskName: m.title || "Advanced Milestone Task",
+      priority: m.priority || "Medium",
+      description: m.description || ""
+    }));
+
+    res.json({
+      plan7Day,
+      plan30Day,
+      plan90Day,
+      enterpriseRoadmap
+    });
   } catch (error) {
     handleApiError(res, error);
   }
@@ -1306,7 +1984,7 @@ Provide a JSON array of project recommendations. Each project must have:
     });
 
     const text = response.text || "[]";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
@@ -1367,25 +2045,36 @@ Generate:
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
 });
 
 // ------------------------------------------------------------------------
-// API ENDPOINT 6: Interactive Interview Questions
+// API ENDPOINT 6: Interactive Enterprise Interview Questions Engine
 // ------------------------------------------------------------------------
 app.post("/api/placement/interview/questions", async (req, res) => {
   try {
-    const { profile, role, excludeQuestions = [], sessionContext, performanceTrends, seed } = req.body;
+    const { 
+      profile, 
+      role, 
+      interviewType = "Technical", 
+      experienceLevel = "Experienced Professional", 
+      domain = "Software Engineering",
+      questionCount = 3,
+      excludeQuestions = [], 
+      sessionContext, 
+      performanceTrends, 
+      seed 
+    } = req.body;
     const ai = getAI();
 
-    // Select a few random skills to focus on if possible to increase question variety
-    const techSkills = profile.technicalSkills || [];
+    // Select skills or domain focus
+    const techSkills = profile?.technicalSkills || [];
     const chosenTech = techSkills.length > 0 
       ? techSkills.sort(() => 0.5 - Math.random()).slice(0, 3).join(", ") 
-      : "general industry tech stacks";
+      : "domain fundamentals and best practices";
 
     let dynamicPromptDetails = "";
     if (sessionContext) {
@@ -1393,56 +2082,61 @@ app.post("/api/placement/interview/questions", async (req, res) => {
 SESSION ROTATION CONTEXT:
 - Active Session ID: ${sessionContext.sessionId || "N/A"}
 - Previous Session IDs: ${sessionContext.previousSessionIds?.join(", ") || "None"}
-Utilize the session rotation context to completely pivot and rotate through different question categories. Do NOT repeat or duplicate the structure or core topics of any past interviews.`;
+Ensure non-repetitive scenario generation across sessions.`;
     }
 
     if (performanceTrends) {
       dynamicPromptDetails += `
 CANDIDATE PERFORMANCE TRENDS:
-- Total Mock Rounds Completed: ${performanceTrends.totalSessions || 0}
+- Total Rounds Completed: ${performanceTrends.totalSessions || 0}
 - Average Overall Score: ${performanceTrends.averageOverallScore !== null ? performanceTrends.averageOverallScore + "%" : "No score yet"}
-- Average Technical Depth: ${performanceTrends.averageTechnicalDepth !== null ? performanceTrends.averageTechnicalDepth + "%" : "No score yet"}
-- Average Communication Clarity: ${performanceTrends.averageCommunicationClarity !== null ? performanceTrends.averageCommunicationClarity + "%" : "No score yet"}
 - Suggested Adaptive Difficulty: ${performanceTrends.suggestedDifficulty || "Intermediate"}
-CRITICAL REQUIREMENT: Adapt the interview question difficulty dynamically to this suggested level. 
-- Beginner: Focus on straightforward fundamental scenarios, simple bug fixing, or basic STAR achievements.
-- Intermediate: Challenge them with operational problem-solving, mid-sized features, or communication gaps.
-- Advanced: Challenge them with senior-level system design, complex distributed trade-offs, catastrophic outages, or multi-stakeholder conflicts.`;
+Adapt question complexity accordingly.`;
     }
 
     if (seed) {
-      dynamicPromptDetails += `
-RANDOMIZATION SEED STIMULUS:
-- Unique Session Random Seed: ${seed}
-Utilize this seed to randomly choose distinct situational themes, business niches (e.g. Fintech, Healthcare, E-commerce, SaaS), or technological scenarios. Ensure maximum variability in every generation.`;
+      dynamicPromptDetails += `\n- Unique Session Random Seed: ${seed}`;
     }
 
-    const prompt = `You are an elite Recruiter and Senior Technical HR Director simulating an interview for a ${role || "Target Role"}.
-Based on the student's background, generate exactly 3 custom-crafted, highly specific, and completely unique interview questions that test their actual experiences, skills, gaps, or traits.
-Do NOT generate generic, cliché, or repetitive questions (e.g., avoid standard introductory questions like 'tell me about yourself' or basic 'why do you want this role'). Produce unique, scenario-based, problem-solving, or deep technical questions.
+    const countToGenerate = Math.min(7, Math.max(1, Number(questionCount) || 3));
 
-CRITICAL REQUIREMENT: To guarantee maximum entropy, complete uniqueness, and rotation of these questions, you MUST NOT generate any questions similar to the following previously asked questions:
+    const prompt = `You are a World-Class Executive Recruiter and Chief Interview Assessment Officer.
+You are conducting a high-stakes ${interviewType.toUpperCase()} INTERVIEW for the target role: "${role || "Target Role"}".
+- CANDIDATE LEVEL: ${experienceLevel}
+- DOMAIN / INDUSTRY: ${domain}
+- INTERVIEW TYPE: ${interviewType} (HR, Technical, Behavioural, Leadership, Government, Domain-specific)
+
+Generate exactly ${countToGenerate} custom-crafted, highly realistic, role-specific, and experience-appropriate interview questions.
+
+TYPE SPECIFIC GUIDELINES:
+- HR: Assess cultural fit, career progression, motivation, conflict resolution, salary alignment, and workplace ethics.
+- TECHNICAL: Assess system architecture, problem solving, domain-specific coding or logic, debugging, trade-offs, and optimization.
+- BEHAVIOURAL: Assess past achievements, crisis handling, STAR framework stories, cross-team friction, mistakes, and resilience.
+- LEADERSHIP: Assess strategy, vision, mentoring, budget/resource allocation, executive decisions, and organizational impact.
+- GOVERNMENT: Assess public policy compliance, official protocol, administrative integrity, regulatory enforcement, ethics, and multi-stakeholder governance.
+- DOMAIN-SPECIFIED (${domain}): Assess domain-specific frameworks, regulatory standards, specialized tools, and real-world operational scenarios pertinent to ${domain}.
+
+LEVEL SPECIFIC GUIDELINES:
+- Freshers: Focus on core fundamentals, academic/personal project ownership, eagerness to learn, logical problem solving, and scenario adaptability.
+- Experienced Professionals: Focus on senior execution, architectural trade-offs, mentoring others, handling catastrophic edge cases, business outcomes, and leadership.
+
+PREVIOUS QUESTIONS TO EXCLUDE:
 ${excludeQuestions.length > 0 ? excludeQuestions.map((q: string) => `- "${q}"`).join("\n") : "- None"}
 
-For this round, try to focus specifically on challenges involving: ${chosenTech}.
-Inject a unique random theme or scenario (e.g. system design challenges, sudden product failures, scaling challenges, ethical conflicts, team resource crunches, or complex logic troubleshooting).
-Dynamic Signature to prevent cached completions: [Random Signature: ${Math.random().toString(36).substring(7)} - Timestamp: ${Date.now()}]
+CANDIDATE BACKGROUND:
+- Degree/Branch: ${profile?.degree || "Degree"} in ${profile?.branch || "Field"}
+- Technical/Core Skills: ${techSkills.join(", ") || "Core Skills"}
+- Non-Tech Skills: ${(profile?.nonTechnicalSkills || []).join(", ")}
+- Projects/Experience: ${profile?.projects || profile?.internships || "Standard background"}
 ${dynamicPromptDetails}
 
-STUDENT BG:
-- Degree/Branch: ${profile.degree} in ${profile.branch}
-- Technical Skills: ${techSkills.join(", ")}
-- Non-Tech Skills: ${(profile.nonTechnicalSkills || []).join(", ")}
-- Projects: ${profile.projects || "Not specified"}
-- Gaps/Constraints: ${profile.constraints || "None"}
-
-Return exactly 3 questions with their types and what the interviewer expects to hear in a successful answer.
+Return JSON array of exactly ${countToGenerate} question objects.
 `;
 
     const response = await generateWithFallback(ai, {
       contents: prompt,
       config: {
-        temperature: 0.98, // Slightly higher for more creative variety
+        temperature: 0.95,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -1452,8 +2146,11 @@ Return exactly 3 questions with their types and what the interviewer expects to 
             properties: {
               id: { type: Type.STRING },
               question: { type: Type.STRING },
-              type: { type: Type.STRING, description: "Must be 'technical', 'behavioral', or 'hr'" },
-              expectedFocus: { type: Type.STRING, description: "What key markers they are grading on" }
+              type: { type: Type.STRING, description: "One of: 'technical', 'behavioral', 'hr', 'leadership', 'government', 'domain'" },
+              interviewType: { type: Type.STRING },
+              experienceLevel: { type: Type.STRING },
+              domainCategory: { type: Type.STRING },
+              expectedFocus: { type: Type.STRING, description: "Key grading rubric and expected response markers" }
             }
           }
         }
@@ -1461,51 +2158,61 @@ Return exactly 3 questions with their types and what the interviewer expects to 
     });
 
     const text = response.text || "[]";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
 });
 
 // ------------------------------------------------------------------------
-// API ENDPOINT 7: Interactive Interview Answer Evaluator
+// API ENDPOINT 7: Enterprise 8-Dimension Answer Evaluator
 // ------------------------------------------------------------------------
 app.post("/api/placement/interview/evaluate", async (req, res) => {
   try {
-    const { question, answer, type, expectedFocus, verbalMetrics } = req.body;
+    const { question, answer, type, expectedFocus, verbalMetrics, interviewType, experienceLevel, domain } = req.body;
     const ai = getAI();
 
     let verbalPromptDetails = "";
     if (verbalMetrics) {
       const fillers = verbalMetrics.fillerCounts || {};
       verbalPromptDetails = `
-CANDIDATE SPOKEN FLUENCY METRICS (FROM LIVE VOICE TRANSCRIPTION):
-- Filler word occurrences: Um: ${fillers.um || 0}, Uh: ${fillers.uh || 0}, Like: ${fillers.like || 0}, Actually: ${fillers.actually || 0}, Basically: ${fillers.basically || 0}, So: ${fillers.so || 0}
+CANDIDATE LIVE SPOKEN FLUENCY METRICS:
+- Filler words count: Um: ${fillers.um || 0}, Uh: ${fillers.uh || 0}, Like: ${fillers.like || 0}, Actually: ${fillers.actually || 0}, Basically: ${fillers.basically || 0}, So: ${fillers.so || 0}
 - Spoken Confidence Level: ${verbalMetrics.sentimentLabel || "N/A"} (${verbalMetrics.sentimentScore || 50}%)
-- Speaking Speed: ${verbalMetrics.wordsPerMinute || 0} Words Per Minute (WPM)
-- Total Conversational Hesitation Pauses: ${verbalMetrics.hesitationDuration || 0} seconds
+- Speaking Speed: ${verbalMetrics.wordsPerMinute || 0} WPM
+- Hesitation Silence Gaps: ${verbalMetrics.hesitationDuration || 0}s
 
-Please incorporate these specific verbal metrics, speaking speed, and silence hesitations into your detailed evaluation feedback. Assess the candidate's "confident fluency" (e.g., whether they speak too fast or too slow, take long silent gaps, or exhibit heavy filler clutter). Give them highly direct tips on how to slow down, pace themselves, eliminate fillers, and sound 10x more polished.
+Incorporate these speech metrics into your evaluation and actionable feedback.
 `;
     }
 
-    const prompt = `You are a strict, top-tier HR Recruiter evaluating a candidate's response.
-Evaluate the answer using professional HR methodologies (including STAR for behavioral/situational).
-Be encouraging but highly actionable. Improve the answer and give the candidate a clear score (0-100).
+    const prompt = `You are a Senior Assessment Director & HR Executive conducting a comprehensive evaluation of a candidate's answer.
+    
+QUESTION ASKED: "${question}"
+QUESTION TYPE/CATEGORY: "${type || interviewType || "Interview Question"}"
+CANDIDATE LEVEL: "${experienceLevel || "Professional"}"
+DOMAIN: "${domain || "General Industry"}"
+EXPECTED MARKERS: "${expectedFocus || "Logical reasoning, clarity, accuracy"}"
 
-QUESTION: "${question}"
-CANDIDATE ANSWER: "${answer}"
-QUESTION TYPE: "${type}"
-EXPECTED MARKERS: "${expectedFocus}"
+CANDIDATE'S ANSWER:
+"${answer}"
 ${verbalPromptDetails}
 
-Evaluate and return:
-1. "score": Number from 0 to 100 representing readiness of this answer.
-2. "feedback": What was good, what was missing, and what filler words or tone to fix (make sure to reference their actual spoken fluency and filler words if any were detected).
-3. "suggestedStarAnswer": A fully polished, natural-sounding rewrite of their answer using the STAR structure (Situation, Task, Action, Result) if behavioral, or clean direct logic if technical/HR. It should stay truthful to what the student described, but make it sound 10x more polished, confident, and professional.
-4. "technicalDepth": An integer score from 0 to 100 evaluating the candidate's display of deep, clear technical reasoning, precision, and mastery of core engineering/domain concepts.
-5. "communicationClarity": An integer score from 0 to 100 evaluating the structure, articulation, fluency, and readability of the response.
-6. "confidence": An integer score from 0 to 100 evaluating the candidate's posture, authority, conviction, and directness.
+Evaluate the response rigorously across 8 SPECIFIC DIMENSIONS (Each an Integer Score from 0 to 100):
+1. "communication": Structure, clarity, articulation, pace, and readability.
+2. "technicalAccuracy": Precision of technical, domain, procedural, or factual claims.
+3. "confidence": Authority, posture, lack of hesitation, and conviction.
+4. "grammar": Sentence structure, vocabulary, syntax correctness, and polished expression.
+5. "professionalism": Executive tone, etiquette, conciseness, and appropriateness.
+6. "problemSolving": Analytical depth, structured logic, edge case handling, and strategy.
+7. "depthOfKnowledge": Mastery of subject matter, nuance, and real-world execution insight.
+8. "behaviour": Alignment with STAR method, ownership, team spirit, and mistake recovery.
+
+Provide:
+- "score": Overall composite score (0-100)
+- "feedback": Concise, highly constructive feedback highlighting strengths, critical gaps, and verbal/pacing tips.
+- "suggestedStarAnswer": A fully rewritten, highly polished 10x response using STAR format or clean executive logic.
+- The 8 dimension numerical scores (0-100).
 `;
 
     const response = await generateWithFallback(ai, {
@@ -1514,21 +2221,134 @@ Evaluate and return:
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
-          required: ["score", "feedback", "suggestedStarAnswer", "technicalDepth", "communicationClarity", "confidence"],
+          required: [
+            "score", 
+            "feedback", 
+            "suggestedStarAnswer", 
+            "communication", 
+            "technicalAccuracy", 
+            "confidence", 
+            "grammar", 
+            "professionalism", 
+            "problemSolving", 
+            "depthOfKnowledge", 
+            "behaviour"
+          ],
           properties: {
             score: { type: Type.INTEGER },
             feedback: { type: Type.STRING },
             suggestedStarAnswer: { type: Type.STRING },
-            technicalDepth: { type: Type.INTEGER, description: "Score from 0 to 100" },
-            communicationClarity: { type: Type.INTEGER, description: "Score from 0 to 100" },
-            confidence: { type: Type.INTEGER, description: "Score from 0 to 100" }
+            communication: { type: Type.INTEGER },
+            technicalAccuracy: { type: Type.INTEGER },
+            confidence: { type: Type.INTEGER },
+            grammar: { type: Type.INTEGER },
+            professionalism: { type: Type.INTEGER },
+            problemSolving: { type: Type.INTEGER },
+            depthOfKnowledge: { type: Type.INTEGER },
+            behaviour: { type: Type.INTEGER },
+            // Legacy fallbacks
+            technicalDepth: { type: Type.INTEGER },
+            communicationClarity: { type: Type.INTEGER }
           }
         }
       }
     });
 
-    const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    const parsed = parseGeminiJson(response.text || "{}");
+    // Ensure legacy shortcuts exist
+    if (parsed) {
+      parsed.technicalDepth = parsed.technicalAccuracy ?? parsed.depthOfKnowledge ?? 70;
+      parsed.communicationClarity = parsed.communication ?? 70;
+    }
+    res.json(parsed);
+  } catch (error) {
+    handleApiError(res, error);
+  }
+});
+
+// ------------------------------------------------------------------------
+// API ENDPOINT 7.8: Final Enterprise Interview Report Generator
+// ------------------------------------------------------------------------
+app.post("/api/placement/interview/report", async (req, res) => {
+  try {
+    const { session, profile, role, category, experienceLevel, domain } = req.body;
+    const ai = getAI();
+
+    const prompt = `You are the Chief Talent Officer and AI Assessment Director of Vorynexa Enterprise AI Interview Studio.
+Generate an executive final evaluation report for a completed candidate interview session.
+
+SESSION METADATA:
+- Target Role: ${role || "Candidate Role"}
+- Category: ${category || "General"}
+- Candidate Level: ${experienceLevel || "Experienced Professional"}
+- Domain: ${domain || "General"}
+- Candidate Name: ${profile?.name || "Candidate"}
+
+QUESTIONS & ANSWERS HISTORY:
+${JSON.stringify(session?.chatHistory || [])}
+
+Generate an executive interview report containing:
+1. "overallScore": 0-100 aggregated readiness score.
+2. "hiringRecommendation": One of "Strongly Recommend Hire", "Hire with Coaching", "Borderline / Re-evaluate", "Not Recommended at Present".
+3. "executiveSummary": A 3-4 sentence comprehensive evaluation of candidate performance.
+4. "keyStrengths": Array of 3-4 distinct strengths observed.
+5. "criticalImprovementAreas": Array of 3-4 high-impact areas for candidate improvement.
+6. "dimensionScores": Object with overall average scores (0-100) for communication, technicalAccuracy, confidence, grammar, professionalism, problemSolving, depthOfKnowledge, behaviour.
+7. "actionPlan": Array of 3 actionable steps to master upcoming real interviews.
+`;
+
+    const response = await generateWithFallback(ai, {
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          required: [
+            "overallScore",
+            "hiringRecommendation",
+            "executiveSummary",
+            "keyStrengths",
+            "criticalImprovementAreas",
+            "dimensionScores",
+            "actionPlan"
+          ],
+          properties: {
+            overallScore: { type: Type.INTEGER },
+            hiringRecommendation: { type: Type.STRING },
+            executiveSummary: { type: Type.STRING },
+            keyStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+            criticalImprovementAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
+            dimensionScores: {
+              type: Type.OBJECT,
+              required: [
+                "communication",
+                "technicalAccuracy",
+                "confidence",
+                "grammar",
+                "professionalism",
+                "problemSolving",
+                "depthOfKnowledge",
+                "behaviour"
+              ],
+              properties: {
+                communication: { type: Type.INTEGER },
+                technicalAccuracy: { type: Type.INTEGER },
+                confidence: { type: Type.INTEGER },
+                grammar: { type: Type.INTEGER },
+                professionalism: { type: Type.INTEGER },
+                problemSolving: { type: Type.INTEGER },
+                depthOfKnowledge: { type: Type.INTEGER },
+                behaviour: { type: Type.INTEGER }
+              }
+            },
+            actionPlan: { type: Type.ARRAY, items: { type: Type.STRING } }
+          }
+        }
+      }
+    });
+
+    const parsed = parseGeminiJson(response.text || "{}");
+    res.json(parsed);
   } catch (error) {
     handleApiError(res, error);
   }
@@ -1656,7 +2476,7 @@ Generate:
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
@@ -1707,7 +2527,7 @@ Each item should have a concrete practical exercise the student can do right now
     });
 
     const text = response.text || "[]";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }
@@ -1772,7 +2592,7 @@ Return a cohesive JSON object.
     });
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    res.json(parseGeminiJson(text));
   } catch (error) {
     handleApiError(res, error);
   }

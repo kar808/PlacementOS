@@ -8,9 +8,37 @@
   }
 }
 
+:root {
+  color-scheme: dark;
+}
+
+/* Light theme overrides for high contrast SaaS aesthetic */
+.light-theme {
+  color-scheme: light;
+  --bg-main: #f8fafc;
+  --text-main: #0f172a;
+}
+
+.light-theme body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.light-theme ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.light-theme ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+.light-theme ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 body {
   background-color: #050505;
   color: #e5e7eb;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Custom scrollbars for clean bento aesthetic */
@@ -28,3 +56,24 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #333;
 }
+
+/* Typography & Focus ring refinements */
+*:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Linear-style subtle grid background */
+.bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.light-theme .bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+}
+
