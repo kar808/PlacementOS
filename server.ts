@@ -701,7 +701,7 @@ const handleApiError = (res: express.Response, error: any) => {
 // ------------------------------------------------------------------------
 // API ENDPOINT 1: Full placement analysis & Enterprise Career Intelligence Engine
 // ------------------------------------------------------------------------
-app.post("/api/placement/analyze", async (req, res) => {
+app.post(["/api/placement/analyze", "/placement/analyze"], async (req, res) => {
   try {
     const profile = req.body;
     const ai = getAI();
@@ -1044,7 +1044,7 @@ Provide a single cohesive JSON object matching the required schema. Ensure all n
 // ------------------------------------------------------------------------
 // API ENDPOINT 2: Resume & LinkedIn Content Builder
 // ------------------------------------------------------------------------
-app.post("/api/placement/resume-optimize", async (req, res) => {
+app.post(["/api/placement/resume-optimize", "/placement/resume-optimize"], async (req, res) => {
   try {
     const { profile, jobDescription, fileContent, fileText, fileBase64, mimeType } = req.body;
     const ai = getAI();
@@ -1151,7 +1151,7 @@ Please evaluate and provide:
 // ------------------------------------------------------------------------
 // API ENDPOINT 2A: Universal Profession Classification & Intelligence Engine (UPIE)
 // ------------------------------------------------------------------------
-app.post("/api/placement/profession-classify", async (req, res) => {
+app.post(["/api/placement/profession-classify", "/placement/profession-classify"], async (req, res) => {
   try {
     const { targetRole, profile, domainHint, customDescription, userAnswers } = req.body;
     const ai = getAI();
@@ -1296,7 +1296,7 @@ CRITICAL RULE: MAINTAIN STRICT ROLE CONSISTENCY. NEVER CONFUSE ONE PROFESSION WI
 // ------------------------------------------------------------------------
 // API ENDPOINT 2B: Enterprise AI Resume Intelligence Engine
 // ------------------------------------------------------------------------
-app.post("/api/placement/resume-autobuild", async (req, res) => {
+app.post(["/api/placement/resume-autobuild", "/placement/resume-autobuild"], async (req, res) => {
   try {
     const { profile, targetRole, strategy, userAnswers } = req.body;
     const ai = getAI();
@@ -1465,13 +1465,26 @@ UNIVERSAL PROFESSION & TRUTHFULNESS DIRECTIVES:
 // ------------------------------------------------------------------------
 // API ENDPOINT 2C: Universal Enterprise Resume & Multimodal Document Analysis Engine
 // ------------------------------------------------------------------------
-app.post("/api/placement/analyze-file", async (req, res) => {
+app.post(["/api/placement/analyze-file", "/placement/analyze-file"], async (req, res) => {
   try {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [UPLOAD STARTED] /api/placement/analyze-file`);
     const { items, profile, targetRole } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.warn(`[${timestamp}] [UPLOAD WARNING] No file items attached`);
+      return res.status(400).json({
+        success: false,
+        isResume: false,
+        message: "No document attached. Please upload a valid resume in PDF, DOCX, TXT, or scan format."
+      });
+    }
+
+    console.log(`[${timestamp}] [PARSING STARTED] Parsing ${items.length} items for analysis...`);
     const ai = getAI();
 
     const parts: any[] = [];
-    let promptText = `You are Vorynexa's Enterprise Resume Analysis & Audit Engine—acting as a Senior Talent Acquisition Director, ATS Machine Parser Specialist, and Multimodal Document Classifier.
+    let promptText = `You are Vorynexa's Enterprise Resume Analysis & Audit Engine—acting as a Senior Talent Acquisition Director, ATS Machine Parser Specialist, Universal Profession Classification Specialist (UPCS), and Multimodal Document Classifier.
 
 Task: Analyze the attached document(s), resume scans/photographs, or text files (PDF, DOCX, TXT, PNG, JPG).
 
@@ -1481,28 +1494,40 @@ Candidate Context:
 
 CRITICAL STEP 1: VALIDATION CHECK (IS THIS A RESUME?)
 - Evaluate whether the uploaded document is a valid resume, CV, curriculum vitae, professional bio, or candidate work profile.
+- Look for structural signals: Name, Contact information, Education, Experience, Skills, Projects, Certifications, Headings (e.g. Work History, Education, Technical Skills, Executive Summary).
 - IF THE DOCUMENT IS NOT A RESUME (e.g. it is a textbook page, invoice, code snippet, assignment, recipe, general news article, random photo, or unrelated document):
   - Set "isResume": false
-  - Set "nonResumeReason": "This document does not appear to be a resume. Please upload a valid resume. (Detected: [Brief description of what was detected])"
-  - Set "overallScore": 0, "atsScore": 0, "professionalismScore": 0
+  - Set "nonResumeReason": "This document does not appear to be a professional resume. Please upload a valid resume."
+  - Set "overallScore": 0, "atsScore": 0, "grammarScore": 0, "formattingScore": 0, "professionalismScore": 0, "careerReadinessScore": 0
   - Provide empty arrays/objects for extracted details. DO NOT HALLUCINATE OR INVENT APPLICANT PROFILE DATA.
 
 CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": true)
 - Set "isResume": true, "nonResumeReason": null
-- Extract: Full Name, Email, Phone, Location, LinkedIn, GitHub, Portfolio URL, Education (Degree, Institution, Year), Experience, Projects, Skills (Technical & Soft), Certifications, Achievements, and Career Summary.
+- Profession Classification: Detect candidate profession (Software, Nursing, Law, Medicine, Finance, Sales, HR, Teaching, Skilled Trades, etc.), Industry, Career Stage, Experience Level, Seniority, and Domain.
+- Extract: Full Name, Email, Phone, Location, Address, LinkedIn, GitHub, Portfolio URL, Career Summary, Education, Experience, Projects, Technical Skills, Soft Skills, Certifications, Achievements, Languages, Publications, Awards, and Missing Sections.
 - Calculate:
-  1. "overallScore": 0-100 comprehensive resume quality score.
-  2. "atsScore": 0-100 machine parser compatibility score.
-  3. "professionalismScore": 0-100 formatting, tone, grammar, and layout consistency rating.
+  1. "overallScore": 0-100 aggregated resume quality score.
+  2. "atsScore": 0-100 ATS machine parser compliance score.
+  3. "grammarScore": 0-100 grammar, syntax, active voice rating.
+  4. "formattingScore": 0-100 visual hierarchy, margin, typography, bullet structure rating.
+  5. "professionalismScore": 0-100 executive tone and polish rating.
+  6. "careerReadinessScore": 0-100 market readiness score for candidate's target profession.
+- Profession-Specific Tailoring: Ensure ALL recommendations, keywords, missing skills, projects, and certifications match the candidate's exact profession. NEVER mix software recommendations into nursing or legal resumes.
 - Perform:
   - "grammarAnalysis": Detail any typos, grammatical errors, or passive voice usage.
-  - "formattingAnalysis": Audit visual margins, density, bullet consistency, and typography.
-  - "keywordAnalysis": Identify strong present keywords and missing target role keywords.
-  - "resumeStrengthAnalysis": Highlight top competitive advantages.
-  - "industryFitAnalysis": Assess alignment with the target industry/field.
-  - "roleSuitability": Evaluate readiness for the specified target role.
+  - "formattingSuggestions": Audit visual margins, density, bullet consistency, and typography.
+  - "missingKeywords": Identify 5-8 missing target role ATS keywords.
+  - "missingSections": Identify any missing key sections (e.g., Work Experience, Quantified Metrics, Certifications).
+  - "keyStrengths": Highlight top competitive advantages.
+  - "criticalFlawsAndRisks": Highlight red flags or formatting errors.
+  - "industryFitAnalysis": Assess alignment with target industry.
+  - "roleSuitability": Evaluate readiness for target role with specific rationale.
   - "skillGapAnalysis": List critical missing skills or certifications.
   - "atsBulletImprovements": Provide 3-5 high-impact before/after bullet rewrites using the STAR method with metrics.
+  - "recommendedProjects": 2-3 profession-appropriate high-impact portfolio projects.
+  - "recommendedCertifications": 2-3 industry-recognized certifications for candidate's exact profession.
+  - "careerRoadmapSuggestions": 3 actionable career progression steps.
+  - "interviewPreparationTips": 3 key interview preparation topics and advice.
   - "overallVerdict": Direct, constructive senior recruiter evaluation.
   - "recommendedActionableSteps": 3-5 prioritized immediate improvement actions.
 `;
@@ -1515,6 +1540,9 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
             rawBase64 = rawBase64.split(";base64,")[1];
           }
           if (rawBase64) {
+            if (item.mimeType.startsWith("image/")) {
+              console.log(`[${timestamp}] [OCR STARTED] Image/Scan detected: ${item.name || "Image"}`);
+            }
             parts.push({
               inlineData: {
                 data: rawBase64,
@@ -1532,6 +1560,7 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
 
     parts.push({ text: promptText });
 
+    console.log(`[${timestamp}] [AI ANALYSIS STARTED] Sending multimodal prompt to Gemini...`);
     const response = await generateWithFallback(ai, {
       contents: parts,
       config: {
@@ -1543,13 +1572,17 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
             "nonResumeReason",
             "overallScore",
             "atsScore",
+            "grammarScore",
+            "formattingScore",
             "professionalismScore",
+            "careerReadinessScore",
             "fileTypeDetected",
             "extractedText",
             "extractedDetails",
             "keyStrengths",
             "criticalFlawsAndRisks",
             "missingKeywords",
+            "missingSections",
             "formattingSuggestions",
             "atsBulletImprovements",
             "overallVerdict",
@@ -1564,9 +1597,23 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
             nonResumeReason: { type: Type.STRING },
             overallScore: { type: Type.INTEGER },
             atsScore: { type: Type.INTEGER },
+            grammarScore: { type: Type.INTEGER },
+            formattingScore: { type: Type.INTEGER },
             professionalismScore: { type: Type.INTEGER },
+            careerReadinessScore: { type: Type.INTEGER },
             fileTypeDetected: { type: Type.STRING },
             extractedText: { type: Type.STRING },
+            professionClassification: {
+              type: Type.OBJECT,
+              properties: {
+                profession: { type: Type.STRING },
+                industry: { type: Type.STRING },
+                careerStage: { type: Type.STRING },
+                experienceLevel: { type: Type.STRING },
+                seniority: { type: Type.STRING },
+                domain: { type: Type.STRING },
+              },
+            },
             extractedDetails: {
               type: Type.OBJECT,
               properties: {
@@ -1574,6 +1621,7 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
                 email: { type: Type.STRING },
                 phone: { type: Type.STRING },
                 location: { type: Type.STRING },
+                address: { type: Type.STRING },
                 linkedin: { type: Type.STRING },
                 github: { type: Type.STRING },
                 portfolio: { type: Type.STRING },
@@ -1581,6 +1629,7 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
                 degree: { type: Type.STRING },
                 careerSummary: { type: Type.STRING },
                 technicalSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                softSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
                 projects: {
                   type: Type.ARRAY,
                   items: {
@@ -1606,11 +1655,15 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
                 },
                 certifications: { type: Type.ARRAY, items: { type: Type.STRING } },
                 achievements: { type: Type.ARRAY, items: { type: Type.STRING } },
+                languages: { type: Type.ARRAY, items: { type: Type.STRING } },
+                publications: { type: Type.ARRAY, items: { type: Type.STRING } },
+                awards: { type: Type.ARRAY, items: { type: Type.STRING } },
               },
             },
             keyStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
             criticalFlawsAndRisks: { type: Type.ARRAY, items: { type: Type.STRING } },
             missingKeywords: { type: Type.ARRAY, items: { type: Type.STRING } },
+            missingSections: { type: Type.ARRAY, items: { type: Type.STRING } },
             formattingSuggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
             grammarAnalysis: { type: Type.STRING },
             industryFitAnalysis: { type: Type.STRING },
@@ -1627,6 +1680,32 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
                 },
               },
             },
+            recommendedProjects: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  objective: { type: Type.STRING },
+                  tools: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  deliverables: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  resumeImpact: { type: Type.STRING },
+                },
+              },
+            },
+            recommendedCertifications: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  issuer: { type: Type.STRING },
+                  relevance: { type: Type.STRING },
+                },
+              },
+            },
+            careerRoadmapSuggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            interviewPreparationTips: { type: Type.ARRAY, items: { type: Type.STRING } },
             overallVerdict: { type: Type.STRING },
             recommendedActionableSteps: { type: Type.ARRAY, items: { type: Type.STRING } },
           },
@@ -1635,8 +1714,27 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
     });
 
     const text = response.text || "{}";
-    res.json(parseGeminiJson(text));
+    const parsedData = parseGeminiJson(text);
+    console.log(`[${timestamp}] [AI ANALYSIS FINISHED] Resume validation status: isResume=${parsedData.isResume}`);
+
+    if (parsedData.isResume === false) {
+      return res.json({
+        success: false,
+        isResume: false,
+        message: parsedData.nonResumeReason || "This document does not appear to be a professional resume. Please upload a valid resume.",
+        analysis: parsedData,
+        ...parsedData
+      });
+    }
+
+    return res.json({
+      success: true,
+      isResume: true,
+      analysis: parsedData,
+      ...parsedData
+    });
   } catch (error) {
+    console.error(`[${new Date().toISOString()}] [API FAILURE] analyze-file error:`, error);
     handleApiError(res, error);
   }
 });
@@ -1644,18 +1742,18 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
 // ------------------------------------------------------------------------
 // API ENDPOINT 3: Enterprise AI Career Roadmap Engine
 // ------------------------------------------------------------------------
-app.post("/api/placement/roadmap", async (req, res) => {
+app.post(["/api/placement/roadmap", "/placement/roadmap"], async (req, res) => {
   try {
     const reqData = req.body || {};
     const profile = reqData.profile || reqData;
     const ai = getAI();
 
     // Extract parameters or fallback to profile values
-    const education = reqData.education || `${profile.degree || "Bachelor Degree"} in ${profile.branch || "Computer Science"} (${profile.college || "University"})`;
-    const currentSkills = reqData.currentSkills || profile.technicalSkills || ["Programming", "Problem Solving"];
-    const experience = reqData.experience || profile.internships || profile.projects || "Student / Entry-level Experience";
-    const careerGoal = reqData.careerGoal || profile.careerGoals || "Achieve long-term engineering leadership and domain mastery";
-    const targetRole = reqData.targetRole || profile.targetRoles?.[0] || "Software Engineer";
+    const education = reqData.education || `${profile.degree || "Degree"} in ${profile.branch || "Field"} (${profile.college || "University"})`;
+    const currentSkills = reqData.currentSkills || profile.technicalSkills || ["Core Knowledge", "Problem Solving"];
+    const experience = reqData.experience || profile.internships || profile.projects || "Student / Early Career Experience";
+    const careerGoal = reqData.careerGoal || profile.careerGoals || "Achieve long-term professional leadership and domain mastery";
+    const targetRole = reqData.targetRole || profile.targetRoles?.[0] || "Professional Lead";
     const country = reqData.country || profile.location || profile.preferredLocation || "United States / Global";
     const preferredIndustry = reqData.preferredIndustry || "Technology & Software";
     const learningSpeed = reqData.learningSpeed || "Standard (1x)";
@@ -1664,50 +1762,63 @@ app.post("/api/placement/roadmap", async (req, res) => {
     const existingResumeText = reqData.existingResumeText || profile.resumeStatus || "";
 
     const prompt = `You are the Chief Career Intelligence Officer, HR Director, Principal AI Engineer, and Career Coach at Vorynexa.
-Generate a deeply personalized, ultra-rigorous, non-generic Enterprise Career Roadmap tailored specifically for this candidate.
+Generate a deeply personalized, ultra-rigorous, non-generic Universal Enterprise Career Roadmap tailored specifically for this candidate.
+
+CRITICAL DIRECTIVE ON PROFESSION ISOLATION & ACCURACY:
+- NEVER generate generic or software-only roadmaps if the user's role/industry is in Healthcare, Law, Teaching, Trades, Business, Finance, Creative, Agriculture, Government, Sports, etc.
+- STRICTLY ISOLATE RECOMMENDATIONS TO THE CANDIDATE'S PROFESSION & SUB-SPECIALIZATION:
+  * Medicine / Nursing / Healthcare: Include clinical rotations, USMLE/PLAB/NEXT/NCLEX licensing, EHR/EMR systems, HIPAA protocols, clinical trial research, hospital rounds. DO NOT include LeetCode or software frameworks.
+  * Law & Legal: Legal drafting, case law, Bar Exam prep, litigation strategy, Westlaw/LexisNexis, moot courts, judicial clerkships.
+  * Education & Teaching: Lesson planning, Bloom's Taxonomy, classroom management, Canvas/Blackboard LMS, teacher certification, pedagogical methods.
+  * Skilled Trades (Electrician, Plumber, HVAC): NEC National Electrical Code, PLC wiring, EPA 608, OSHA safety certification, blueprint reading, apprenticeship logs.
+  * Accounting & Finance: CPA/CFA exams, GAAP/IFRS standards, financial modeling in Excel, Bloomberg Terminal, audit trails, risk management.
+  * Software / AI / Engineering: System design, PyTorch/TensorFlow, MLOps, CI/CD pipelines, GitHub repositories, cloud infrastructure.
+  * Marketing & Growth: CAC/LTV metrics, Google Analytics 4, conversion rate optimization, campaign case studies, CRM workflows.
+  * Government & Civil Services: Civil services syllabus breakdown, public administration, policy draft analysis, general studies, interview board prep.
 
 CANDIDATE INPUT PROFILE:
+- Target Role: ${targetRole}
+- Preferred Industry: ${preferredIndustry}
 - Education: ${education}
 - Current Skills: ${Array.isArray(currentSkills) ? currentSkills.join(", ") : currentSkills}
-- Non-Technical Skills: ${profile.nonTechnicalSkills?.join(", ") || "Communication, Teamwork"}
+- Non-Technical Skills: ${profile.nonTechnicalSkills?.join(", ") || "Communication, Leadership, Critical Thinking"}
 - Experience & Projects: ${experience}
 - Long-Term Career Goal: ${careerGoal}
-- Target Role: ${targetRole}
 - Country / Market: ${country}
-- Preferred Industry: ${preferredIndustry}
 - Learning Pace: ${learningSpeed}
 - Available Time: ${availableTime}
 - Budget Tier: ${budget}
 - Existing Resume Snapshot: ${existingResumeText}
 
 INSTRUCTIONS:
-1. STEP 1: Perform candidate diagnostic analysis:
-   - Identify current career stage, current verified skills, top missing skills, target profession, skill gap summary + gap score (0-100), resume strength score (0-100) + summary, interview readiness score (0-100) + summary, and a personalized executive mentor verdict.
-2. STEP 2: Generate a complete 4-Stage Roadmap covering ALL 4 STAGES:
-   - "Beginner Stage" (Foundations, core tools, fundamental theory)
-   - "Intermediate Stage" (Architectures, real-world development, framework mastery)
-   - "Advanced Stage" (Enterprise scalability, system design, specialized domain skills)
-   - "Expert Stage" (Production optimization, leadership, executive interview prep, industry impact)
+1. STEP 1: Perform Candidate Classification & Diagnostic Analysis:
+   - Identify candidate's exact Industry, Profession, Sub-Specialization, Career Stage, Education Level, Experience Tier, and whether profile is Technical or Non-Technical.
+   - Compute classificationConfidenceScore (0-100). If confidence < 80, provide 2 concise clarification questions in clarificationQuestions array.
+   - Calculate Skill Gap Index Score (0-100), Resume Strength Score (0-100), ATS Keyword Compatibility Score (0-100), and Interview Readiness Score (0-100).
+   - Provide executive mentor verdict, realistic salary progression guidance, alternative career paths, common industry mistakes, current industry trends, emerging skills, and LinkedIn optimization tips.
+2. STEP 2: Generate a complete 4-Stage Execution Matrix covering ALL 4 STAGES:
+   - "Beginner Stage" (Foundations, core domain tools, fundamental theory, initial milestones)
+   - "Intermediate Stage" (Practices, real-world case studies/projects, framework/methodology mastery)
+   - "Advanced Stage" (Enterprise scale, complex problem solving, specialized domain mastery)
+   - "Expert Stage" (Optimization, leadership, executive interview prep, industry authority)
 
 FOR EVERY SINGLE STAGE (Beginner, Intermediate, Advanced, Expert), YOU MUST PROVIDE:
 - stageName
 - stageTitle
 - timeline (e.g. "Weeks 1-4 / 60 Hours")
 - mentorAdvice (Personalized direct coaching advice)
-- learningTopics (5+ specific topics)
+- learningTopics (5+ profession-specific topics)
 - recommendedProjects (2 detailed projects with title, description, keyDeliverables array, portfolioImpact)
 - recommendedCertifications (2 certifications with name, issuer, relevance, estimatedCost)
-- recommendedTools (5+ specific tools/frameworks)
+- recommendedTools (5+ specific profession tools)
 - books (2 top books with title, author, whyRead)
 - courses (2 courses with title, platform, urlOrProvider, type)
 - practicePlatforms (2 platforms with name, focus)
 - interviewPreparation (2 interview topics with topic, keyQuestions array, strategy)
-- portfolioTasks (3 portfolio tasks)
+- portfolioTasks (3 portfolio/case-study deliverables)
 - networkingSuggestions (3 actionable networking steps)
 - jobApplicationStrategy (3 job search tactics)
 - milestones (4-6 milestones with id, title, description, completed: false, priority: 'High'|'Medium'|'Low', userNotes)
-
-Also synthesize plan7Day, plan30Day, and plan90Day arrays from the milestones for backward compatibility.
 `;
 
     const stageProperties = {
@@ -1845,7 +1956,37 @@ Also synthesize plan7Day, plan30Day, and plan90Day arrays from the milestones fo
                 resumeStrengthSummary: { type: Type.STRING },
                 interviewReadinessScore: { type: Type.INTEGER },
                 interviewReadinessSummary: { type: Type.STRING },
-                mentorExecutiveVerdict: { type: Type.STRING }
+                mentorExecutiveVerdict: { type: Type.STRING },
+                classifiedIndustry: { type: Type.STRING },
+                classifiedProfession: { type: Type.STRING },
+                classifiedDomain: { type: Type.STRING },
+                classifiedSpecialisation: { type: Type.STRING },
+                classifiedSubSpecialization: { type: Type.STRING },
+                classifiedCareerLevel: { type: Type.STRING },
+                classifiedExperienceLevel: { type: Type.STRING },
+                classifiedCountry: { type: Type.STRING },
+                classifiedCareerGoal: { type: Type.STRING },
+                isTechnicalProfile: { type: Type.BOOLEAN },
+                classificationConfidenceScore: { type: Type.INTEGER },
+                clarificationQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                salaryProgressionGuidance: { type: Type.STRING },
+                alternativeCareerPaths: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      roleTitle: { type: Type.STRING },
+                      rationale: { type: Type.STRING },
+                      transitionEffort: { type: Type.STRING }
+                    }
+                  }
+                },
+                commonMistakesToAvoid: { type: Type.ARRAY, items: { type: Type.STRING } },
+                industryTrends: { type: Type.ARRAY, items: { type: Type.STRING } },
+                emergingSkills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                linkedInOptimizationTips: { type: Type.ARRAY, items: { type: Type.STRING } },
+                resumeImprovements: { type: Type.ARRAY, items: { type: Type.STRING } },
+                atsScore: { type: Type.INTEGER }
               }
             },
             stages: {
@@ -1884,16 +2025,21 @@ Also synthesize plan7Day, plan30Day, and plan90Day arrays from the milestones fo
       },
       userAnalysis: parsedData.userAnalysis || {
         currentCareerStage: "Early Career Specialist",
-        currentSkills: Array.isArray(currentSkills) ? currentSkills : ["Software Fundamentals"],
-        missingSkills: ["System Design", "Cloud Infrastructure", "CI/CD"],
+        currentSkills: Array.isArray(currentSkills) ? currentSkills : ["Foundational Skills"],
+        missingSkills: ["Domain Standards", "Advanced Practice"],
         targetProfession: `${targetRole} in ${preferredIndustry}`,
-        skillGapSummary: "Identified minor gaps in distributed systems and cloud production tools.",
+        skillGapSummary: `Identified growth areas for ${targetRole}.`,
         skillGapScore: 35,
         resumeStrengthScore: 78,
-        resumeStrengthSummary: "Strong educational foundation with relevant project highlights.",
+        resumeStrengthSummary: "Solid baseline profile.",
         interviewReadinessScore: 72,
-        interviewReadinessSummary: "Good technical concepts; practice structured STAR behavioral responses.",
-        mentorExecutiveVerdict: `Your profile for ${targetRole} in ${country} shows high potential. Focus on executing the 4-stage milestones.`
+        interviewReadinessSummary: "Good preparation; practice domain-specific scenario responses.",
+        mentorExecutiveVerdict: `Your profile for ${targetRole} in ${country} shows strong momentum. Follow the 4-stage execution matrix below.`,
+        classifiedIndustry: preferredIndustry,
+        classifiedProfession: targetRole,
+        classifiedSubSpecialization: "General Practice",
+        classificationConfidenceScore: 92,
+        atsScore: 78
       },
       stages: parsedData.stages || {}
     };
@@ -1935,10 +2081,49 @@ Also synthesize plan7Day, plan30Day, and plan90Day arrays from the milestones fo
   }
 });
 
+// Endpoint for Adaptive Sectional Roadmap Updates (Step 5)
+app.post(["/api/placement/roadmap-adaptive", "/placement/roadmap-adaptive"], async (req, res) => {
+  try {
+    const { existingRoadmap, updatedFields, targetStage } = req.body;
+    const ai = getAI();
+
+    const currentAnalysis = existingRoadmap?.userAnalysis || {};
+    const targetProfession = updatedFields?.targetRole || currentAnalysis.targetProfession || "Specialist";
+
+    const prompt = `You are Vorynexa's Adaptive Career Intelligence Engine.
+The candidate updated their profile parameters or completed new milestones.
+Re-compute the affected roadmap section while preserving the candidate's career trajectory.
+
+UPDATED CANDIDATE PARAMS:
+- Target Role: ${targetProfession}
+- Preferred Industry: ${updatedFields?.preferredIndustry || currentAnalysis.classifiedIndustry || "Industry"}
+- Updated Skills/Certifications: ${JSON.stringify(updatedFields?.currentSkills || currentAnalysis.currentSkills)}
+- Education/Experience: ${updatedFields?.education || ""} | ${updatedFields?.experience || ""}
+
+Regenerate the updated userAnalysis diagnostics AND the requested stage ("${targetStage || "all"}"). Ensure recommendations strictly align with ${targetProfession}.
+Return valid JSON adhering to the userAnalysis and stage structure.`;
+
+    const response = await generateWithFallback(ai, {
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const parsedData = parseGeminiJson(response.text || "{}");
+    res.json({
+      success: true,
+      updatedSection: parsedData
+    });
+  } catch (error) {
+    handleApiError(res, error);
+  }
+});
+
 // ------------------------------------------------------------------------
 // API ENDPOINT 4: Custom Project Generator
 // ------------------------------------------------------------------------
-app.post("/api/placement/projects", async (req, res) => {
+app.post(["/api/placement/projects", "/placement/projects"], async (req, res) => {
   try {
     const { profile, targetRole } = req.body;
     const ai = getAI();
@@ -1993,7 +2178,7 @@ Provide a JSON array of project recommendations. Each project must have:
 // ------------------------------------------------------------------------
 // API ENDPOINT 5: Job Search Strategy & Outreach Scripts
 // ------------------------------------------------------------------------
-app.post("/api/placement/job-search", async (req, res) => {
+app.post(["/api/placement/job-search", "/placement/job-search"], async (req, res) => {
   try {
     const profile = req.body;
     const ai = getAI();
@@ -2054,7 +2239,7 @@ Generate:
 // ------------------------------------------------------------------------
 // API ENDPOINT 6: Interactive Enterprise Interview Questions Engine
 // ------------------------------------------------------------------------
-app.post("/api/placement/interview/questions", async (req, res) => {
+app.post(["/api/placement/interview/questions", "/placement/interview/questions"], async (req, res) => {
   try {
     const { 
       profile, 
@@ -2165,9 +2350,9 @@ Return JSON array of exactly ${countToGenerate} question objects.
 });
 
 // ------------------------------------------------------------------------
-// API ENDPOINT 7: Enterprise 8-Dimension Answer Evaluator
+// API ENDPOINT 7: Enterprise 15-Dimension Answer Evaluator
 // ------------------------------------------------------------------------
-app.post("/api/placement/interview/evaluate", async (req, res) => {
+app.post(["/api/placement/interview/evaluate", "/placement/interview/evaluate"], async (req, res) => {
   try {
     const { question, answer, type, expectedFocus, verbalMetrics, interviewType, experienceLevel, domain } = req.body;
     const ai = getAI();
@@ -2198,21 +2383,32 @@ CANDIDATE'S ANSWER:
 "${answer}"
 ${verbalPromptDetails}
 
-Evaluate the response rigorously across 8 SPECIFIC DIMENSIONS (Each an Integer Score from 0 to 100):
+Evaluate the response rigorously across 15 SPECIFIC DIMENSIONS (Each an Integer Score from 0 to 100):
 1. "communication": Structure, clarity, articulation, pace, and readability.
-2. "technicalAccuracy": Precision of technical, domain, procedural, or factual claims.
+2. "grammar": Sentence structure, syntax correctness, and polished expression.
 3. "confidence": Authority, posture, lack of hesitation, and conviction.
-4. "grammar": Sentence structure, vocabulary, syntax correctness, and polished expression.
-5. "professionalism": Executive tone, etiquette, conciseness, and appropriateness.
-6. "problemSolving": Analytical depth, structured logic, edge case handling, and strategy.
-7. "depthOfKnowledge": Mastery of subject matter, nuance, and real-world execution insight.
-8. "behaviour": Alignment with STAR method, ownership, team spirit, and mistake recovery.
+4. "professionalism": Executive tone, etiquette, conciseness, and appropriateness.
+5. "domainKnowledge": Industry-specific subject mastery and principles.
+6. "technicalAccuracy": Precision of technical, domain, procedural, or factual claims.
+7. "behaviour": Alignment with STAR method, ownership, team spirit, and mistake recovery.
+8. "problemSolving": Analytical depth, structured logic, edge case handling, and strategy.
+9. "leadership": Vision, delegation, initiative, and leadership impact.
+10. "softSkills": Empathy, collaboration, active listening, and EQ.
+11. "vocabulary": Lexicon precision and domain terminology.
+12. "clarity": Directness, transparency, and clear articulation.
+13. "structure": STAR / PREP structural organization.
+14. "conciseness": Signal-to-noise ratio, brevity, and focus.
+15. "depthOfKnowledge": Mastery of subject matter and execution nuance.
 
 Provide:
 - "score": Overall composite score (0-100)
 - "feedback": Concise, highly constructive feedback highlighting strengths, critical gaps, and verbal/pacing tips.
-- "suggestedStarAnswer": A fully rewritten, highly polished 10x response using STAR format or clean executive logic.
-- The 8 dimension numerical scores (0-100).
+- "suggestedStarAnswer": A fully rewritten, highly polished response using STAR format or clean executive logic.
+- "keyStrengths": Array of 2-3 specific strengths in this response.
+- "keyWeaknesses": Array of 2-3 specific weaknesses in this response.
+- "improvementAreas": Array of 2-3 targeted actions for next time.
+- "learningResources": Array of 2 recommended topics/links/books to read.
+- Numerical scores (0-100) for all 15 dimensions.
 `;
 
     const response = await generateWithFallback(ai, {
@@ -2238,14 +2434,25 @@ Provide:
             score: { type: Type.INTEGER },
             feedback: { type: Type.STRING },
             suggestedStarAnswer: { type: Type.STRING },
+            keyStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+            keyWeaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            improvementAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
+            learningResources: { type: Type.ARRAY, items: { type: Type.STRING } },
             communication: { type: Type.INTEGER },
-            technicalAccuracy: { type: Type.INTEGER },
-            confidence: { type: Type.INTEGER },
             grammar: { type: Type.INTEGER },
+            confidence: { type: Type.INTEGER },
             professionalism: { type: Type.INTEGER },
-            problemSolving: { type: Type.INTEGER },
-            depthOfKnowledge: { type: Type.INTEGER },
+            domainKnowledge: { type: Type.INTEGER },
+            technicalAccuracy: { type: Type.INTEGER },
             behaviour: { type: Type.INTEGER },
+            problemSolving: { type: Type.INTEGER },
+            leadership: { type: Type.INTEGER },
+            softSkills: { type: Type.INTEGER },
+            vocabulary: { type: Type.INTEGER },
+            clarity: { type: Type.INTEGER },
+            structure: { type: Type.INTEGER },
+            conciseness: { type: Type.INTEGER },
+            depthOfKnowledge: { type: Type.INTEGER },
             // Legacy fallbacks
             technicalDepth: { type: Type.INTEGER },
             communicationClarity: { type: Type.INTEGER }
@@ -2259,6 +2466,13 @@ Provide:
     if (parsed) {
       parsed.technicalDepth = parsed.technicalAccuracy ?? parsed.depthOfKnowledge ?? 70;
       parsed.communicationClarity = parsed.communication ?? 70;
+      parsed.domainKnowledge = parsed.domainKnowledge ?? parsed.technicalAccuracy ?? 70;
+      parsed.leadership = parsed.leadership ?? 70;
+      parsed.softSkills = parsed.softSkills ?? 70;
+      parsed.vocabulary = parsed.vocabulary ?? 70;
+      parsed.clarity = parsed.clarity ?? parsed.communication ?? 70;
+      parsed.structure = parsed.structure ?? 70;
+      parsed.conciseness = parsed.conciseness ?? 70;
     }
     res.json(parsed);
   } catch (error) {
@@ -2269,7 +2483,7 @@ Provide:
 // ------------------------------------------------------------------------
 // API ENDPOINT 7.8: Final Enterprise Interview Report Generator
 // ------------------------------------------------------------------------
-app.post("/api/placement/interview/report", async (req, res) => {
+app.post(["/api/placement/interview/report", "/placement/interview/report"], async (req, res) => {
   try {
     const { session, profile, role, category, experienceLevel, domain } = req.body;
     const ai = getAI();
@@ -2288,13 +2502,19 @@ QUESTIONS & ANSWERS HISTORY:
 ${JSON.stringify(session?.chatHistory || [])}
 
 Generate an executive interview report containing:
-1. "overallScore": 0-100 aggregated readiness score.
-2. "hiringRecommendation": One of "Strongly Recommend Hire", "Hire with Coaching", "Borderline / Re-evaluate", "Not Recommended at Present".
-3. "executiveSummary": A 3-4 sentence comprehensive evaluation of candidate performance.
-4. "keyStrengths": Array of 3-4 distinct strengths observed.
-5. "criticalImprovementAreas": Array of 3-4 high-impact areas for candidate improvement.
-6. "dimensionScores": Object with overall average scores (0-100) for communication, technicalAccuracy, confidence, grammar, professionalism, problemSolving, depthOfKnowledge, behaviour.
-7. "actionPlan": Array of 3 actionable steps to master upcoming real interviews.
+1. "overallScore": 0-100 aggregated score.
+2. "interviewReadinessScore": 0-100 candidate readiness score for live market interviews.
+3. "hiringRecommendation": One of "Strongly Recommend Hire", "Hire with Coaching", "Borderline / Re-evaluate", "Not Recommended at Present".
+4. "executiveSummary": A 3-4 sentence comprehensive evaluation of candidate performance.
+5. "keyStrengths": Array of 3-4 distinct strengths observed.
+6. "keyWeaknesses": Array of 3-4 weaknesses identified across responses.
+7. "skillGaps": Array of 3-4 technical or soft skill gaps identified.
+8. "criticalImprovementAreas": Array of 3-4 high-impact areas for candidate improvement.
+9. "roleSpecificRecommendations": Array of 3 specific recommendations for ${role || "this role"}.
+10. "learningResources": Array of 3 recommended books, courses, or practice areas.
+11. "dimensionScores": Object with scores (0-100) for:
+   - communication, technicalAccuracy, confidence, grammar, professionalism, problemSolving, depthOfKnowledge, behaviour, leadership, vocabulary, fluency, structure, timeManagement, consistency.
+12. "actionPlan": Array of 3 actionable next steps to master upcoming real interviews.
 `;
 
     const response = await generateWithFallback(ai, {
@@ -2305,31 +2525,31 @@ Generate an executive interview report containing:
           type: Type.OBJECT,
           required: [
             "overallScore",
+            "interviewReadinessScore",
             "hiringRecommendation",
             "executiveSummary",
             "keyStrengths",
+            "keyWeaknesses",
+            "skillGaps",
             "criticalImprovementAreas",
+            "roleSpecificRecommendations",
+            "learningResources",
             "dimensionScores",
             "actionPlan"
           ],
           properties: {
             overallScore: { type: Type.INTEGER },
+            interviewReadinessScore: { type: Type.INTEGER },
             hiringRecommendation: { type: Type.STRING },
             executiveSummary: { type: Type.STRING },
             keyStrengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+            keyWeaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            skillGaps: { type: Type.ARRAY, items: { type: Type.STRING } },
             criticalImprovementAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
+            roleSpecificRecommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
+            learningResources: { type: Type.ARRAY, items: { type: Type.STRING } },
             dimensionScores: {
               type: Type.OBJECT,
-              required: [
-                "communication",
-                "technicalAccuracy",
-                "confidence",
-                "grammar",
-                "professionalism",
-                "problemSolving",
-                "depthOfKnowledge",
-                "behaviour"
-              ],
               properties: {
                 communication: { type: Type.INTEGER },
                 technicalAccuracy: { type: Type.INTEGER },
@@ -2338,7 +2558,13 @@ Generate an executive interview report containing:
                 professionalism: { type: Type.INTEGER },
                 problemSolving: { type: Type.INTEGER },
                 depthOfKnowledge: { type: Type.INTEGER },
-                behaviour: { type: Type.INTEGER }
+                behaviour: { type: Type.INTEGER },
+                leadership: { type: Type.INTEGER },
+                vocabulary: { type: Type.INTEGER },
+                fluency: { type: Type.INTEGER },
+                structure: { type: Type.INTEGER },
+                timeManagement: { type: Type.INTEGER },
+                consistency: { type: Type.INTEGER }
               }
             },
             actionPlan: { type: Type.ARRAY, items: { type: Type.STRING } }
@@ -2357,7 +2583,7 @@ Generate an executive interview report containing:
 // ------------------------------------------------------------------------
 // API ENDPOINT 7.5: Clarify & Rephrase Interview Question
 // ------------------------------------------------------------------------
-app.post("/api/placement/interview/clarify", async (req, res) => {
+app.post(["/api/placement/interview/clarify", "/placement/interview/clarify"], async (req, res) => {
   res.setHeader("Content-Type", "application/json");
   try {
     const { question, type, expectedFocus } = req.body;
@@ -2426,7 +2652,7 @@ Return a clean JSON object with keys "clarifiedQuestion" and "helpfulHints".`;
 // ------------------------------------------------------------------------
 // API ENDPOINT 8: Offer & Negotiation Advisor
 // ------------------------------------------------------------------------
-app.post("/api/placement/negotiate", async (req, res) => {
+app.post(["/api/placement/negotiate", "/placement/negotiate"], async (req, res) => {
   try {
     const { currentOffer, targetCompany, expectations } = req.body;
     const ai = getAI();
@@ -2485,7 +2711,7 @@ Generate:
 // ------------------------------------------------------------------------
 // API ENDPOINT 9: Confidence & Communication Coach
 // ------------------------------------------------------------------------
-app.post("/api/placement/communication-tips", async (req, res) => {
+app.post(["/api/placement/communication-tips", "/placement/communication-tips"], async (req, res) => {
   try {
     const profile = req.body;
     const ai = getAI();
@@ -2536,7 +2762,7 @@ Each item should have a concrete practical exercise the student can do right now
 // ------------------------------------------------------------------------
 // API ENDPOINT 10: HR Socials Analysis (LinkedIn & GitHub rating)
 // ------------------------------------------------------------------------
-app.post("/api/placement/analyze-socials", async (req, res) => {
+app.post(["/api/placement/analyze-socials", "/placement/analyze-socials"], async (req, res) => {
   try {
     const { linkedinUrl, githubUrl, profile } = req.body;
     const ai = getAI();
@@ -2596,6 +2822,31 @@ Return a cohesive JSON object.
   } catch (error) {
     handleApiError(res, error);
   }
+});
+
+// ------------------------------------------------------------------------
+// CATCH-ALL API 404 & GLOBAL ERROR HANDLER (PREVENTS HTML RESPONSES FOR API CALLS)
+// ------------------------------------------------------------------------
+app.use(["/api/*", "/placement/*"], (req, res) => {
+  console.warn(`[API 404 CATCH-ALL] Unmatched API request: ${req.method} ${req.originalUrl || req.url}`);
+  res.status(404).json({
+    success: false,
+    isResume: false,
+    message: `API endpoint not found: ${req.method} ${req.originalUrl || req.url}`
+  });
+});
+
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(`[GLOBAL EXPRESS ERROR] ${req.method} ${req.url}:`, err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(err.status || 500).json({
+    success: false,
+    isResume: false,
+    message: err.message || "An unexpected server error occurred during request processing.",
+    error: process.env.NODE_ENV === "development" ? String(err) : undefined
+  });
 });
 
 // ------------------------------------------------------------------------

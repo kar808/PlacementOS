@@ -120,12 +120,12 @@ export default function IntelligenceDashboard({
 
   // 1. Core bento card categories and attributes
   const scoreCategories = [
-    { key: "resume", name: "ATS Resume", score: scores.resume.score, low: scores.resume.loweringFactors, fix: scores.resume.fastestFix, target: "resume" },
-    { key: "linkedIn", name: "LinkedIn Branding", score: scores.linkedIn.score, low: scores.linkedIn.loweringFactors, fix: scores.linkedIn.fastestFix, target: "resume" },
-    { key: "skills", name: "Domain Skills", score: scores.skills.score, low: scores.skills.loweringFactors, fix: scores.skills.fastestFix, target: "roadmap" },
-    { key: "interview", name: "Interview Prep", score: scores.interview.score, low: scores.interview.loweringFactors, fix: scores.interview.fastestFix, target: "interview" },
-    { key: "aptitude", name: "Aptitude & Logical", score: scores.aptitude.score, low: scores.aptitude.loweringFactors, fix: scores.aptitude.fastestFix, target: "roadmap" },
-    { key: "communication", name: "English & Comm", score: scores.communication.score, low: scores.communication.loweringFactors, fix: scores.communication.fastestFix, target: "communication" },
+    { key: "resume", name: "ATS Resume", score: scores?.resume?.score ?? 75, low: scores?.resume?.loweringFactors || [], fix: scores?.resume?.fastestFix || "Optimize keywords", target: "resume" },
+    { key: "linkedIn", name: "LinkedIn Branding", score: scores?.linkedIn?.score ?? 70, low: scores?.linkedIn?.loweringFactors || [], fix: scores?.linkedIn?.fastestFix || "Complete profile headline", target: "resume" },
+    { key: "skills", name: "Domain Skills", score: scores?.skills?.score ?? 80, low: scores?.skills?.loweringFactors || [], fix: scores?.skills?.fastestFix || "Build domain portfolio project", target: "roadmap" },
+    { key: "interview", name: "Interview Prep", score: scores?.interview?.score ?? 65, low: scores?.interview?.loweringFactors || [], fix: scores?.interview?.fastestFix || "Complete AI mock interview", target: "interview" },
+    { key: "aptitude", name: "Aptitude & Logical", score: scores?.aptitude?.score ?? 75, low: scores?.aptitude?.loweringFactors || [], fix: scores?.aptitude?.fastestFix || "Practice technical problem solving", target: "roadmap" },
+    { key: "communication", name: "English & Comm", score: scores?.communication?.score ?? 80, low: scores?.communication?.loweringFactors || [], fix: scores?.communication?.fastestFix || "Practice spoken delivery drills", target: "communication" },
   ];
 
   // Find the lowest score category for our Floating Quick Actions Tray

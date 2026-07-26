@@ -276,7 +276,7 @@ ${linkedinUrl || "[LinkedIn Link]"}`;
                 <h3 className="font-extrabold text-sm text-white uppercase tracking-wider font-mono">Screening Strengths (Pros)</h3>
               </div>
               <ul className="space-y-3">
-                {analysis.pros.map((pro, index) => (
+                {(analysis?.pros || []).map((pro, index) => (
                   <li key={index} className="flex items-start gap-2.5 text-xs text-white/80 leading-relaxed">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0 mt-2" />
                     <span>{pro}</span>
@@ -292,7 +292,7 @@ ${linkedinUrl || "[LinkedIn Link]"}`;
                 <h3 className="font-extrabold text-sm text-white uppercase tracking-wider font-mono">Screening Risks (Cons)</h3>
               </div>
               <ul className="space-y-3">
-                {analysis.cons.map((con, index) => (
+                {(analysis?.cons || []).map((con, index) => (
                   <li key={index} className="flex items-start gap-2.5 text-xs text-white/80 leading-relaxed">
                     <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shrink-0 mt-2" />
                     <span>{con}</span>
@@ -313,7 +313,7 @@ ${linkedinUrl || "[LinkedIn Link]"}`;
             </div>
 
             <div className="grid grid-cols-1 gap-3">
-              {analysis.criticalFixes.map((fix, index) => (
+              {(analysis?.criticalFixes || []).map((fix, index) => (
                 <div 
                   key={index} 
                   onClick={() => toggleFix(index)}

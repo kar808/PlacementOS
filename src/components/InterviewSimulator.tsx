@@ -259,8 +259,8 @@ export function InterviewSimulator({
   const silenceCheckIntervalRef = useRef<any>(null);
 
   const currentQuestion: MockInterviewQuestion | undefined = session.questions[session.currentQuestionIndex];
-  const lastHistoryItem = session.chatHistory[session.chatHistory.length - 1];
-  const isQuestionAnswered = lastHistoryItem?.role === "student" && lastHistoryItem.feedback !== undefined;
+  const currentAnswerItem = session.chatHistory[session.currentQuestionIndex];
+  const isQuestionAnswered = Boolean(currentAnswerItem && currentAnswerItem.role === "student" && currentAnswerItem.feedback !== undefined);
 
   const effectiveDomain = selectedDomain === "Custom Domain" 
     ? (customDomainText.trim() || "General Industry") 
@@ -533,7 +533,13 @@ export function InterviewSimulator({
     setIsListening(false);
 
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (e) {}
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try { mediaRecorderRef.current.stop(); } catch (e) {}
@@ -574,6 +580,17 @@ export function InterviewSimulator({
     isListeningRef.current = true;
     setIsTimerActive(true);
     logSpeechEvent("Initiating speech recognition session...");
+
+    // Destroy any lingering speech recognition instance before starting fresh
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -1271,6 +1288,20 @@ export function InterviewSimulator({
                   </div>
                 </div>
 
+                {/* Progress Bar & Status */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span>Interview Progress ({Math.round(((session.currentQuestionIndex + (isQuestionAnswered ? 1 : 0)) / session.questions.length) * 100)}% Completed)</span>
+                    <span>{session.chatHistory.filter((i) => i.role === "student").length} of {session.questions.length} Answered • ~{Math.max(1, (session.questions.length - session.currentQuestionIndex) * 2)} min remaining</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700/50">
+                    <div
+                      className="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-full transition-all duration-300"
+                      style={{ width: `${Math.round(((session.currentQuestionIndex + (isQuestionAnswered ? 1 : 0)) / session.questions.length) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+
                 {/* Question Prompt */}
                 <div className="space-y-3">
                   <h3 className="text-lg md:text-xl font-bold text-white leading-relaxed">
@@ -1547,7 +1578,7 @@ export function InterviewSimulator({
                       <h4 className="font-bold text-white text-base">Answer Evaluated & Graded</h4>
                     </div>
                     <span className="text-xl font-black font-mono text-emerald-400">
-                      Score: {lastHistoryItem.score}%
+                      Score: {currentAnswerItem?.score ?? 80}%
                     </span>
                   </div>
 
@@ -1555,12 +1586,12 @@ export function InterviewSimulator({
                   <div className="space-y-2">
                     <strong className="text-xs font-mono uppercase text-slate-400 block">Your Recorded Answer:</strong>
                     <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-sm text-slate-200 leading-relaxed">
-                      {lastHistoryItem.text}
+                      {currentAnswerItem?.text}
                     </div>
 
-                    {lastRecordedAudio && (
+                    {(currentAnswerItem?.audioUrl || lastRecordedAudio) && (
                       <div className="pt-2 flex items-center gap-3">
-                        <audio controls src={lastRecordedAudio} className="h-8 max-w-xs" />
+                        <audio controls src={currentAnswerItem?.audioUrl || lastRecordedAudio || undefined} className="h-8 max-w-xs" />
                         <span className="text-xs text-slate-400 font-mono">Recorded Voice Clip</span>
                       </div>
                     )}
@@ -1570,7 +1601,7 @@ export function InterviewSimulator({
                   <div className="space-y-2">
                     <strong className="text-xs font-mono uppercase text-indigo-400 block">AI Assessor Evaluation & Insights:</strong>
                     <div className="p-4 bg-indigo-950/40 rounded-xl border border-indigo-500/30 text-xs text-slate-200 leading-relaxed">
-                      {lastHistoryItem.feedback}
+                      {currentAnswerItem?.feedback}
                     </div>
                   </div>
 
@@ -1803,10 +1834,42 @@ export function InterviewSimulator({
 
                         <div className="space-y-3 pt-2">
                           {h.questionsAndAnswers?.map((qa, idx) => (
-                            <div key={idx} className="p-3.5 bg-slate-800/50 rounded-xl space-y-2 text-xs border border-slate-700/50">
+                            <div key={idx} className="p-3.5 bg-slate-800/50 rounded-xl space-y-3 text-xs border border-slate-700/50">
                               <span className="font-bold text-white block">Q{idx + 1}: {qa.question}</span>
                               <p className="text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">{qa.answer}</p>
-                              <p className="text-indigo-300">{qa.feedback}</p>
+
+                              {/* Recorded Audio Playback & Self-Critique Studio */}
+                              {qa.audioUrl ? (
+                                <div className="p-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-indigo-300 font-bold font-mono text-[11px] flex items-center gap-1.5">
+                                      <Headphones className="w-3.5 h-3.5 text-indigo-400" /> Playback Answer Audio & Self-Critique Tone
+                                    </span>
+                                    <span className="text-[9px] bg-indigo-500/20 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-500/30">
+                                      Recorded Speech
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <audio controls src={qa.audioUrl} className="w-full h-8 rounded" />
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-indigo-500/20 text-[10px]">
+                                    <span className="text-slate-400 font-mono">Critique Focus:</span>
+                                    <span className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded font-mono">Pace & Pauses</span>
+                                    <span className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded font-mono">Vocal Confidence</span>
+                                    <span className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded font-mono">Filler Word Frequency</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-[11px] text-slate-400 italic bg-slate-900/40 p-2 rounded-lg border border-slate-800/50 font-mono">
+                                  <VolumeX className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                  Text response logged (Microphone was off or audio recording was skipped for this question).
+                                </div>
+                              )}
+
+                              <div className="space-y-1">
+                                <span className="text-indigo-400 font-mono font-bold text-[10px] uppercase block">AI Evaluation & Critique:</span>
+                                <p className="text-slate-300 leading-relaxed">{qa.feedback}</p>
+                              </div>
                             </div>
                           ))}
                         </div>

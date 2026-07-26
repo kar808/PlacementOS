@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   EnterpriseCareerRoadmap, 
   EnterpriseRoadmapParams, 
+  EnterpriseUserAnalysis,
   RoadmapMilestoneItem, 
   RoadmapPlan, 
   StudentProfile 
@@ -247,6 +248,130 @@ export function generateDefaultEnterpriseRoadmap(
   };
 }
 
+export function ensureEnterpriseRoadmapData(
+  raw?: Partial<EnterpriseCareerRoadmap> | null,
+  profile?: StudentProfile,
+  overrides?: EnterpriseRoadmapParams
+): EnterpriseCareerRoadmap {
+  const def = generateDefaultEnterpriseRoadmap(
+    profile || ({} as StudentProfile),
+    overrides
+  );
+
+  if (!raw) return def;
+
+  const rawAnalysis: any = raw.userAnalysis || {};
+  const userAnalysis: EnterpriseUserAnalysis = {
+    currentCareerStage: rawAnalysis.currentCareerStage || def.userAnalysis.currentCareerStage,
+    currentSkills: Array.isArray(rawAnalysis.currentSkills) && rawAnalysis.currentSkills.length > 0 ? rawAnalysis.currentSkills : def.userAnalysis.currentSkills,
+    missingSkills: Array.isArray(rawAnalysis.missingSkills) && rawAnalysis.missingSkills.length > 0 ? rawAnalysis.missingSkills : def.userAnalysis.missingSkills,
+    targetProfession: rawAnalysis.targetProfession || def.userAnalysis.targetProfession,
+    skillGapSummary: rawAnalysis.skillGapSummary || def.userAnalysis.skillGapSummary,
+    skillGapScore: typeof rawAnalysis.skillGapScore === "number" ? rawAnalysis.skillGapScore : def.userAnalysis.skillGapScore,
+    resumeStrengthScore: typeof rawAnalysis.resumeStrengthScore === "number" ? rawAnalysis.resumeStrengthScore : def.userAnalysis.resumeStrengthScore,
+    resumeStrengthSummary: rawAnalysis.resumeStrengthSummary || def.userAnalysis.resumeStrengthSummary,
+    interviewReadinessScore: typeof rawAnalysis.interviewReadinessScore === "number" ? rawAnalysis.interviewReadinessScore : def.userAnalysis.interviewReadinessScore,
+    interviewReadinessSummary: rawAnalysis.interviewReadinessSummary || def.userAnalysis.interviewReadinessSummary,
+    mentorExecutiveVerdict: rawAnalysis.mentorExecutiveVerdict || def.userAnalysis.mentorExecutiveVerdict,
+    classifiedIndustry: rawAnalysis.classifiedIndustry || def.userAnalysis.classifiedIndustry,
+    classifiedProfession: rawAnalysis.classifiedProfession || def.userAnalysis.classifiedProfession,
+    classifiedSubSpecialization: rawAnalysis.classifiedSubSpecialization || def.userAnalysis.classifiedSubSpecialization,
+    classifiedCareerStage: rawAnalysis.classifiedCareerStage || def.userAnalysis.classifiedCareerStage,
+    isTechnicalProfile: typeof rawAnalysis.isTechnicalProfile === "boolean" ? rawAnalysis.isTechnicalProfile : def.userAnalysis.isTechnicalProfile,
+    classificationConfidenceScore: typeof rawAnalysis.classificationConfidenceScore === "number" ? rawAnalysis.classificationConfidenceScore : def.userAnalysis.classificationConfidenceScore,
+    clarificationQuestions: Array.isArray(rawAnalysis.clarificationQuestions) ? rawAnalysis.clarificationQuestions : def.userAnalysis.clarificationQuestions,
+    salaryProgressionGuidance: rawAnalysis.salaryProgressionGuidance || def.userAnalysis.salaryProgressionGuidance,
+    alternativeCareerPaths: Array.isArray(rawAnalysis.alternativeCareerPaths) ? rawAnalysis.alternativeCareerPaths : def.userAnalysis.alternativeCareerPaths,
+    commonMistakesToAvoid: Array.isArray(rawAnalysis.commonMistakesToAvoid) ? rawAnalysis.commonMistakesToAvoid : def.userAnalysis.commonMistakesToAvoid,
+    industryTrends: Array.isArray(rawAnalysis.industryTrends) ? rawAnalysis.industryTrends : def.userAnalysis.industryTrends,
+    emergingSkills: Array.isArray(rawAnalysis.emergingSkills) ? rawAnalysis.emergingSkills : def.userAnalysis.emergingSkills,
+    linkedInOptimizationTips: Array.isArray(rawAnalysis.linkedInOptimizationTips) ? rawAnalysis.linkedInOptimizationTips : def.userAnalysis.linkedInOptimizationTips,
+    resumeImprovements: Array.isArray(rawAnalysis.resumeImprovements) ? rawAnalysis.resumeImprovements : def.userAnalysis.resumeImprovements,
+    atsScore: typeof rawAnalysis.atsScore === "number" ? rawAnalysis.atsScore : def.userAnalysis.atsScore
+  };
+
+  const stageKeys: Array<"beginner" | "intermediate" | "advanced" | "expert"> = ["beginner", "intermediate", "advanced", "expert"];
+  const stages: any = {};
+
+  stageKeys.forEach((key) => {
+    const rawStage: any = (raw.stages as any)?.[key] || {};
+    const defStage = def.stages[key];
+
+    stages[key] = {
+      stageName: rawStage.stageName || defStage.stageName,
+      stageTitle: rawStage.stageTitle || defStage.stageTitle,
+      timeline: rawStage.timeline || defStage.timeline,
+      mentorAdvice: rawStage.mentorAdvice || defStage.mentorAdvice,
+      learningTopics: Array.isArray(rawStage.learningTopics) && rawStage.learningTopics.length > 0 ? rawStage.learningTopics : defStage.learningTopics,
+      recommendedProjects: Array.isArray(rawStage.recommendedProjects) && rawStage.recommendedProjects.length > 0
+        ? rawStage.recommendedProjects.map((p: any, i: number) => ({
+            title: p?.title || defStage.recommendedProjects[i]?.title || "Portfolio Project",
+            description: p?.description || defStage.recommendedProjects[i]?.description || "",
+            keyDeliverables: Array.isArray(p?.keyDeliverables) && p.keyDeliverables.length > 0 ? p.keyDeliverables : ["Deliverables", "Case Study"],
+            portfolioImpact: p?.portfolioImpact || "High Impact"
+          }))
+        : defStage.recommendedProjects,
+      recommendedCertifications: Array.isArray(rawStage.recommendedCertifications) && rawStage.recommendedCertifications.length > 0
+        ? rawStage.recommendedCertifications.map((c: any, i: number) => ({
+            name: c?.name || "Professional Certificate",
+            issuer: c?.issuer || "Industry Body",
+            relevance: c?.relevance || "High",
+            estimatedCost: c?.estimatedCost || "Free / Low Cost"
+          }))
+        : defStage.recommendedCertifications,
+      recommendedTools: Array.isArray(rawStage.recommendedTools) && rawStage.recommendedTools.length > 0 ? rawStage.recommendedTools : defStage.recommendedTools,
+      books: Array.isArray(rawStage.books) && rawStage.books.length > 0
+        ? rawStage.books.map((b: any) => ({
+            title: b?.title || "Domain Reference Book",
+            author: b?.author || "Industry Author",
+            whyRead: b?.whyRead || "Core domain principles"
+          }))
+        : defStage.books,
+      courses: Array.isArray(rawStage.courses) && rawStage.courses.length > 0
+        ? rawStage.courses.map((c: any) => ({
+            title: c?.title || "Online Academy Course",
+            platform: c?.platform || "Online Provider",
+            urlOrProvider: c?.urlOrProvider || "Provider",
+            type: c?.type || "Free"
+          }))
+        : defStage.courses,
+      practicePlatforms: Array.isArray(rawStage.practicePlatforms) && rawStage.practicePlatforms.length > 0
+        ? rawStage.practicePlatforms.map((p: any) => ({
+            name: p?.name || "Practice Platform",
+            focus: p?.focus || "Skill Drills"
+          }))
+        : defStage.practicePlatforms,
+      interviewPreparation: Array.isArray(rawStage.interviewPreparation) && rawStage.interviewPreparation.length > 0
+        ? rawStage.interviewPreparation.map((ip: any) => ({
+            topic: ip?.topic || "Domain Interview Prep",
+            keyQuestions: Array.isArray(ip?.keyQuestions) && ip.keyQuestions.length > 0 ? ip.keyQuestions : ["Core Question"],
+            strategy: ip?.strategy || "Use structured framework"
+          }))
+        : defStage.interviewPreparation,
+      portfolioTasks: Array.isArray(rawStage.portfolioTasks) && rawStage.portfolioTasks.length > 0 ? rawStage.portfolioTasks : defStage.portfolioTasks,
+      networkingSuggestions: Array.isArray(rawStage.networkingSuggestions) && rawStage.networkingSuggestions.length > 0 ? rawStage.networkingSuggestions : defStage.networkingSuggestions,
+      jobApplicationStrategy: Array.isArray(rawStage.jobApplicationStrategy) && rawStage.jobApplicationStrategy.length > 0 ? rawStage.jobApplicationStrategy : defStage.jobApplicationStrategy,
+      milestones: Array.isArray(rawStage.milestones) && rawStage.milestones.length > 0
+        ? rawStage.milestones.map((m: any, i: number) => ({
+            id: m?.id || `m_${key}_${i}`,
+            title: m?.title || "Action Milestone",
+            description: m?.description || "",
+            completed: Boolean(m?.completed),
+            priority: m?.priority || "High",
+            userNotes: m?.userNotes || ""
+          }))
+        : defStage.milestones,
+    };
+  });
+
+  return {
+    generatedAt: raw.generatedAt || new Date().toISOString(),
+    inputs: raw.inputs || def.inputs,
+    userAnalysis,
+    stages,
+  };
+}
+
 export default function RoadmapView({
   profile,
   roadmap,
@@ -259,21 +384,25 @@ export default function RoadmapView({
   // Parameter Studio Toggle & Input State
   const [showStudio, setShowStudio] = useState(false);
   const [customParams, setCustomParams] = useState<EnterpriseRoadmapParams>({
-    education: `${profile.degree || "B.Tech"} in ${profile.branch || "Computer Science"}`,
-    currentSkills: profile.technicalSkills || [],
-    experience: profile.internships || profile.projects || "Student / Intern",
-    careerGoal: profile.careerGoals || "Software Engineering Leadership",
-    targetRole: profile.targetRoles?.[0] || "Software Engineer",
-    country: profile.location || profile.preferredLocation || "United States / Global",
+    education: `${profile?.degree || "B.Tech"} in ${profile?.branch || "Computer Science"}`,
+    currentSkills: profile?.technicalSkills || [],
+    experience: profile?.internships || profile?.projects || "Student / Intern",
+    careerGoal: profile?.careerGoals || "Software Engineering Leadership",
+    targetRole: profile?.targetRoles?.[0] || "Software Engineer",
+    country: profile?.location || profile?.preferredLocation || "United States / Global",
     preferredIndustry: "Technology & Software",
     learningSpeed: "Standard (1x)",
-    availableTime: profile.timeAvailable || "2-3 hours/day",
+    availableTime: profile?.timeAvailable || "2-3 hours/day",
     budget: "$0 (Free / Open Source)",
-    existingResumeText: profile.resumeStatus || ""
+    existingResumeText: profile?.resumeStatus || ""
   });
 
-  // Derived or Active Enterprise Roadmap Data
-  const enterpriseData: EnterpriseCareerRoadmap = roadmap?.enterpriseRoadmap || generateDefaultEnterpriseRoadmap(profile, customParams);
+  // Derived or Active Enterprise Roadmap Data with robust defensive normalization
+  const enterpriseData: EnterpriseCareerRoadmap = ensureEnterpriseRoadmapData(
+    roadmap?.enterpriseRoadmap,
+    profile,
+    customParams
+  );
 
   // Completed Milestones & User Notes State
   const [completedMilestones, setCompletedMilestones] = useState<Record<string, boolean>>({});
@@ -584,6 +713,81 @@ export default function RoadmapView({
           </div>
         </div>
       )}
+
+      {/* STEP 0: AI PROFESSION CLASSIFICATION & CONFIDENCE DIAGNOSTIC */}
+      <div className="bg-[#111]/90 backdrop-blur-md border border-white/10 p-5 rounded-2xl shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+            <div>
+              <h3 className="text-sm font-extrabold text-white tracking-tight">AI Profession Classification Diagnostic</h3>
+              <p className="text-[11px] text-white/50">Verified AI Taxonomy & Candidate Sub-Specialization Detection</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-white/40 uppercase">AI Confidence Score:</span>
+            <span className={`px-2.5 py-1 rounded-md text-xs font-black font-mono border ${
+              (analysis.classificationConfidenceScore || 90) >= 80 
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
+                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+            }`}>
+              {analysis.classificationConfidenceScore || 92}% Confidence
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-black/50 border border-white/5 p-3 rounded-xl space-y-1">
+            <span className="text-[9px] font-mono text-white/40 uppercase block">Detected Industry</span>
+            <span className="text-xs font-black text-white block truncate">{analysis.classifiedIndustry || customParams.preferredIndustry}</span>
+          </div>
+
+          <div className="bg-black/50 border border-white/5 p-3 rounded-xl space-y-1">
+            <span className="text-[9px] font-mono text-white/40 uppercase block">Primary Profession</span>
+            <span className="text-xs font-black text-emerald-400 block truncate">{analysis.classifiedProfession || customParams.targetRole}</span>
+          </div>
+
+          <div className="bg-black/50 border border-white/5 p-3 rounded-xl space-y-1">
+            <span className="text-[9px] font-mono text-white/40 uppercase block">Sub-Specialization</span>
+            <span className="text-xs font-bold text-amber-300 block truncate">{analysis.classifiedSubSpecialization || "Domain Practice"}</span>
+          </div>
+
+          <div className="bg-black/50 border border-white/5 p-3 rounded-xl space-y-1">
+            <span className="text-[9px] font-mono text-white/40 uppercase block">Technical / Field Type</span>
+            <span className="text-xs font-bold text-sky-400 block truncate">
+              {analysis.isTechnicalProfile !== undefined ? (analysis.isTechnicalProfile ? "Technical / Engineering" : "Applied / Domain Specialist") : "Domain Specialist"}
+            </span>
+          </div>
+        </div>
+
+        {/* AI Clarification Prompt if Confidence < 80% */}
+        {analysis.classificationConfidenceScore && analysis.classificationConfidenceScore < 80 && (
+          <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl space-y-2">
+            <div className="flex items-center gap-2 text-amber-400 text-xs font-bold">
+              <Sparkles className="w-4 h-4" />
+              <span>AI Clarification Needed for Higher Precision</span>
+            </div>
+            <p className="text-[11px] text-white/80 leading-relaxed">
+              To guarantee 100% precision for your roadmap, please clarify:
+            </p>
+            <ul className="list-disc list-inside text-xs text-amber-200/90 space-y-1">
+              {(analysis.clarificationQuestions || [
+                "Which specific sub-specialization do you plan to focus on?",
+                "Are you seeking entry-level, mid-tier, or executive-level placement?"
+              ]).map((q, idx) => (
+                <li key={idx}>{q}</li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setShowStudio(true)}
+              className="mt-2 text-xs font-bold px-3 py-1.5 bg-amber-500 text-black rounded-lg hover:bg-amber-400 transition-colors cursor-pointer"
+            >
+              Refine Parameters & Clarify AI Prompt
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* STEP 1: CANDIDATE DIAGNOSTIC ANALYSIS DASHBOARD */}
       <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl space-y-6">
@@ -1141,6 +1345,163 @@ export default function RoadmapView({
 
         </div>
 
+      </div>
+
+      {/* STEP 3 & 4: CAREER INTELLIGENCE & MARKET INSIGHTS PANEL */}
+      <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl space-y-6">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-base font-extrabold text-white tracking-tight">Steps 3 & 4: Profession Intelligence & Market Insights</h2>
+          </div>
+          <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
+            {analysis.classifiedProfession || customParams.targetRole} Domain Intelligence
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Salary Progression & Compensation */}
+          <div className="bg-black/40 border border-white/10 p-5 rounded-2xl space-y-3">
+            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+              <Zap className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-xs font-extrabold text-white uppercase tracking-wider font-mono">Salary & Progression Trajectory</h3>
+            </div>
+            <p className="text-xs text-white/80 leading-relaxed font-medium">
+              {analysis.salaryProgressionGuidance || `Entry-level ${customParams.targetRole} positions start competitively with rapid 30-50% comp jumps upon reaching Senior/Lead milestones and mastering core domain tools.`}
+            </p>
+
+            {analysis.alternativeCareerPaths && analysis.alternativeCareerPaths.length > 0 && (
+              <div className="pt-2 border-t border-white/5 space-y-2">
+                <span className="text-[10px] font-mono uppercase text-white/40 block font-bold">Adjacent / Alternative Roles:</span>
+                <div className="space-y-2">
+                  {analysis.alternativeCareerPaths.map((alt, idx) => (
+                    <div key={idx} className="bg-black/50 border border-white/5 p-3 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-300">{alt.roleTitle}</span>
+                        <span className="text-[10px] font-mono text-amber-400">Effort: {alt.transitionEffort}</span>
+                      </div>
+                      <p className="text-[11px] text-white/60">{alt.rationale}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Industry Trends & Emerging Skills */}
+          <div className="bg-black/40 border border-white/10 p-5 rounded-2xl space-y-3">
+            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-xs font-extrabold text-white uppercase tracking-wider font-mono">Industry Trends & Emerging Skills</h3>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase text-white/40 block font-bold mb-1">Key Industry Shifts:</span>
+                <ul className="space-y-1.5">
+                  {(analysis.industryTrends || [
+                    `AI augmentation and automation in ${customParams.targetRole} workflows`,
+                    "Emphasis on cross-functional domain communication and quantitative impact",
+                    "Shift towards specialized sub-domain tool mastery"
+                  ]).map((tr, idx) => (
+                    <li key={idx} className="text-xs text-white/80 flex items-start gap-2">
+                      <span className="text-emerald-400">•</span>
+                      <span>{tr}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-mono uppercase text-white/40 block font-bold mb-1">Emerging Skills to Acquire:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {(analysis.emergingSkills || ["AI Co-pilots", "Data Literacy", "Cloud Operations", "Domain Compliance"]).map((sk, idx) => (
+                    <span key={idx} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[11px] font-bold rounded-md">
+                      ⚡ {sk}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Pitfalls to Avoid & LinkedIn Optimization */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <div className="bg-black/40 border border-white/10 p-5 rounded-2xl space-y-3">
+            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+              <ShieldCheck className="w-4 h-4 text-rose-400" />
+              <h3 className="text-xs font-extrabold text-white uppercase tracking-wider font-mono">Common Pitfalls to Avoid</h3>
+            </div>
+            <ul className="space-y-2">
+              {(analysis.commonMistakesToAvoid || [
+                "Learning frameworks without mastering core fundamental domain principles.",
+                "Neglecting real-world portfolio deliverables and verified case studies.",
+                "Relying solely on online job boards without direct alumni networking."
+              ]).map((pm, idx) => (
+                <li key={idx} className="text-xs text-rose-200/90 bg-rose-500/10 border border-rose-500/20 p-2.5 rounded-xl font-medium flex items-start gap-2">
+                  <span className="text-rose-400 font-bold shrink-0">⚠️</span>
+                  <span>{pm}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-black/40 border border-white/10 p-5 rounded-2xl space-y-3">
+            <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+              <Globe className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-xs font-extrabold text-white uppercase tracking-wider font-mono">LinkedIn & Personal Branding Protocol</h3>
+            </div>
+            <ul className="space-y-2">
+              {(analysis.linkedInOptimizationTips || [
+                `Optimize headline: "${customParams.targetRole} | Specialist in ${customParams.preferredIndustry}"`,
+                "Featured Section: Pin top capstone deliverable and case study link.",
+                "Post weekly breakdown of a real-world problem solved during roadmap execution."
+              ]).map((tip, idx) => (
+                <li key={idx} className="text-xs text-white/80 font-medium flex items-start gap-2">
+                  <span className="text-emerald-400 font-bold">✓</span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      {/* STEP 6: MOTIVATION & WELL-BEING MENTORSHIP BANNER */}
+      <div className="bg-gradient-to-r from-emerald-950/40 via-black to-slate-950 border border-emerald-500/30 p-6 rounded-2xl shadow-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Rocket className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-sm font-black text-white tracking-tight">Step 6: Career Resilience & Mindset Coach</h3>
+          </div>
+          <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold">Daily Mindset Protocol</span>
+        </div>
+
+        <p className="text-xs text-white/80 leading-relaxed font-medium">
+          Remember: Transforming into a top 1% {customParams.targetRole} is a marathon of consistency, not an overnight sprint. Breakdown intimidating goals into 25-minute focused daily deep-work blocks. Celebrate every milestone checked off in this roadmap!
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div className="bg-black/40 border border-white/10 p-3 rounded-xl text-center space-y-1">
+            <span className="text-[10px] font-mono text-white/40 block uppercase">Daily Target</span>
+            <span className="text-xs font-black text-emerald-400 block">{customParams.availableTime || "2 Hours / Day"}</span>
+          </div>
+
+          <div className="bg-black/40 border border-white/10 p-3 rounded-xl text-center space-y-1">
+            <span className="text-[10px] font-mono text-white/40 block uppercase">Learning Pace</span>
+            <span className="text-xs font-black text-amber-300 block">{customParams.learningSpeed || "Standard (1x)"}</span>
+          </div>
+
+          <div className="bg-black/40 border border-white/10 p-3 rounded-xl text-center space-y-1">
+            <span className="text-[10px] font-mono text-white/40 block uppercase">Consistency Strategy</span>
+            <span className="text-xs font-black text-sky-400 block">1 Milestone Every 3 Days</span>
+          </div>
+        </div>
       </div>
 
       {/* ADD CUSTOM MILESTONE MODAL */}

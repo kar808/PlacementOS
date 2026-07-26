@@ -256,6 +256,27 @@ export interface EnterpriseUserAnalysis {
   interviewReadinessScore: number;
   interviewReadinessSummary: string;
   mentorExecutiveVerdict: string;
+  classifiedIndustry?: string;
+  classifiedProfession?: string;
+  classifiedDomain?: string;
+  classifiedSpecialisation?: string;
+  classifiedSubSpecialization?: string;
+  classifiedCareerStage?: string;
+  classifiedCareerLevel?: string;
+  classifiedExperienceLevel?: string;
+  classifiedCountry?: string;
+  classifiedCareerGoal?: string;
+  isTechnicalProfile?: boolean;
+  classificationConfidenceScore?: number;
+  clarificationQuestions?: string[];
+  salaryProgressionGuidance?: string;
+  alternativeCareerPaths?: { roleTitle: string; rationale: string; transitionEffort: string }[];
+  commonMistakesToAvoid?: string[];
+  industryTrends?: string[];
+  emergingSkills?: string[];
+  linkedInOptimizationTips?: string[];
+  resumeImprovements?: string[];
+  atsScore?: number;
 }
 
 export interface EnterpriseRoadmapParams {
@@ -342,6 +363,13 @@ export interface EvaluationDimensions {
   problemSolving: number;       // Problem solving & analytical logic
   depthOfKnowledge: number;     // Knowledge depth & domain mastery
   behaviour: number;            // Behavioral / STAR alignment & ownership
+  leadership?: number;          // Vision, delegation, & leadership impact
+  softSkills?: number;          // Empathy, collaboration, & active listening
+  vocabulary?: number;          // Lexicon precision & domain terminology
+  clarity?: number;             // Directness & articulation
+  structure?: number;           // STAR / PREP structural organization
+  conciseness?: number;         // Signal-to-noise ratio & brevity
+  domainKnowledge?: number;     // Industry-specific subject mastery
 }
 
 export interface MockInterviewChatHistoryItem {
@@ -396,16 +424,28 @@ export interface FileAnalysisResult {
   nonResumeReason?: string | null;
   overallScore: number;
   atsScore?: number;
+  grammarScore?: number;
+  formattingScore?: number;
   professionalismScore?: number;
+  careerReadinessScore?: number;
   fileTypeDetected: string;
   extractedText: string;
   documentQualityScore?: number;
   atsCompatibilityScore?: number;
+  professionClassification?: {
+    profession?: string;
+    industry?: string;
+    careerStage?: string;
+    experienceLevel?: string;
+    seniority?: string;
+    domain?: string;
+  };
   extractedDetails?: {
     name?: string;
     email?: string;
     phone?: string;
     location?: string;
+    address?: string;
     linkedin?: string;
     github?: string;
     portfolio?: string;
@@ -413,21 +453,30 @@ export interface FileAnalysisResult {
     degree?: string;
     careerSummary?: string;
     technicalSkills?: string[];
+    softSkills?: string[];
     projects?: Array<{ title: string; description?: string; techUsed?: string[] } | string>;
     experience?: Array<{ company: string; role: string; duration?: string; highlights?: string[] }>;
     internships?: string[];
     certifications?: string[];
     achievements?: string[];
+    languages?: string[];
+    publications?: string[];
+    awards?: string[];
   };
   keyStrengths?: string[];
   criticalFlawsAndRisks?: string[];
   missingKeywords?: string[];
+  missingSections?: string[];
   formattingSuggestions?: string[];
   grammarAnalysis?: string;
   industryFitAnalysis?: string;
   roleSuitability?: string;
   skillGapAnalysis?: string[];
   atsBulletImprovements?: { before: string; after: string; explanation: string }[];
+  recommendedProjects?: Array<{ title: string; objective?: string; tools?: string[]; deliverables?: string[]; resumeImpact?: string }>;
+  recommendedCertifications?: Array<{ name: string; issuer?: string; relevance?: string }>;
+  careerRoadmapSuggestions?: string[];
+  interviewPreparationTips?: string[];
   overallVerdict?: string;
   recommendedActionableSteps?: string[];
 }

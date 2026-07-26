@@ -1482,7 +1482,7 @@ export default function App() {
         )}
 
         {/* Content Panel */}
-        <main className="flex-1 overflow-y-auto space-y-6">
+        <main className="flex-1 overflow-y-auto space-y-6 pb-20 md:pb-6">
           {/* Deep Work Focus Mode Active Header */}
           {isDeepWork && (
             <div className="p-3.5 bg-gradient-to-r from-purple-900/40 via-purple-900/20 to-black/60 border border-purple-500/30 rounded-2xl flex items-center justify-between gap-3 text-xs font-mono text-purple-200 shadow-xl backdrop-blur-md animate-in fade-in duration-200 mb-2">
@@ -1696,6 +1696,61 @@ export default function App() {
           </div>
         </main>
       </div>
+
+      {/* Mobile Sticky Quick Navigation Bar */}
+      {showWorkspaceNav && (
+        <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#111]/95 backdrop-blur-md border-t border-white/10 px-3 py-2 flex items-center justify-around shadow-2xl">
+          <button
+            onClick={() => { setActiveTab("home"); setMobileMenuOpen(false); }}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all min-w-[56px] min-h-[44px] cursor-pointer ${
+              activeTab === "home" ? "text-emerald-400 font-bold" : "text-white/50 hover:text-white"
+            }`}
+          >
+            <Home className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px] tracking-tight font-mono">Dashboard</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab("resume"); setMobileMenuOpen(false); }}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all min-w-[56px] min-h-[44px] cursor-pointer ${
+              activeTab === "resume" ? "text-emerald-400 font-bold" : "text-white/50 hover:text-white"
+            }`}
+          >
+            <FileText className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px] tracking-tight font-mono">Resume</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab("interview"); setMobileMenuOpen(false); }}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all min-w-[56px] min-h-[44px] cursor-pointer ${
+              activeTab === "interview" ? "text-emerald-400 font-bold" : "text-white/50 hover:text-white"
+            }`}
+          >
+            <MessageSquare className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px] tracking-tight font-mono">Interview</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab("roadmap"); setMobileMenuOpen(false); }}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all min-w-[56px] min-h-[44px] cursor-pointer ${
+              activeTab === "roadmap" ? "text-emerald-400 font-bold" : "text-white/50 hover:text-white"
+            }`}
+          >
+            <Calendar className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px] tracking-tight font-mono">Roadmap</span>
+          </button>
+
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all min-w-[56px] min-h-[44px] cursor-pointer ${
+              mobileMenuOpen ? "text-cyan-400 font-bold" : "text-white/50 hover:text-white"
+            }`}
+          >
+            <Menu className="w-5 h-5 mb-0.5" />
+            <span className="text-[10px] tracking-tight font-mono">Menu</span>
+          </button>
+        </nav>
+      )}
     </div>
   );
 }
