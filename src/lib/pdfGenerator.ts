@@ -502,3 +502,227 @@ export function generateProfessionalResumePdf(data: ResumePdfData): jsPDF {
 
   return doc;
 }
+
+export interface ResumeSuggestionsPdfData {
+  candidateName: string;
+  targetRole: string;
+  atsScore?: number;
+  atsBreakdown?: {
+    keywordMatchScore?: number;
+    readabilityScore?: number;
+    impactQuantification?: number;
+    sectionsCompleteness?: number;
+  };
+  suggestedHeadline?: string;
+  suggestedAboutSection?: string;
+  bulletRewrites?: {
+    before: string;
+    after: string;
+    explanation?: string;
+  }[];
+  topExtractedKeywords?: string[];
+  missingKeywords?: string[];
+  actionableSteps?: string[];
+}
+
+export function generateResumeSuggestionsPdf(data: ResumeSuggestionsPdfData): jsPDF {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
+    format: "a4",
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 36;
+  const marginY = 36;
+  const contentWidth = pageWidth - marginX * 2;
+  let yPos = marginY;
+
+  const checkPageBreak = (neededHeight: number) => {
+    if (yPos + neededHeight > pageHeight - marginY - 20) {
+      doc.addPage();
+      yPos = marginY;
+    }
+  };
+
+  // Header Banner
+  doc.setFillColor(15, 23, 42); // Dark slate banner
+  doc.rect(marginX, yPos, contentWidth, 54, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(255, 255, 255);
+  doc.text("VORYNEXA CAREER AI - RESUME OPTIMIZATION REPORT", marginX + 16, yPos + 24);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(148, 163, 184);
+  doc.text(`Candidate: ${data.candidateName}  |  Target Role: ${data.targetRole}`, marginX + 16, yPos + 42);
+
+  yPos += 70;
+
+  // ATS Score Overview Box
+  if (data.atsScore !== undefined) {
+    checkPageBreak(50);
+    doc.setFillColor(241, 245, 249);
+    doc.roundedRect(marginX, yPos, contentWidth, 44, 4, 4, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Overall ATS Readiness Grade: ${data.atsScore}%`, marginX + 14, yPos + 18);
+
+    if (data.atsBreakdown) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105);
+      const subScores = [
+        `Keywords: ${data.atsBreakdown.keywordMatchScore ?? 80}%`,
+        `Readability: ${data.atsBreakdown.readabilityScore ?? 85}%`,
+        `Impact Quantification: ${data.atsBreakdown.impactQuantification ?? 78}%`,
+      ].join("  •  ");
+      doc.text(subScores, marginX + 14, yPos + 33);
+    }
+
+    yPos += 56;
+  }
+
+  // Recommended Headline
+  if (data.suggestedHeadline) {
+    checkPageBreak(40);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text("RECOMMENDED LINKEDIN & RESUME HEADLINE", marginX, yPos);
+    yPos += 14;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+    const splitHeadline = doc.splitTextToSize(data.suggestedHeadline, contentWidth - 10);
+    doc.text(splitHeadline, marginX, yPos);
+    yPos += splitHeadline.length * 13 + 12;
+  }
+
+  // Bullet Rewrites
+  if (data.bulletRewrites && data.bulletRewrites.length > 0) {
+    checkPageBreak(30);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text("HIGH-IMPACT ATS BULLET POINT REWRITES", marginX, yPos);
+    yPos += 16;
+
+    for (const [idx, item] of data.bulletRewrites.entries()) {
+      checkPageBreak(80);
+
+      // Original line
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(225, 29, 72); // Rose
+      doc.text(`Original (${idx + 1}):`, marginX, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 116, 139);
+      const originalLines = doc.splitTextToSize(item.before, contentWidth - 70);
+      doc.text(originalLines, marginX + 65, yPos);
+      yPos += originalLines.length * 12 + 4;
+
+      // Optimized line
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(16, 185, 129); // Emerald
+      doc.text(`Optimized (${idx + 1}):`, marginX, yPos);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      const optimizedLines = doc.splitTextToSize(item.after, contentWidth - 70);
+      doc.text(optimizedLines, marginX + 65, yPos);
+      yPos += optimizedLines.length * 12 + 4;
+
+      if (item.explanation) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        const expLines = doc.splitTextToSize(`Why: ${item.explanation}`, contentWidth - 65);
+        doc.text(expLines, marginX + 65, yPos);
+        yPos += expLines.length * 10 + 6;
+      }
+
+      yPos += 8;
+    }
+  }
+
+  // Keywords Section
+  if ((data.topExtractedKeywords && data.topExtractedKeywords.length > 0) || (data.missingKeywords && data.missingKeywords.length > 0)) {
+    checkPageBreak(50);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text("KEYWORD ANALYSIS & TARGETING", marginX, yPos);
+    yPos += 14;
+
+    if (data.topExtractedKeywords && data.topExtractedKeywords.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(16, 185, 129);
+      doc.text("Matched Keywords: ", marginX, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(51, 65, 85);
+      const kwText = doc.splitTextToSize(data.topExtractedKeywords.join(", "), contentWidth - 110);
+      doc.text(kwText, marginX + 105, yPos);
+      yPos += kwText.length * 12 + 6;
+    }
+
+    if (data.missingKeywords && data.missingKeywords.length > 0) {
+      checkPageBreak(25);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(225, 29, 72);
+      doc.text("Missing Keywords: ", marginX, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(51, 65, 85);
+      const mkwText = doc.splitTextToSize(data.missingKeywords.join(", "), contentWidth - 110);
+      doc.text(mkwText, marginX + 105, yPos);
+      yPos += mkwText.length * 12 + 6;
+    }
+  }
+
+  // Actionable Steps
+  if (data.actionableSteps && data.actionableSteps.length > 0) {
+    checkPageBreak(40);
+    yPos += 10;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text("ACTIONABLE NEXT STEPS", marginX, yPos);
+    yPos += 14;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(51, 65, 85);
+    for (const step of data.actionableSteps) {
+      checkPageBreak(20);
+      const stepLines = doc.splitTextToSize(`• ${step}`, contentWidth - 10);
+      doc.text(stepLines, marginX, yPos);
+      yPos += stepLines.length * 12 + 4;
+    }
+  }
+
+  // Footer
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      `Vorynexa Career Intelligence  |  Resume Optimization Report  |  Page ${p} of ${totalPages}`,
+      pageWidth / 2,
+      pageHeight - 20,
+      { align: "center" }
+    );
+  }
+
+  return doc;
+}
+

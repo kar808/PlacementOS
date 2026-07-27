@@ -697,7 +697,7 @@ export default function App() {
 
       // 3. Interceptor: Standardize error messaging & handle 400-series status codes gracefully
       if (!response.ok || (data && data.error)) {
-        let userFriendlyMsg = "An unexpected error occurred while communicating with the career engine. Please try again.";
+        let userFriendlyMsg = "";
 
         if (data?.message) {
           userFriendlyMsg = data.message;
@@ -707,18 +707,24 @@ export default function App() {
           } else if (typeof data.error === "object" && data.error.message) {
             userFriendlyMsg = data.error.message;
           }
-        } else if (response.status === 400) {
-          userFriendlyMsg = "Invalid request or document format. Please verify your selected parameters or re-upload a valid PDF, Word, or plain text document.";
-        } else if (response.status === 401 || response.status === 403) {
-          userFriendlyMsg = "Session security verification required. Please sign in or refresh your session token to proceed.";
-        } else if (response.status === 404) {
-          userFriendlyMsg = "The requested career analysis endpoint was not found. Please try again later.";
-        } else if (response.status === 415) {
-          userFriendlyMsg = "Unsupported document MIME type. The file text was extracted for analysis. Please upload as a standard PDF or Word file.";
-        } else if (response.status === 429) {
-          userFriendlyMsg = "System rate limit reached. Please wait a few seconds before trying again.";
-        } else if (response.status >= 500) {
-          userFriendlyMsg = "Career AI server is temporarily busy. Please wait a moment and click retry.";
+        }
+
+        if (!userFriendlyMsg) {
+          if (response.status === 400) {
+            userFriendlyMsg = "Invalid request or document format. Please verify your parameters or upload a valid PDF, Word, or plain text document.";
+          } else if (response.status === 401 || response.status === 403) {
+            userFriendlyMsg = "Session security verification required. Please sign in or refresh your session token to proceed.";
+          } else if (response.status === 404) {
+            userFriendlyMsg = "The requested career analysis endpoint was not found. Please try again later.";
+          } else if (response.status === 415) {
+            userFriendlyMsg = "Unsupported document format. Please upload as a standard PDF or Word file.";
+          } else if (response.status === 429) {
+            userFriendlyMsg = "System rate limit reached. Please wait a few seconds before trying again.";
+          } else if (response.status >= 500) {
+            userFriendlyMsg = `Career Engine Service Notice (${response.status}): The system is executing high-load analysis. Please click retry or adjust your inputs.`;
+          } else {
+            userFriendlyMsg = "An unexpected error occurred while communicating with the career engine. Please try again.";
+          }
         }
 
         // Clean up raw API errors if embedded
@@ -1661,7 +1667,7 @@ export default function App() {
                     </div>
                   </div>
                 )}
-                <ProfileForm profile={profile} onSave={handleSaveProfile} hrAnalysis={hrAnalysis} />
+                <ProfileForm profile={profile} onSave={handleSaveProfile} onAutoSave={saveProfileUpdate} hrAnalysis={hrAnalysis} />
               </div>
             )}
 

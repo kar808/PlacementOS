@@ -45,10 +45,11 @@ const maskValue = (value: string, type: "name" | "email" | "phone" | "url") => {
 interface ProfileFormProps {
   profile: StudentProfile;
   onSave: (updated: StudentProfile) => void;
+  onAutoSave?: (updated: StudentProfile) => Promise<void> | void;
   hrAnalysis?: HRProfileAnalysis | null;
 }
 
-export default function ProfileForm({ profile, onSave, hrAnalysis }: ProfileFormProps) {
+export default function ProfileForm({ profile, onSave, onAutoSave, hrAnalysis }: ProfileFormProps) {
   const [formData, setFormData] = useState<StudentProfile>(profile);
   const [techInput, setTechInput] = useState("");
   const [nonTechInput, setNonTechInput] = useState("");
@@ -77,7 +78,11 @@ export default function ProfileForm({ profile, onSave, hrAnalysis }: ProfileForm
     setAutoSaveStatus("saving");
     const timer = setTimeout(async () => {
       try {
-        await onSave(formData);
+        if (onAutoSave) {
+          await onAutoSave(formData);
+        } else {
+          await onSave(formData);
+        }
         lastSavedRef.current = currentJson;
         setAutoSaveStatus("saved");
         setLastSaveTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
@@ -88,7 +93,7 @@ export default function ProfileForm({ profile, onSave, hrAnalysis }: ProfileForm
     }, 5000); // 5-second debounced auto-save to Supabase/database
 
     return () => clearTimeout(timer);
-  }, [formData, onSave]);
+  }, [formData, onSave, onAutoSave]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
