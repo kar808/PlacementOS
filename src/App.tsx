@@ -1708,6 +1708,7 @@ export default function App() {
             {activeTab === "schedule" && (
               <PlacementSchedule
                 profile={profile}
+                onTargetRoleChange={handleTargetRoleChange}
               />
             )}
 
