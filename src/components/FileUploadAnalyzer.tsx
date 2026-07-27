@@ -397,7 +397,7 @@ export default function FileUploadAnalyzer({
                 ref={fileInputRef}
                 type="file" 
                 multiple 
-                accept="application/pdf,.doc,.docx,.txt,.rtf,image/*"
+                accept=".pdf,application/pdf,.doc,.docx,.txt,.rtf,image/*,image/png,image/jpeg,image/webp"
                 onChange={handleFileSelect}
                 className="hidden"
               />

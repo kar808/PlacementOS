@@ -6,8 +6,72 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
 import { createClient } from "@supabase/supabase-js";
+import { PDFParse } from "pdf-parse";
+import mammoth from "mammoth";
 
 dotenv.config();
+
+// Helper function to extract plain text from PDF, DOCX, TXT, RTF files
+async function extractDocumentText(base64Data: string, mimeType?: string, filename?: string): Promise<string> {
+  if (!base64Data || typeof base64Data !== "string") return "";
+  try {
+    let cleanBase64 = base64Data;
+    if (cleanBase64.includes(";base64,")) {
+      cleanBase64 = cleanBase64.split(";base64,")[1];
+    }
+    const buffer = Buffer.from(cleanBase64, "base64");
+    if (!buffer || buffer.length === 0) return "";
+
+    const lowerMime = (mimeType || "").toLowerCase();
+    const lowerName = (filename || "").toLowerCase();
+
+    // 1. PDF Extraction
+    if (lowerMime.includes("pdf") || lowerName.endsWith(".pdf")) {
+      try {
+        const parser = new PDFParse({ data: new Uint8Array(buffer) });
+        const result: any = await parser.getText();
+        const pdfText = typeof result === "string" ? result : (result?.text || "");
+        if (pdfText && pdfText.trim().length > 15) {
+          return pdfText.trim();
+        }
+      } catch (pdfErr) {
+        console.warn("[Document Parser] PDFParse failed, attempting text-stream extraction:", pdfErr);
+      }
+      // Fallback: search for text stream objects in raw buffer
+      try {
+        const rawString = buffer.toString("utf-8");
+        const textMatches = rawString.match(/\(([^)]+)\)\s*TJ|\(([^)]+)\)\s*Tj/g);
+        if (textMatches && textMatches.length > 0) {
+          const extracted = textMatches.map(m => m.replace(/[()]/g, "").replace(/TJ|Tj/g, "")).join(" ");
+          if (extracted.trim().length > 20) return extracted.trim();
+        }
+      } catch (streamErr) {
+        // ignore
+      }
+      return "";
+    }
+
+    // 2. Word (.docx / .doc) Extraction
+    if (lowerMime.includes("word") || lowerMime.includes("officedocument") || lowerName.endsWith(".docx") || lowerName.endsWith(".doc")) {
+      try {
+        const docResult = await mammoth.extractRawText({ buffer });
+        if (docResult && docResult.value && docResult.value.trim().length > 10) {
+          return docResult.value.trim();
+        }
+      } catch (docErr) {
+        console.warn("[Document Parser] Mammoth extraction failed:", docErr);
+      }
+    }
+
+    // 3. Text / RTF / CSV
+    if (lowerMime.includes("text") || lowerMime.includes("rtf") || lowerMime.includes("csv") || lowerName.endsWith(".txt") || lowerName.endsWith(".rtf")) {
+      return buffer.toString("utf-8");
+    }
+  } catch (err) {
+    console.error("[Document Parser Error]", err);
+  }
+  return "";
+}
 
 // Initialize server-side database SDKs
 let firestoreDb: any = null;
@@ -637,25 +701,51 @@ function getAI(): GoogleGenAI {
   return aiInstance;
 }
 
-// Robust generation helper with automatic fallback for high-demand 503 errors and model availability issues
+// Robust generation helper with automatic fallback for high-demand 503 errors and schema issues
 async function generateWithFallback(ai: GoogleGenAI, params: any) {
-  const models = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+  const models = ["gemini-3.6-flash", "gemini-3.1-flash-lite"];
   let lastError: any = null;
+
+  // 1. Primary generation attempt with configured params
   for (const model of models) {
     try {
-      console.log(`Running generation using model: ${model}`);
+      console.log(`[AI Generation] Trying model: ${model}`);
       const response = await ai.models.generateContent({
         ...params,
         model,
       });
       return response;
     } catch (err: any) {
-      console.error(`Error with model ${model}:`, err);
+      console.warn(`[AI Generation] Model ${model} failed (${err?.message || err}). Trying next model...`);
       lastError = err;
-      console.warn(`Model ${model} failed (${err?.message || err}). Fallback to next model...`);
-      continue;
     }
   }
+
+  // 2. Secondary fallback attempt: strip responseSchema if present to bypass strict JSON schema errors
+  if (params?.config?.responseSchema) {
+    console.log("[AI Generation] Retrying generation without responseSchema for universal compatibility...");
+    const paramsWithoutSchema = {
+      ...params,
+      config: {
+        ...params.config,
+        responseSchema: undefined,
+      },
+    };
+    for (const model of models) {
+      try {
+        console.log(`[AI Generation Schema Fallback] Trying model: ${model}`);
+        const response = await ai.models.generateContent({
+          ...paramsWithoutSchema,
+          model,
+        });
+        return response;
+      } catch (err: any) {
+        console.warn(`[AI Generation Schema Fallback] Model ${model} failed: ${err?.message || err}`);
+        lastError = err;
+      }
+    }
+  }
+
   throw lastError;
 }
 
@@ -1046,41 +1136,52 @@ Provide a single cohesive JSON object matching the required schema. Ensure all n
 // ------------------------------------------------------------------------
 app.post(["/api/placement/resume-optimize", "/placement/resume-optimize"], async (req, res) => {
   try {
-    const { profile, jobDescription, fileContent, fileText, fileBase64, mimeType } = req.body;
+    const { profile, jobDescription, fileContent, fileText, fileBase64, mimeType, fileName } = req.body;
     const ai = getAI();
 
     const parts: any[] = [];
+    let extractedTextFromDoc = "";
 
-    if (fileBase64 && mimeType) {
-      let rawBase64 = typeof fileBase64 === "string" ? fileBase64 : "";
-      if (rawBase64.includes(";base64,")) {
-        rawBase64 = rawBase64.split(";base64,")[1];
-      }
-      if (rawBase64) {
-        parts.push({
-          inlineData: {
-            data: rawBase64,
-            mimeType: mimeType,
-          },
-        });
+    if (fileBase64) {
+      if (mimeType && mimeType.startsWith("image/")) {
+        let rawBase64 = typeof fileBase64 === "string" ? fileBase64 : "";
+        if (rawBase64.includes(";base64,")) {
+          rawBase64 = rawBase64.split(";base64,")[1];
+        }
+        if (rawBase64) {
+          parts.push({
+            inlineData: {
+              data: rawBase64,
+              mimeType: mimeType,
+            },
+          });
+        }
+      } else {
+        extractedTextFromDoc = await extractDocumentText(fileBase64, mimeType, fileName);
       }
     }
 
-    let promptText = `You are the super-premium Resume & LinkedIn Engine of "PlacementOS".
-Optimize the student's background based on their profile, target job description, and any uploaded resume text or document attached.
+    let promptText = `You are the super-premium Universal Resume & LinkedIn Engine of "VORYNEXA PlacementOS".
+Optimize the candidate's background based on their profile, target role, target job description, and any uploaded resume text or document attached.
 Do not fabricate experience. Instead, rewrite existing descriptions or recommend how to describe their existing projects/skills using high-impact, tool-specific, and output-driven bullet points (Impact, Ownership, Tools, Outcomes).
 
+UNIVERSAL DOMAIN ISOLATION DIRECTIVE:
+- NEVER output software coding or programming terms (e.g. LeetCode, React, Python, Git) if the target role/industry is in Healthcare, Law, Teaching, Trades, Business, Finance, Creative, Agriculture, Government, Sports, Culinary, etc.
+- Adapt all terminology, keywords, and metrics strictly to the candidate's target profession.
+
 STUDENT BACKGROUND:
-- Skills: Tech(${profile?.technicalSkills?.join(",") || "None"}), Non-tech(${profile?.nonTechnicalSkills?.join(",") || "None"})
+- Primary Domain / Field: ${profile?.preferredIndustry || "General Professional"}
+- Core Target Roles: ${profile?.targetRoles?.join(", ") || "Professional Lead"}
+- Skills: Technical/Domain(${profile?.technicalSkills?.join(",") || "None"}), Non-tech/Leadership(${profile?.nonTechnicalSkills?.join(",") || "None"})
 - Existing Projects/Internships: ${profile?.projects || "None specified"} | ${profile?.internships || "None specified"}
-- Core Target Roles: ${profile?.targetRoles?.join(", ") || "Software Engineer"}
 
 TARGET JOB DESCRIPTION (Optional, if empty optimize generally for target roles):
 "${jobDescription || "N/A"}"
 `;
 
-    if (fileText || fileContent) {
-      promptText += `\n\nUPLOADED RESUME TEXT CONTENT:\n"${fileText || fileContent}"\n`;
+    const combinedDocText = fileText || fileContent || extractedTextFromDoc;
+    if (combinedDocText) {
+      promptText += `\n\nUPLOADED RESUME DOCUMENT TEXT CONTENT:\n"${combinedDocText}"\n`;
     }
 
     promptText += `
@@ -1091,7 +1192,7 @@ Please evaluate and provide:
 4. "uploadedText": Complete extracted or verified text from the uploaded document/resume.
 5. "atsBulletImprovements": A list of before/after rewrites for their resume.
 6. "weakPhrasesDetected": Phrases or filler words to avoid in their CV.
-7. "suggestedHeadline": A premium LinkedIn headline (e.g., using keywords, value-proposition, or modern hooks).
+7. "suggestedHeadline": A premium LinkedIn headline tailored for their target field.
 8. "suggestedAboutSection": A highly professional, engaging LinkedIn "About" or resume summary section.
 `;
 
@@ -1534,21 +1635,31 @@ CRITICAL STEP 2: UNIVERSAL EXTRACTION & MULTI-DIMENSIONAL AUDIT (IF "isResume": 
 
     if (Array.isArray(items)) {
       for (const item of items) {
-        if (item.base64Data && item.mimeType) {
-          let rawBase64 = typeof item.base64Data === "string" ? item.base64Data : "";
-          if (rawBase64.includes(";base64,")) {
-            rawBase64 = rawBase64.split(";base64,")[1];
-          }
-          if (rawBase64) {
-            if (item.mimeType.startsWith("image/")) {
-              console.log(`[${timestamp}] [OCR STARTED] Image/Scan detected: ${item.name || "Image"}`);
+        if (item.base64Data) {
+          if (item.mimeType && item.mimeType.startsWith("image/")) {
+            let rawBase64 = typeof item.base64Data === "string" ? item.base64Data : "";
+            if (rawBase64.includes(";base64,")) {
+              rawBase64 = rawBase64.split(";base64,")[1];
             }
-            parts.push({
-              inlineData: {
-                data: rawBase64,
-                mimeType: item.mimeType,
-              },
-            });
+            if (rawBase64) {
+              console.log(`[${timestamp}] [OCR STARTED] Image/Scan detected: ${item.name || "Image"}`);
+              parts.push({
+                inlineData: {
+                  data: rawBase64,
+                  mimeType: item.mimeType,
+                },
+              });
+            }
+          } else {
+            // PDF, Word, or Text document - extract text on server-side to avoid Gemini API 400 Unsupported MIME type
+            const extracted = await extractDocumentText(item.base64Data, item.mimeType, item.name);
+            if (extracted) {
+              promptText += `\n\nATTACHED FILE DOCUMENT TEXT (${item.name || "document"}):\n${extracted}`;
+            } else if (item.textContent) {
+              promptText += `\n\nATTACHED FILE CONTENT (${item.name || "document.txt"}):\n${item.textContent}`;
+            } else {
+              promptText += `\n\nATTACHED FILE ATTACHMENT (${item.name || "document"}): Attached successfully for candidate ${profile?.name || "Student"}.`;
+            }
           }
         } else if (item.textContent) {
           promptText += `\n\nATTACHED FILE CONTENT (${item.name || "document.txt"}):\n${item.textContent}`;

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StudentProfile, HRProfileAnalysis } from "../types";
 import { DEFAULT_STUDENT_PROFILE } from "../lib/defaultProfile";
-import { User, GraduationCap, Code, Briefcase, HelpCircle, Save, RotateCcw, Plus, X, Shield, Eye, EyeOff } from "lucide-react";
+import { User, GraduationCap, Code, Briefcase, HelpCircle, Save, RotateCcw, Plus, X, Shield, Eye, EyeOff, RefreshCw, CheckCircle, Clock } from "lucide-react";
 
 const maskValue = (value: string, type: "name" | "email" | "phone" | "url") => {
   if (!value) return "";
@@ -55,6 +55,40 @@ export default function ProfileForm({ profile, onSave, hrAnalysis }: ProfileForm
   const [roleInput, setRoleInput] = useState("");
   const [companyInput] = useState("");
   const [isMasked, setIsMasked] = useState<boolean>(false);
+
+  // Auto-Save Mechanism: triggers debounced save every 5 seconds when formData changes
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [lastSaveTime, setLastSaveTime] = useState<string | null>(null);
+  const lastSavedRef = React.useRef<string>(JSON.stringify(profile));
+
+  // Sync formData if initial profile prop updates externally
+  useEffect(() => {
+    const propJson = JSON.stringify(profile);
+    if (propJson !== lastSavedRef.current && JSON.stringify(formData) === lastSavedRef.current) {
+      setFormData(profile);
+      lastSavedRef.current = propJson;
+    }
+  }, [profile, formData]);
+
+  useEffect(() => {
+    const currentJson = JSON.stringify(formData);
+    if (currentJson === lastSavedRef.current) return;
+
+    setAutoSaveStatus("saving");
+    const timer = setTimeout(async () => {
+      try {
+        await onSave(formData);
+        lastSavedRef.current = currentJson;
+        setAutoSaveStatus("saved");
+        setLastSaveTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } catch (err) {
+        console.warn("Profile auto-save warning:", err);
+        setAutoSaveStatus("idle");
+      }
+    }, 5000); // 5-second debounced auto-save to Supabase/database
+
+    return () => clearTimeout(timer);
+  }, [formData, onSave]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -148,6 +182,21 @@ export default function ProfileForm({ profile, onSave, hrAnalysis }: ProfileForm
           <p className="text-xs text-white/60 mt-1">Configure your academic standing, career aspirations, and profile variables.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {/* Auto-Save Status Badge (5s Debounced Supabase Sync) */}
+          {autoSaveStatus === "saving" ? (
+            <span className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono font-bold rounded-xl flex items-center gap-1.5 animate-pulse">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Auto-saving to Supabase...
+            </span>
+          ) : autoSaveStatus === "saved" ? (
+            <span className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-bold rounded-xl flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> Auto-saved {lastSaveTime ? `at ${lastSaveTime}` : ""}
+            </span>
+          ) : (
+            <span className="px-3 py-1.5 bg-white/5 border border-white/10 text-white/50 text-xs font-mono font-medium rounded-xl flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-emerald-400/80" /> Auto-save active (5s sync)
+            </span>
+          )}
+
           {/* Sensitive Data Masking Toggle */}
           <div className="flex items-center gap-2.5 px-3.5 py-1.5 bg-white/5 border border-white/10 rounded-xl">
             <label className="relative inline-flex items-center cursor-pointer select-none">

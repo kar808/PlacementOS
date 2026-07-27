@@ -554,6 +554,32 @@ export default function App() {
     await runCoreAudit(completedProfile);
   };
 
+  const handleTargetRoleChange = async (newRole: string, newIndustry?: string) => {
+    if (!newRole || !newRole.trim()) return;
+    const cleanRole = newRole.trim();
+    const existingRoles = profile.targetRoles || [];
+    const updatedRoles = [cleanRole, ...existingRoles.filter((r) => r.toLowerCase() !== cleanRole.toLowerCase())];
+    const updatedProfile: StudentProfile = {
+      ...profile,
+      targetRoles: updatedRoles,
+      preferredIndustry: newIndustry || profile.preferredIndustry || "Engineering & Technology"
+    };
+
+    setProfile(updatedProfile);
+    localStorage.setItem("placement_profile", JSON.stringify(updatedProfile));
+
+    if (user && user.uid !== "local_sandbox_user") {
+      try {
+        await supabaseDb.saveProfile(user.uid, updatedProfile);
+      } catch (err) {
+        console.error("Error saving updated target role to Supabase:", err);
+      }
+    }
+
+    addNotification("Placement Target Updated", `Target role updated to "${cleanRole}" (${newIndustry || profile.preferredIndustry || "General"}).`);
+    logActivity("Placement Target Updated", `Updated target job to "${cleanRole}"`, "profile");
+  };
+
   // Manual retry synchronization handler
   const handleSyncRetry = async () => {
     if (!user || user.uid === "local_sandbox_user") return;
@@ -596,10 +622,9 @@ export default function App() {
     }
   };
 
-  // Unified endpoint executor helper with Supabase JWT verification header, request integrity and client-side rate limiting
+  // Unified endpoint executor helper with global API request interceptor, Supabase JWT verification header, request integrity, FormData support, and 400-series error catching
   const callServerEndpoint = async (endpoint: string, body: any) => {
     setApiError(null);
-    const sanitizedBody = sanitizeUserInput(body);
     const userId = user?.uid || "sandbox-user";
     const monitorStartTime = startCall(endpoint);
 
@@ -619,7 +644,14 @@ export default function App() {
 
     let response: Response | null = null;
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+      const headers: Record<string, string> = {};
+      
+      // Do NOT set Content-Type if uploading FormData; browser sets multipart/form-data boundary automatically
+      if (!isFormData) {
+        headers["Content-Type"] = "application/json";
+      }
+
       const supabase = getSupabase();
       const { data: { session } } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
       if (session) {
@@ -630,7 +662,8 @@ export default function App() {
 
       // 2. Compute dynamic request integrity signature and timestamp
       const integrityTimestamp = Date.now();
-      const integritySignature = computeRequestIntegrity(endpoint, sanitizedBody, integrityTimestamp, userId);
+      const sanitizedPayload = isFormData ? "form-data-upload" : sanitizeUserInput(body);
+      const integritySignature = computeRequestIntegrity(endpoint, sanitizedPayload, integrityTimestamp, userId);
       headers["X-Request-Timestamp"] = String(integrityTimestamp);
       headers["X-Request-Integrity"] = integritySignature;
       headers["X-Request-Client-Id"] = userId;
@@ -638,7 +671,7 @@ export default function App() {
       response = await fetch(endpoint, {
         method: "POST",
         headers,
-        body: JSON.stringify(sanitizedBody),
+        body: isFormData ? body : JSON.stringify(sanitizedPayload),
       });
 
       const rawText = await response.text();
@@ -662,10 +695,45 @@ export default function App() {
         }
       }
 
-      if (data) {
-        if (!response.ok || data.error) {
-          throw new Error(data.message || data.error || `Endpoint operation failed with status ${response.status}`);
+      // 3. Interceptor: Standardize error messaging & handle 400-series status codes gracefully
+      if (!response.ok || (data && data.error)) {
+        let userFriendlyMsg = "An unexpected error occurred while communicating with the career engine. Please try again.";
+
+        if (data?.message) {
+          userFriendlyMsg = data.message;
+        } else if (data?.error) {
+          if (typeof data.error === "string") {
+            userFriendlyMsg = data.error;
+          } else if (typeof data.error === "object" && data.error.message) {
+            userFriendlyMsg = data.error.message;
+          }
+        } else if (response.status === 400) {
+          userFriendlyMsg = "Invalid request or document format. Please verify your selected parameters or re-upload a valid PDF, Word, or plain text document.";
+        } else if (response.status === 401 || response.status === 403) {
+          userFriendlyMsg = "Session security verification required. Please sign in or refresh your session token to proceed.";
+        } else if (response.status === 404) {
+          userFriendlyMsg = "The requested career analysis endpoint was not found. Please try again later.";
+        } else if (response.status === 415) {
+          userFriendlyMsg = "Unsupported document MIME type. The file text was extracted for analysis. Please upload as a standard PDF or Word file.";
+        } else if (response.status === 429) {
+          userFriendlyMsg = "System rate limit reached. Please wait a few seconds before trying again.";
+        } else if (response.status >= 500) {
+          userFriendlyMsg = "Career AI server is temporarily busy. Please wait a moment and click retry.";
         }
+
+        // Clean up raw API errors if embedded
+        if (userFriendlyMsg.includes("Unsupported MIME type")) {
+          userFriendlyMsg = "The uploaded file format is not directly supported by the model parser. We have automatically converted it for text analysis. Please try again.";
+        } else if (userFriendlyMsg.includes("INVALID_ARGUMENT")) {
+          userFriendlyMsg = "Server received an invalid parameter. Please verify your inputs or upload document.";
+        }
+
+        setApiError(userFriendlyMsg);
+        endCall(endpoint, monitorStartTime, false);
+        throw new Error(userFriendlyMsg);
+      }
+
+      if (data) {
         endCall(endpoint, monitorStartTime, true);
         return data;
       }
@@ -675,20 +743,19 @@ export default function App() {
       const isHtml = snippet.startsWith("<!DOCTYPE") || snippet.startsWith("<html") || snippet.includes("<body");
       
       if (isHtml) {
-        throw new Error(`Server returned an HTML error page (Status ${response.status}). Please try again.`);
-      } else if (!response.ok) {
-        throw new Error(`Server error (Status ${response.status}): ${snippet}`);
+        const htmlErrMsg = `Server returned an HTML response (Status ${response.status}). Please try again.`;
+        setApiError(htmlErrMsg);
+        throw new Error(htmlErrMsg);
       } else {
-        throw new Error(`Unexpected server response format: ${snippet}`);
+        const fmtErrMsg = `Unexpected server response (Status ${response.status}): ${snippet}`;
+        setApiError(fmtErrMsg);
+        throw new Error(fmtErrMsg);
       }
-      
-      endCall(endpoint, monitorStartTime, true);
-      return data;
 
     } catch (err: any) {
       endCall(endpoint, monitorStartTime, false);
-      console.error(`Error fetching ${endpoint}:`, err);
-      const errMsg = err.message || "Failed to contact the career analysis server. Please ensure the backend is running and your GEMINI_API_KEY is active.";
+      console.error(`[API Interceptor] Error on ${endpoint}:`, err);
+      const errMsg = err.message || "Failed to contact the career analysis server. Please check your network connection and try again.";
       setApiError(errMsg);
 
       // Log fatal errors to database for debugging
@@ -697,7 +764,7 @@ export default function App() {
         try {
           const logPayload = {
             endpoint,
-            payload: body || null,
+            payload: body instanceof FormData ? "FormData" : (body || null),
             timestamp: new Date().toISOString(),
             errorStatus: response?.status || null,
             errorMessage: errMsg,
@@ -1634,6 +1701,7 @@ export default function App() {
                 roadmap={roadmapPlan}
                 onGenerate={handleGenerateRoadmap}
                 isGenerating={isGeneratingRoadmap}
+                onTargetRoleChange={handleTargetRoleChange}
               />
             )}
 
@@ -1664,6 +1732,7 @@ export default function App() {
                 isGenerating={isGeneratingInterview}
                 isEvaluating={isEvaluatingInterview}
                 callServerEndpoint={callServerEndpoint}
+                onTargetRoleChange={handleTargetRoleChange}
               />
             )}
 

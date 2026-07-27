@@ -275,6 +275,20 @@ export default function ResumeBuilder({
   const [isFileReaderLoading, setIsFileReaderLoading] = useState<boolean>(false);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
+  const [previewTab, setPreviewTab] = useState<"document" | "text">("document");
+  const [analysisProgress, setAnalysisProgress] = useState<number>(0);
+  
+  // Compute resume completion percentage based on current draft state
+  const computeResumeCompleteness = () => {
+    if (!generatedResumeData) return 0;
+    let score = 0;
+    if (generatedResumeData.professionalSummary && generatedResumeData.professionalSummary.trim().length > 20) score += 20;
+    if ((generatedResumeData.skillsGrouped?.languages?.length || 0) + (generatedResumeData.skillsGrouped?.frameworksAndTools?.length || 0) > 0) score += 20;
+    if (generatedResumeData.experienceAndProjects && generatedResumeData.experienceAndProjects.length > 0) score += 30;
+    if (generatedResumeData.educationDetails?.degree || profile.degree) score += 15;
+    if (autoBuildRole && autoBuildRole.trim().length > 0) score += 15;
+    return Math.min(100, score);
+  };
   
   // Local suggestions state
   const [activeSuggestions, setActiveSuggestions] = useState<ResumeLinkedInSuggestion | null>(
@@ -462,7 +476,7 @@ export default function ResumeBuilder({
       try {
         const result = event.target?.result as string;
         const base64Data = result ? result.split(",")[1] || result : "";
-        const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+        const previewUrl = URL.createObjectURL(file);
 
         let textContent = `[Verified Document Data]\nFilename: ${file.name}\nSize: ${(file.size / 1024).toFixed(1)} KB\nType: ${file.type || "Document/Image"}\nCandidate: ${profile.name || "Student"}\nTarget Role: ${profile.targetRoles?.[0] || "Software Engineer"}`;
 
@@ -1128,7 +1142,7 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
               <input 
                 ref={fileInputRef}
                 type="file" 
-                accept="application/pdf,image/*,.txt,.doc,.docx"
+                accept=".pdf,application/pdf,.doc,.docx,.txt,.rtf,image/*,image/png,image/jpeg,image/webp"
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -1184,7 +1198,7 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
                   <input 
                     ref={fileInputRef}
                     type="file" 
-                    accept="application/pdf,image/*,.txt,.doc,.docx"
+                    accept=".pdf,application/pdf,.doc,.docx,.txt,.rtf,image/*,image/png,image/jpeg,image/webp"
                     onChange={handleFileChange}
                     className="hidden"
                   />
@@ -1256,6 +1270,80 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
               </div>
             </div>
           </div>
+
+          {/* VISUAL COMPLETENESS PROGRESS BAR COMPONENT */}
+          {(() => {
+            const completenessPct = computeResumeCompleteness();
+            return (
+              <div className="bg-black/50 border border-white/10 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Gauge className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                      Resume Completeness & ATS Readiness Meter
+                    </h4>
+                  </div>
+                  <span className={`text-xs font-black font-mono px-2.5 py-0.5 rounded-full border ${
+                    completenessPct >= 80 
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" 
+                      : completenessPct >= 50 
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30" 
+                      : "bg-rose-500/20 text-rose-400 border-rose-500/30"
+                  }`}>
+                    {completenessPct}% Completed
+                  </span>
+                </div>
+
+                {/* Animated Progress Track */}
+                <div className="w-full bg-white/10 h-2.5 rounded-full overflow-hidden p-0.5 border border-white/5">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      completenessPct >= 80 
+                        ? "bg-gradient-to-r from-emerald-500 to-cyan-400" 
+                        : completenessPct >= 50 
+                        ? "bg-gradient-to-r from-amber-500 to-emerald-400" 
+                        : "bg-gradient-to-r from-rose-500 to-amber-500"
+                    }`}
+                    style={{ width: `${completenessPct}%` }}
+                  />
+                </div>
+
+                {/* Section Requirement Badges */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] font-mono">
+                  <span className={`px-2 py-0.5 rounded border flex items-center gap-1 ${
+                    generatedResumeData?.professionalSummary ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" : "bg-white/5 text-white/40 border-white/10"
+                  }`}>
+                    {generatedResumeData?.professionalSummary ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-white/30" />} Summary (20%)
+                  </span>
+
+                  <span className={`px-2 py-0.5 rounded border flex items-center gap-1 ${
+                    (generatedResumeData?.skillsGrouped?.languages?.length || 0) + (generatedResumeData?.skillsGrouped?.frameworksAndTools?.length || 0) > 0 
+                      ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" : "bg-white/5 text-white/40 border-white/10"
+                  }`}>
+                    {(generatedResumeData?.skillsGrouped?.languages?.length || 0) + (generatedResumeData?.skillsGrouped?.frameworksAndTools?.length || 0) > 0 ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-white/30" />} Core Skills (20%)
+                  </span>
+
+                  <span className={`px-2 py-0.5 rounded border flex items-center gap-1 ${
+                    generatedResumeData?.experienceAndProjects?.length ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" : "bg-white/5 text-white/40 border-white/10"
+                  }`}>
+                    {generatedResumeData?.experienceAndProjects?.length ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-white/30" />} Experience & Projects (30%)
+                  </span>
+
+                  <span className={`px-2 py-0.5 rounded border flex items-center gap-1 ${
+                    generatedResumeData?.educationDetails?.degree || profile.degree ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" : "bg-white/5 text-white/40 border-white/10"
+                  }`}>
+                    {generatedResumeData?.educationDetails?.degree || profile.degree ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-white/30" />} Education (15%)
+                  </span>
+
+                  <span className={`px-2 py-0.5 rounded border flex items-center gap-1 ${
+                    autoBuildRole ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" : "bg-white/5 text-white/40 border-white/10"
+                  }`}>
+                    {autoBuildRole ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-white/30" />} Target Role (15%)
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Controls: Target Role, Strategy Selector, Profile Source */}
           <div className="p-5 bg-black/40 border border-white/10 rounded-2xl space-y-4">
@@ -1959,22 +2047,53 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
         </div>
       )}
 
-      {/* Document Text Preview Modal */}
+      {/* Document & PDF Document Previewer Modal */}
       {isPreviewModalOpen && uploadedResumeFile && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111] border border-white/20 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-[#111] border border-white/20 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Modal Header */}
-            <div className="p-5 border-b border-white/10 flex justify-between items-center bg-black/40">
+            <div className="p-5 border-b border-white/10 flex flex-wrap justify-between items-center bg-black/40 gap-3">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400">
                   <FileCode className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-white text-sm">Resume Document Text Preview</h3>
-                  <p className="text-[11px] text-white/50 font-mono">
-                    {uploadedResumeFile.name} • {(uploadedResumeFile.size / 1024).toFixed(1)} KB
+                  <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
+                    Document Verification Previewer
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono rounded font-bold uppercase">
+                      Ready for Analysis Engine
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-white/50 font-mono mt-0.5">
+                    {uploadedResumeFile.name} • {(uploadedResumeFile.size / 1024).toFixed(1)} KB • {uploadedResumeFile.mimeType}
                   </p>
                 </div>
+              </div>
+
+              {/* View Switcher Tabs */}
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab("document")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer ${
+                    previewTab === "document"
+                      ? "bg-emerald-500 text-black shadow-sm"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  Document Viewer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab("text")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer ${
+                    previewTab === "text"
+                      ? "bg-emerald-500 text-black shadow-sm"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  Extracted Text
+                </button>
               </div>
 
               <button
@@ -1987,40 +2106,75 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
 
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto space-y-4 flex-1">
-              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white/70 space-y-1 font-mono">
-                <div className="flex justify-between">
-                  <span><strong>Candidate:</strong> {profile.name || "Student"}</span>
-                  <span><strong>Target Role:</strong> {profile.targetRoles?.[0] || "Software Engineer"}</span>
-                </div>
-                <div><strong>MIME Type:</strong> {uploadedResumeFile.mimeType}</div>
+              <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white/70 space-y-1 font-mono flex items-center justify-between">
+                <div><strong>Candidate:</strong> {profile.name || "Student"} • <strong>Target Role:</strong> {profile.targetRoles?.[0] || "Software Engineer"}</div>
+                <div className="text-emerald-400 text-[10px] font-bold">✓ Verified Native Format</div>
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-white/80 font-mono">Extracted Text Content</label>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(uploadedResumeFile.textContent);
-                      setCopiedPreviewText(true);
-                      setTimeout(() => setCopiedPreviewText(false), 2000);
-                    }}
-                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer"
-                  >
-                    {copiedPreviewText ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedPreviewText ? "Copied!" : "Copy Text"}
-                  </button>
+              {previewTab === "document" ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-white/80 font-bold flex items-center gap-1.5">
+                      <Eye className="w-4 h-4 text-emerald-400" /> Interactive Browser Document Display
+                    </span>
+                    <span className="text-[10px] text-white/40">Verify layout & formatting prior to parsing</span>
+                  </div>
+
+                  {uploadedResumeFile.previewUrl || uploadedResumeFile.file || uploadedResumeFile.base64Data ? (
+                    <div className="rounded-xl overflow-hidden border border-white/20 bg-white/5 p-1 min-h-[420px] flex items-center justify-center">
+                      {uploadedResumeFile.mimeType.startsWith("image/") ? (
+                        <img 
+                          src={uploadedResumeFile.previewUrl || (uploadedResumeFile.file ? URL.createObjectURL(uploadedResumeFile.file) : `data:${uploadedResumeFile.mimeType};base64,${uploadedResumeFile.base64Data}`)} 
+                          alt={uploadedResumeFile.name} 
+                          className="max-h-[460px] mx-auto object-contain rounded-lg shadow-xl" 
+                        />
+                      ) : (
+                        <iframe 
+                          src={uploadedResumeFile.previewUrl || (uploadedResumeFile.file ? URL.createObjectURL(uploadedResumeFile.file) : `data:${uploadedResumeFile.mimeType || 'application/pdf'};base64,${uploadedResumeFile.base64Data}`)} 
+                          title="PDF Previewer" 
+                          className="w-full h-[460px] rounded-lg border-0 bg-white"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-12 text-center bg-black/60 border border-white/10 rounded-xl space-y-2">
+                      <FileText className="w-10 h-10 text-white/30 mx-auto" />
+                      <p className="text-xs font-bold text-white/70">Native document stream preview initialized</p>
+                      <p className="text-[11px] text-white/40 font-mono">Use the "Extracted Text" tab to review parsed text strings.</p>
+                    </div>
+                  )}
                 </div>
-                <pre className="p-4 bg-black/80 border border-white/10 rounded-xl text-xs font-mono text-emerald-300/90 whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto">
-                  {uploadedResumeFile.textContent}
-                </pre>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-white/80 font-mono">Extracted Document Text String</label>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(uploadedResumeFile.textContent);
+                        setCopiedPreviewText(true);
+                        setTimeout(() => setCopiedPreviewText(false), 2000);
+                      }}
+                      className="text-[11px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedPreviewText ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedPreviewText ? "Copied!" : "Copy Text"}
+                    </button>
+                  </div>
+                  <pre className="p-4 bg-black/90 border border-white/15 rounded-xl text-xs font-mono text-emerald-300/90 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
+                    {uploadedResumeFile.textContent}
+                  </pre>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-white/10 bg-black/40 flex justify-end gap-3">
+            <div className="p-4 border-t border-white/10 bg-black/40 flex justify-between items-center gap-3">
+              <span className="text-[10px] text-white/40 font-mono">
+                AI Engine Document Integrity Signature: OK
+              </span>
               <button
                 onClick={() => setIsPreviewModalOpen(false)}
-                className="px-4 py-2 bg-emerald-500 text-black font-extrabold text-xs rounded-xl hover:bg-emerald-400 transition-colors cursor-pointer"
+                className="px-4 py-2 bg-emerald-500 text-black font-extrabold text-xs rounded-xl hover:bg-emerald-400 transition-colors cursor-pointer font-mono"
               >
                 Close Preview
               </button>

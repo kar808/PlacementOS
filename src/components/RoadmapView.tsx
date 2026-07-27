@@ -7,6 +7,7 @@ import {
   RoadmapPlan, 
   StudentProfile 
 } from "../types";
+import { MAJOR_CAREER_DOMAINS } from "./UniversalProfessionEngine";
 import { 
   Calendar, CheckSquare, Clock, Award, Star, ListChecks, Play, 
   TrendingUp, Compass, ShieldCheck, Zap, Download, Sliders, 
@@ -19,6 +20,7 @@ interface RoadmapViewProps {
   roadmap: RoadmapPlan | null;
   onGenerate: (customParams?: EnterpriseRoadmapParams) => Promise<void>;
   isGenerating: boolean;
+  onTargetRoleChange?: (role: string, industry?: string) => Promise<void> | void;
 }
 
 // Client-side Fallback Builder for instant personalized roadmap generation
@@ -26,50 +28,95 @@ export function generateDefaultEnterpriseRoadmap(
   profile: StudentProfile,
   overrides?: EnterpriseRoadmapParams
 ): EnterpriseCareerRoadmap {
-  const edu = overrides?.education || `${profile.degree || "Bachelor Degree"} in ${profile.branch || "Computer Science"} (${profile.college || "University"})`;
-  const skills = overrides?.currentSkills?.length ? overrides.currentSkills : (profile.technicalSkills?.length ? profile.technicalSkills : ["Programming Fundamentals", "Problem Solving"]);
-  const role = overrides?.targetRole || profile.targetRoles?.[0] || "Software Engineer";
+  const edu = overrides?.education || `${profile.degree || "Bachelor Degree"} in ${profile.branch || "General Studies"} (${profile.college || "University"})`;
+  const skills = overrides?.currentSkills?.length ? overrides.currentSkills : (profile.technicalSkills?.length ? profile.technicalSkills : ["Domain Knowledge", "Problem Solving"]);
+  const role = overrides?.targetRole || profile.targetRoles?.[0] || "Professional Lead";
   const country = overrides?.country || profile.location || profile.preferredLocation || "United States / Global";
-  const ind = overrides?.preferredIndustry || "Technology & Software";
+  const ind = overrides?.preferredIndustry || profile.preferredIndustry || "Engineering & Technology";
   const speed = overrides?.learningSpeed || "Standard (1x)";
   const time = overrides?.availableTime || profile.timeAvailable || "2-3 hours/day";
   const budget = overrides?.budget || "$0 (Free / Open Source)";
-  const goal = overrides?.careerGoal || profile.careerGoals || "Engineering Leadership & Domain Mastery";
+  const goal = overrides?.careerGoal || profile.careerGoals || "Professional Leadership & Domain Mastery";
 
-  const missing = [
-    "System Design & Scalability Architecture",
-    "Cloud Native Deployment (AWS/GCP)",
-    "CI/CD Automated Testing Pipelines",
-    "Production Monitoring & Telemetry (Grafana/Datadog)",
-    "Advanced Data Structures & Algorithms"
-  ];
+  const lowerInd = ind.toLowerCase();
+  const lowerRole = role.toLowerCase();
+  const isTechDomain = lowerInd.includes("tech") || lowerInd.includes("software") || lowerInd.includes("ai") || lowerInd.includes("cyber") || lowerInd.includes("data") || lowerRole.includes("developer") || lowerRole.includes("engineer") || lowerRole.includes("programmer");
 
-  const beginnerMilestones: RoadmapMilestoneItem[] = [
-    { id: "b1", title: `Master Core ${skills[0] || "Programming"} Fundamentals`, description: "Build deep proficiency in memory management, OOP/FP concepts, and standard data types.", completed: false, priority: "High" },
-    { id: "b2", title: "Git & GitHub Production Workflow", description: "Learn branching strategies, PR code reviews, interactive rebase, and commit conventions.", completed: false, priority: "High" },
-    { id: "b3", title: "Core Data Structures & Algorithms Sprint", description: "Solve 50+ foundational problems on LeetCode/HackerRank covering Arrays, Strings, HashMaps, and Stacks.", completed: false, priority: "High" },
-    { id: "b4", title: "Build Baseline Full-Stack CRUD Application", description: "Develop an end-to-end application with persistent database storage and clean REST endpoints.", completed: false, priority: "Medium" }
-  ];
+  let missing: string[];
+  let beginnerMilestones: RoadmapMilestoneItem[];
+  let intermediateMilestones: RoadmapMilestoneItem[];
+  let advancedMilestones: RoadmapMilestoneItem[];
+  let expertMilestones: RoadmapMilestoneItem[];
 
-  const intermediateMilestones: RoadmapMilestoneItem[] = [
-    { id: "i1", title: `Intermediate ${role} System Architecture`, description: "Architect decoupled microservices or modular monoliths with authentication and caching.", completed: false, priority: "High" },
-    { id: "i2", title: "Database Query Optimization & Indexing", description: "Master SQL indexing, query execution plans, transactions, and Redis caching layers.", completed: false, priority: "High" },
-    { id: "i3", title: "Containerization with Docker", description: "Containerize multi-service applications using Docker compose and environment configurations.", completed: false, priority: "Medium" },
-    { id: "i4", title: "Mock Technical Interview Sprints", description: "Complete 5 mock technical interview rounds with real-time feedback on STAR responses and code design.", completed: false, priority: "High" }
-  ];
+  if (!isTechDomain) {
+    missing = [
+      `Advanced ${ind} Statutory & Regulatory Compliance`,
+      `Domain Tooling & Specialized Platform Mastery`,
+      `Quantified Project Deliverables & Portfolio Documentation`,
+      `Industry Certification & Licensing Requirements`,
+      `Strategic Stakeholder & Executive Leadership`
+    ];
 
-  const advancedMilestones: RoadmapMilestoneItem[] = [
-    { id: "a1", title: "Distributed Systems & Scalability Design", description: "Master load balancing, message queues (Kafka/RabbitMQ), rate limiting, and sharding.", completed: false, priority: "High" },
-    { id: "a2", title: "Cloud Deployment Pipeline (AWS/GCP)", description: "Automate CI/CD pipelines with GitHub Actions, Terraform, and cloud serverless/containers.", completed: false, priority: "High" },
-    { id: "a3", title: "Capstones & Live Production Deployment", description: "Deploy an enterprise-grade project with 99.9% uptime, live domain, SSL, and error logging.", completed: false, priority: "High" },
-    { id: "a4", title: "Targeted Outreach & Referral Pipeline", description: "Send 20+ personalized alumni outreach messages for direct referral opportunities.", completed: false, priority: "Medium" }
-  ];
+    beginnerMilestones = [
+      { id: "b1", title: `Master Foundational ${ind} Core Principles`, description: `Build deep proficiency in foundational regulations, methodologies, and standard terminology for ${role}.`, completed: false, priority: "High" },
+      { id: "b2", title: "Domain Documentation & Compliance Standards", description: "Learn key industry documentation standards, protocol compliance, and quality auditing.", completed: false, priority: "High" },
+      { id: "b3", title: "Core Industry Skill & Tooling Sprint", description: "Master specialized software, diagnostic equipment, or reporting platforms required for " + role + ".", completed: false, priority: "High" },
+      { id: "b4", title: "Build Baseline Portfolio Case Study", description: "Develop an end-to-end practical project or comprehensive report demonstrating real-world domain application.", completed: false, priority: "Medium" }
+    ];
 
-  const expertMilestones: RoadmapMilestoneItem[] = [
-    { id: "e1", title: "High-Stakes Technical & Executive Interview Readiness", description: "Ace System Design architecture whiteboarding and C-level executive culture rounds.", completed: false, priority: "High" },
-    { id: "e2", title: "Open-Source Contributions & Technical Thought Leadership", description: "Publish 2 technical blogs and submit PRs to prominent open-source repositories.", completed: false, priority: "Medium" },
-    { id: "e3", title: "Offer Negotiation & Career Strategy", description: "Leverage competing offers using data-backed compensation guidelines for maximum total rewards.", completed: false, priority: "High" }
-  ];
+    intermediateMilestones = [
+      { id: "i1", title: `Intermediate ${role} Execution & Case Analysis`, description: "Execute complex real-world workflows, risk evaluations, and cross-functional scenarios.", completed: false, priority: "High" },
+      { id: "i2", title: "Data-Driven Analysis & Process Optimization", description: "Optimize operational metrics, budget efficiency, or quality control metrics.", completed: false, priority: "High" },
+      { id: "i3", title: "Industry Licensing & Certification Prep", description: "Prepare for core professional certifications and regulatory credentials required in " + ind + ".", completed: false, priority: "Medium" },
+      { id: "i4", title: "Mock Domain Specialist Interview Sprints", description: "Complete structured mock interview rounds with real-time feedback on STAR responses and situational judgment.", completed: false, priority: "High" }
+    ];
+
+    advancedMilestones = [
+      { id: "a1", title: `Advanced ${role} Strategy & Stakeholder Management`, description: "Lead high-stakes initiatives, stakeholder negotiations, and complex multi-team deliverables.", completed: false, priority: "High" },
+      { id: "a2", title: "Publish Comprehensive Portfolio & Field Audit", description: "Deliver an enterprise-grade portfolio case study or audit report with measurable business impact.", completed: false, priority: "High" },
+      { id: "a3", title: "Targeted Industry Network & Referral Pipeline", description: "Engage key senior professionals and alumni for direct referral and executive placement opportunities.", completed: false, priority: "High" }
+    ];
+
+    expertMilestones = [
+      { id: "e1", title: "High-Stakes Domain & Executive Interview Readiness", description: "Ace senior executive panel rounds, case presentations, and situational leadership evaluations.", completed: false, priority: "High" },
+      { id: "e2", title: "Industry Thought Leadership & Certification Achievement", description: "Complete top-tier industry credential and publish field insights or white papers.", completed: false, priority: "Medium" },
+      { id: "e3", title: "Executive Offer Negotiation & Career Strategy", description: "Leverage market compensation benchmarks for maximum total rewards and career growth.", completed: false, priority: "High" }
+    ];
+  } else {
+    missing = [
+      "System Design & Scalability Architecture",
+      "Cloud Native Deployment (AWS/GCP)",
+      "CI/CD Automated Testing Pipelines",
+      "Production Monitoring & Telemetry (Grafana/Datadog)",
+      "Advanced Data Structures & Algorithms"
+    ];
+
+    beginnerMilestones = [
+      { id: "b1", title: `Master Core ${skills[0] || "Programming"} Fundamentals`, description: "Build deep proficiency in memory management, OOP/FP concepts, and standard data types.", completed: false, priority: "High" },
+      { id: "b2", title: "Git & GitHub Production Workflow", description: "Learn branching strategies, PR code reviews, interactive rebase, and commit conventions.", completed: false, priority: "High" },
+      { id: "b3", title: "Core Data Structures & Algorithms Sprint", description: "Solve foundational problems covering Arrays, Strings, HashMaps, and Stacks.", completed: false, priority: "High" },
+      { id: "b4", title: "Build Baseline Full-Stack CRUD Application", description: "Develop an end-to-end application with persistent database storage and clean REST endpoints.", completed: false, priority: "Medium" }
+    ];
+
+    intermediateMilestones = [
+      { id: "i1", title: `Intermediate ${role} System Architecture`, description: "Architect decoupled microservices or modular monoliths with authentication and caching.", completed: false, priority: "High" },
+      { id: "i2", title: "Database Query Optimization & Indexing", description: "Master SQL indexing, query execution plans, transactions, and Redis caching layers.", completed: false, priority: "High" },
+      { id: "i3", title: "Containerization with Docker", description: "Containerize multi-service applications using Docker compose and environment configurations.", completed: false, priority: "Medium" },
+      { id: "i4", title: "Mock Technical Interview Sprints", description: "Complete 5 mock technical interview rounds with real-time feedback on STAR responses and code design.", completed: false, priority: "High" }
+    ];
+
+    advancedMilestones = [
+      { id: "a1", title: "Distributed Systems & Scalability Design", description: "Master load balancing, message queues, rate limiting, and sharding.", completed: false, priority: "High" },
+      { id: "a2", title: "Cloud Deployment Pipeline (AWS/GCP)", description: "Automate CI/CD pipelines with GitHub Actions, Terraform, and cloud serverless/containers.", completed: false, priority: "High" },
+      { id: "a3", title: "Capstones & Live Production Deployment", description: "Deploy an enterprise-grade project with 99.9% uptime, live domain, SSL, and error logging.", completed: false, priority: "High" }
+    ];
+
+    expertMilestones = [
+      { id: "e1", title: "High-Stakes Technical & Executive Interview Readiness", description: "Ace System Design architecture whiteboarding and C-level executive culture rounds.", completed: false, priority: "High" },
+      { id: "e2", title: "Open-Source Contributions & Technical Thought Leadership", description: "Publish technical blogs and submit PRs to prominent open-source repositories.", completed: false, priority: "Medium" },
+      { id: "e3", title: "Offer Negotiation & Career Strategy", description: "Leverage competing offers using data-backed compensation guidelines for maximum total rewards.", completed: false, priority: "High" }
+    ];
+  }
 
   return {
     generatedAt: new Date().toISOString(),
@@ -377,6 +424,7 @@ export default function RoadmapView({
   roadmap,
   onGenerate,
   isGenerating,
+  onTargetRoleChange,
 }: RoadmapViewProps) {
   // Enterprise Roadmap active stage selection
   const [activeStage, setActiveStage] = useState<"beginner" | "intermediate" | "advanced" | "expert">("beginner");
@@ -540,6 +588,26 @@ export default function RoadmapView({
         }
       `}</style>
 
+      {/* Print-Only Executive Header for PDF Export */}
+      <div className="hidden print-only mb-6 p-6 border-b-2 border-black bg-white text-black">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-black uppercase tracking-tight text-black">Vorynexa — Enterprise AI Career Roadmap</h1>
+            <p className="text-sm font-bold text-gray-800 mt-1">
+              Target Role: <span className="text-emerald-700">{customParams.targetRole || profile.targetRoles?.[0] || "Professional"}</span> • Preferred Industry: <span className="text-emerald-700">{customParams.preferredIndustry || "Technology"}</span>
+            </p>
+            <p className="text-xs text-gray-600 mt-0.5">
+              Candidate: <strong>{profile.name || profile.email || "Student"}</strong> • Education: {customParams.education || profile.degree || "University"} • Country: {customParams.country || "Global"}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-black text-emerald-600">{overallPct}%</div>
+            <div className="text-[10px] uppercase font-mono tracking-wider text-gray-500">Overall Execution Progress</div>
+            <div className="text-[10px] text-gray-400 mt-1">Exported on {new Date().toLocaleDateString()}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Top Header & Action Suite */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-emerald-950/40 via-[#111] to-black border border-emerald-500/20 p-6 rounded-2xl shadow-2xl relative overflow-hidden no-print">
         <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -600,6 +668,54 @@ export default function RoadmapView({
         </div>
       </div>
 
+      {/* UNIVERSAL FIELD ENGINE - INTERACTIVE DOMAIN SWITCHER STRIP */}
+      <div className="bg-[#111] border border-white/10 rounded-2xl p-4 space-y-3 no-print">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Compass className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-xs font-extrabold text-white uppercase tracking-wider font-mono">
+              Universal Field Engine — Select Target Domain
+            </h3>
+          </div>
+          <span className="text-[10px] text-white/40 font-mono">
+            Active Domain: <strong className="text-emerald-400">{customParams.preferredIndustry}</strong>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-emerald-500/20">
+          {MAJOR_CAREER_DOMAINS.map((dom) => {
+            const isSelected = customParams.preferredIndustry === dom.name;
+            return (
+              <button
+                key={dom.id}
+                onClick={() => {
+                  const firstRole = dom.commonRoles?.[0];
+                  const suggestedRole = typeof firstRole === "string" ? firstRole : ((firstRole as any)?.title || customParams.targetRole);
+                  const updatedParams: EnterpriseRoadmapParams = {
+                    ...customParams,
+                    preferredIndustry: dom.name,
+                    targetRole: suggestedRole
+                  };
+                  setCustomParams(updatedParams);
+                  if (onTargetRoleChange) {
+                    onTargetRoleChange(suggestedRole, dom.name);
+                  }
+                  onGenerate(updatedParams);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                  isSelected
+                    ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-md shadow-emerald-500/10"
+                    : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white hover:border-white/20"
+                }`}
+              >
+                <span>{dom.name}</span>
+                {isSelected && <Check className="w-3 h-3 text-emerald-400" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* PARAMETER CUSTOMIZATION STUDIO DRAWER / MODAL */}
       {showStudio && (
         <div className="bg-[#111] border border-emerald-500/30 p-6 rounded-2xl shadow-2xl space-y-6 animate-in fade-in slide-in-from-top-4 duration-300 no-print">
@@ -613,13 +729,28 @@ export default function RoadmapView({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <label className="text-xs font-bold text-white/70 block mb-1">Target Role</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-bold text-white/70 block">Target Role</label>
+                {onTargetRoleChange && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customParams.targetRole) {
+                        onTargetRoleChange(customParams.targetRole, customParams.preferredIndustry);
+                      }
+                    }}
+                    className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" /> Sync Target
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={customParams.targetRole || ""}
                 onChange={(e) => setCustomParams({ ...customParams, targetRole: e.target.value })}
                 className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none font-semibold"
-                placeholder="e.g. Fullstack Engineer, Data Scientist"
+                placeholder="e.g. Fullstack Engineer, Clinical Research Lead, Corporate Attorney"
               />
             </div>
 
@@ -635,19 +766,30 @@ export default function RoadmapView({
             </div>
 
             <div>
-              <label className="text-xs font-bold text-white/70 block mb-1">Preferred Industry</label>
+              <label className="text-xs font-bold text-white/70 block mb-1">Preferred Industry (Universal Field Engine)</label>
               <select
-                value={customParams.preferredIndustry || "Technology & Software"}
-                onChange={(e) => setCustomParams({ ...customParams, preferredIndustry: e.target.value })}
+                value={customParams.preferredIndustry || "Engineering & Technology"}
+                onChange={(e) => {
+                  const newInd = e.target.value;
+                  const foundDomain = MAJOR_CAREER_DOMAINS.find(d => d.name === newInd);
+                  const firstRole = foundDomain?.commonRoles?.[0];
+                  const suggestedRole = typeof firstRole === "string" ? firstRole : ((firstRole as any)?.title || customParams.targetRole);
+                  setCustomParams({ 
+                    ...customParams, 
+                    preferredIndustry: newInd,
+                    targetRole: suggestedRole || customParams.targetRole
+                  });
+                  if (onTargetRoleChange && suggestedRole) {
+                    onTargetRoleChange(suggestedRole, newInd);
+                  }
+                }}
                 className="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none font-semibold"
               >
-                <option value="Technology & Software">Technology & Software</option>
-                <option value="FinTech & Digital Banking">FinTech & Digital Banking</option>
-                <option value="AI & Autonomous Systems">AI & Autonomous Systems</option>
-                <option value="Healthcare & BioTech">Healthcare & BioTech</option>
-                <option value="E-Commerce & Retail Tech">E-Commerce & Retail Tech</option>
-                <option value="Cybersecurity & Defense">Cybersecurity & Defense</option>
-                <option value="Gaming & Interactive Media">Gaming & Interactive Media</option>
+                {MAJOR_CAREER_DOMAINS.map((domain) => (
+                  <option key={domain.id} value={domain.name}>
+                    {domain.name}
+                  </option>
+                ))}
               </select>
             </div>
 

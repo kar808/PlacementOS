@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MockInterviewQuestion, StudentProfile, MockInterviewSession, PastInterviewSession } from "../types";
+import { MAJOR_CAREER_DOMAINS } from "./UniversalProfessionEngine";
 import { 
   MessageSquare, Play, Send, RefreshCw, Star, ArrowRight, 
   CheckCircle2, ChevronDown, ChevronUp, Brain, Mic, MicOff, 
@@ -64,6 +65,7 @@ interface InterviewSimulatorProps {
   isGenerating?: boolean;
   isEvaluating?: boolean;
   callServerEndpoint: (endpoint: string, body: any) => Promise<any>;
+  onTargetRoleChange?: (role: string, industry?: string) => Promise<void> | void;
 }
 
 const EVALUATION_DIMENSIONS = [
@@ -93,13 +95,7 @@ const EXPERIENCE_LEVELS = [
 ];
 
 const DOMAINS_LIST = [
-  "Software Engineering & IT",
-  "Artificial Intelligence & Data Science",
-  "Finance & Investment Banking",
-  "Healthcare & Clinical Medicine",
-  "Civil Services & Public Governance (IAS/IPS)",
-  "Aerospace & Mechanical Engineering",
-  "Product Management",
+  ...MAJOR_CAREER_DOMAINS.map(d => d.name),
   "Custom Domain"
 ];
 
@@ -194,7 +190,8 @@ export function InterviewSimulator({
   onResetInterview,
   isGenerating = false,
   isEvaluating = false,
-  callServerEndpoint
+  callServerEndpoint,
+  onTargetRoleChange
 }: InterviewSimulatorProps) {
   // Navigation & Config state
   const [activeSubTab, setActiveSubTab] = useState<"practice" | "trends" | "history">("practice");
@@ -1163,12 +1160,23 @@ export function InterviewSimulator({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold block">
-                    3. Target Industry / Domain
+                    3. Target Industry / Domain (Universal Field Engine)
                   </label>
                   <select
                     value={selectedDomain}
-                    onChange={(e) => setSelectedDomain(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    onChange={(e) => {
+                      const newDomain = e.target.value;
+                      setSelectedDomain(newDomain);
+                      const found = MAJOR_CAREER_DOMAINS.find(d => d.name === newDomain);
+                      if (found && found.commonRoles?.[0]) {
+                        const topRole = typeof found.commonRoles[0] === "string" ? found.commonRoles[0] : (found.commonRoles[0] as any).title;
+                        setSelectedRole(topRole);
+                        if (onTargetRoleChange) {
+                          onTargetRoleChange(topRole, newDomain);
+                        }
+                      }
+                    }}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium"
                   >
                     {DOMAINS_LIST.map((d) => (
                       <option key={d} value={d}>{d}</option>
@@ -1189,14 +1197,37 @@ export function InterviewSimulator({
                 {/* Target Role & Question Count */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold block">
-                      Target Role / Position Title
-                    </label>
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold block">
+                        Target Role / Position Title
+                      </label>
+                      {onTargetRoleChange && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedRole) {
+                              onTargetRoleChange(selectedRole, selectedDomain === "Custom Domain" ? customDomainText : selectedDomain);
+                            }
+                          }}
+                          className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
+                        >
+                          <Sparkles className="w-2.5 h-2.5" /> Sync Target Role
+                        </button>
+                      )}
+                    </div>
                     <input
                       type="text"
                       value={selectedRole}
-                      onChange={(e) => setSelectedRole(e.target.value)}
-                      placeholder="e.g., Senior Software Engineer, IAS Officer, Clinical Nurse Lead"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedRole(val);
+                      }}
+                      onBlur={() => {
+                        if (selectedRole && onTargetRoleChange) {
+                          onTargetRoleChange(selectedRole, selectedDomain === "Custom Domain" ? customDomainText : selectedDomain);
+                        }
+                      }}
+                      placeholder="e.g., Senior Software Engineer, Corporate Lawyer, Clinical Specialist"
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
                     />
                   </div>

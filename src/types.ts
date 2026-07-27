@@ -28,6 +28,7 @@ export interface StudentProfile {
   codingLevel: string;
   confidenceLevel: string;
   constraints: string;
+  preferredIndustry?: string;
   linkedinUrl?: string;
   githubUrl?: string;
   email?: string;
