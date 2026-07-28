@@ -15,7 +15,7 @@ export default function ProjectAdvisor({
   onGenerate,
   isGenerating,
 }: ProjectAdvisorProps) {
-  const [selectedRole, setSelectedRole] = useState(profile.targetRoles[0] || "");
+  const [selectedRole, setSelectedRole] = useState(profile.targetRoles?.[0] || "");
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const handleCopy = (text: string, index: number) => {
@@ -55,15 +55,15 @@ export default function ProjectAdvisor({
               onChange={(e) => setSelectedRole(e.target.value)}
               className="w-full text-sm border border-white/10 rounded-lg px-3 py-2 text-white bg-black/40 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
             >
-              {profile.targetRoles.map((role) => (
+              {(profile.targetRoles || []).map((role) => (
                 <option key={role} value={role} className="bg-[#111] text-white">
                   {role}
                 </option>
               ))}
-              {!profile.targetRoles.includes(selectedRole) && selectedRole && (
+              {!(profile.targetRoles || []).includes(selectedRole) && selectedRole && (
                 <option value={selectedRole} className="bg-[#111] text-white">{selectedRole}</option>
               )}
-              {profile.targetRoles.length === 0 && <option value="" className="bg-[#111] text-white">Select a target role</option>}
+              {(profile.targetRoles || []).length === 0 && <option value="" className="bg-[#111] text-white">Select a target role</option>}
             </select>
           </div>
           <button
@@ -86,7 +86,7 @@ export default function ProjectAdvisor({
 
       {projects ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {projects.map((project, idx) => (
+          {(projects || []).map((project, idx) => (
             <div key={idx} className="bg-[#111] border border-white/10 rounded-xl p-6 shadow-lg flex flex-col justify-between space-y-6 transition-all duration-300 hover:scale-[1.02] hover:border-emerald-500/20">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-white/10 pb-2">

@@ -52,7 +52,7 @@ export default function CommunicationCoach({
 
       {tips ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {tips.map((item, idx) => (
+          {(tips || []).map((item, idx) => (
             <div key={idx} className="bg-[#111] border border-white/10 rounded-xl p-5 shadow-lg flex flex-col justify-between space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-emerald-500/20">
               <div className="space-y-3">
                 <div className="flex justify-between items-start border-b border-white/10 pb-2">

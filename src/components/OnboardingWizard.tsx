@@ -316,10 +316,10 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 min-h-[44px] p-2 bg-black/40 border border-white/5 rounded-xl mt-1.5">
-                    {profile.technicalSkills.length === 0 && (
+                    {(profile.technicalSkills || []).length === 0 && (
                       <span className="text-xs text-white/25 p-1 font-mono italic">No technical skills added yet.</span>
                     )}
-                    {profile.technicalSkills.map((skill) => (
+                    {(profile.technicalSkills || []).map((skill) => (
                       <span key={skill} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono bg-white/5 text-white border border-white/10">
                         {skill}
                         <button type="button" onClick={() => handleRemoveTech(skill)} className="text-white/40 hover:text-rose-400 transition-colors">
@@ -351,10 +351,10 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 min-h-[44px] p-2 bg-black/40 border border-white/5 rounded-xl mt-1.5">
-                    {profile.nonTechnicalSkills.length === 0 && (
+                    {(profile.nonTechnicalSkills || []).length === 0 && (
                       <span className="text-xs text-white/25 p-1 font-mono italic">No soft skills added yet.</span>
                     )}
-                    {profile.nonTechnicalSkills.map((skill) => (
+                    {(profile.nonTechnicalSkills || []).map((skill) => (
                       <span key={skill} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono bg-white/5 text-white border border-white/10">
                         {skill}
                         <button type="button" onClick={() => handleRemoveNonTech(skill)} className="text-white/40 hover:text-rose-400 transition-colors">
@@ -485,10 +485,10 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1.5 p-1.5 bg-black/40 border border-white/5 rounded-xl">
-                      {profile.targetRoles.length === 0 && (
+                      {(profile.targetRoles || []).length === 0 && (
                         <span className="text-[10px] text-white/25 italic p-1 font-mono">No target roles specified.</span>
                       )}
-                      {profile.targetRoles.map((role) => (
+                      {(profile.targetRoles || []).map((role) => (
                         <span key={role} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-white/5 text-white border border-white/10">
                           {role}
                           <button type="button" onClick={() => handleRemoveRole(role)} className="text-white/40 hover:text-rose-400">
@@ -520,10 +520,10 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1.5 p-1.5 bg-black/40 border border-white/5 rounded-xl">
-                      {profile.targetCompanies.length === 0 && (
+                      {(profile.targetCompanies || []).length === 0 && (
                         <span className="text-[10px] text-white/25 italic p-1 font-mono">No target companies specified.</span>
                       )}
-                      {profile.targetCompanies.map((c) => (
+                      {(profile.targetCompanies || []).map((c) => (
                         <span key={c} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-white/5 text-white border border-white/10">
                           {c}
                           <button type="button" onClick={() => handleRemoveCompany(c)} className="text-white/40 hover:text-rose-400">

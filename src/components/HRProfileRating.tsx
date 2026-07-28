@@ -46,7 +46,7 @@ Dear Hiring Team,
 
 My name is ${profile.name}, and I am a final-year student specializing in ${profile.branch || "Computer Science"} at ${profile.college || "my college"}. 
 
-I recently completed an HR Socials Screen using VORYNEXA, scoring ${analysis?.ratings.professionalism || 85}% in Professionalism and ${analysis?.ratings.githubActivity || 80}% in Technical Maturity. 
+I recently completed an HR Socials Screen using VORYNEXA, scoring ${analysis?.ratings?.professionalism || 85}% in Professionalism and ${analysis?.ratings?.githubActivity || 80}% in Technical Maturity. 
 
 Over the past semesters, I've honed skills in ${profile.technicalSkills?.slice(0, 5).join(", ") || "various technologies"} and built portfolio-worthy applications. You can view my public profiles below:
 - LinkedIn: ${linkedinUrl || "[LinkedIn Link]"}
@@ -226,10 +226,10 @@ ${linkedinUrl || "[LinkedIn Link]"}`;
             {/* Right: Scores bento layout */}
             <div className="lg:col-span-2 grid grid-cols-2 gap-4">
               {[
-                { name: "Public Professionalism", value: analysis.ratings.professionalism, desc: "Branding alignment, profile clarity, and recruiter appeal." },
-                { name: "Technical Maturity", value: analysis.ratings.githubActivity, desc: "Commit frequencies, repo clarity, and engineering postures." },
-                { name: "Profile Activity", value: analysis.ratings.hrAppeal, desc: "Recruiter search visibility and interaction frequencies." },
-                { name: "LinkedIn Completeness", value: analysis.ratings.linkedinCompleteness, desc: "Keyword density, banner layout, and title strength." }
+                { name: "Public Professionalism", value: analysis?.ratings?.professionalism || 75, desc: "Branding alignment, profile clarity, and recruiter appeal." },
+                { name: "Technical Maturity", value: analysis?.ratings?.githubActivity || 75, desc: "Commit frequencies, repo clarity, and engineering postures." },
+                { name: "Profile Activity", value: analysis?.ratings?.hrAppeal || 75, desc: "Recruiter search visibility and interaction frequencies." },
+                { name: "LinkedIn Completeness", value: analysis?.ratings?.linkedinCompleteness || 75, desc: "Keyword density, banner layout, and title strength." }
               ].map((item, idx) => (
                 <div key={idx} className="bg-[#111] border border-white/10 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
                   <div>

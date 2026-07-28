@@ -633,11 +633,11 @@ ${profSummary}
 - Domain Knowledge & Methodologies: ${coreEngineering.join(", ")}
 
 ## PROJECTS & PROFESSIONAL EXPERIENCE
-### ${projects[0].title} (${projects[0].roleOrCategory})
-${projects[0].bullets.map(b => `- ${b}`).join("\n")}
+### ${projects[0]?.title || "Project 1"} (${projects[0]?.roleOrCategory || "Engineering"})
+${(projects[0]?.bullets || []).map(b => `- ${b}`).join("\n")}
 
-### ${projects[1].title} (${projects[1].roleOrCategory})
-${projects[1].bullets.map(b => `- ${b}`).join("\n")}
+### ${projects[1]?.title || "Project 2"} (${projects[1]?.roleOrCategory || "Development"})
+${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
 
 ## EDUCATION & CREDENTIALS
 - ${degree} in ${branch} - ${college} (${gradYear})
@@ -745,8 +745,8 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
           atsReadabilityScore: result.atsBreakdown?.readabilityScore || 95,
           uploadedText: result.fullMarkdownText,
           atsBulletImprovements: result.atsBreakdown?.bulletRewrites || result.experienceAndProjects?.flatMap((proj: any) =>
-            proj.bullets.map((b: string) => ({
-              before: "Worked on " + proj.title,
+            (proj.bullets || []).map((b: string) => ({
+              before: "Worked on " + (proj.title || "project"),
               after: b,
               explanation: "Quantified metric and STAR method action verb applied by AI.",
             }))
@@ -1936,7 +1936,7 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
                         </span>
                       </div>
                       <ul className="space-y-1.5 list-disc list-inside text-xs text-white/70">
-                        {proj.bullets.map((b, bi) => (
+                        {(proj.bullets || []).map((b, bi) => (
                           <li key={bi} className="leading-relaxed">
                             {b}
                           </li>
@@ -2740,7 +2740,7 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
                       <span className="text-[10px] font-mono text-gray-500">{p.roleOrCategory}</span>
                     </div>
                     <ul className="list-disc list-inside text-xs text-gray-700 space-y-1 pl-1">
-                      {p.bullets.map((b, bi) => (
+                      {(p.bullets || []).map((b, bi) => (
                         <li key={bi} className="leading-snug">{b}</li>
                       ))}
                     </ul>

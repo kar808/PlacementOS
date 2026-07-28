@@ -95,8 +95,8 @@ export default function UserDashboard({
       else if (typeof value === "string" && value.trim() !== "") populatedCount++;
     });
 
-    if (profile.technicalSkills.length > 0) populatedCount++;
-    if (profile.targetRoles.length > 0) populatedCount++;
+    if ((profile.technicalSkills || []).length > 0) populatedCount++;
+    if ((profile.targetRoles || []).length > 0) populatedCount++;
 
     const totalFields = fieldsToTrack.length + 2;
     return Math.round((populatedCount / totalFields) * 100);
@@ -130,7 +130,7 @@ export default function UserDashboard({
               Welcome back, {studentFirstName}! <Sparkles className="w-5 h-5 text-emerald-400" />
             </h2>
             <p className="text-xs text-white/50 leading-relaxed max-w-xl">
-              Your career co-pilot is active. We analyzed your background and synchronized {interviewHistory.length} mock sessions. You are currently tracked on target pathways for <strong className="text-emerald-400 font-mono">{profile.targetRoles[0] || "Software Engineer"}</strong>.
+              Your career co-pilot is active. We analyzed your background and synchronized {interviewHistory.length} mock sessions. You are currently tracked on target pathways for <strong className="text-emerald-400 font-mono">{profile.targetRoles?.[0] || "Software Engineer"}</strong>.
             </p>
           </div>
 
@@ -171,12 +171,12 @@ export default function UserDashboard({
 
             <div>
               <h3 className="text-lg font-black text-white flex items-center gap-2 font-mono">
-                {isMissionCompleted ? "Daily Mission Accomplished!" : `Execute 15-Min Sprint for ${profile.targetRoles[0] || "Software Engineer"}`}
+                {isMissionCompleted ? "Daily Mission Accomplished!" : `Execute 15-Min Sprint for ${profile.targetRoles?.[0] || "Software Engineer"}`}
               </h3>
               <p className="text-xs text-white/60 leading-relaxed mt-0.5">
                 {isMissionCompleted 
                   ? "Great work! You have completed today's career mission and maintained your streak. Come back tomorrow for your next mission."
-                  : `Complete 1 AI Mock Interview Session or Optimize 2 ATS Resume bullets for ${profile.targetRoles[0] || "Software Engineer"}.`}
+                  : `Complete 1 AI Mock Interview Session or Optimize 2 ATS Resume bullets for ${profile.targetRoles?.[0] || "Software Engineer"}.`}
               </p>
             </div>
           </div>
@@ -218,7 +218,7 @@ export default function UserDashboard({
             </h3>
           </div>
           <p className="text-[10px] text-white/40 font-mono">
-            Vorynexa AI Operating System &middot; Target Role: <strong className="text-emerald-400">{profile.targetRoles[0] || "Software Engineer"}</strong>
+            Vorynexa AI Operating System &middot; Target Role: <strong className="text-emerald-400">{profile.targetRoles?.[0] || "Software Engineer"}</strong>
           </p>
         </div>
 
@@ -230,7 +230,7 @@ export default function UserDashboard({
                 <BookOpen className="w-3.5 h-3.5" /> 1. What to Learn?
               </div>
               <h4 className="text-xs font-bold text-white leading-snug">
-                {profile.technicalSkills.length > 0 ? `Master ${profile.technicalSkills[0]} & System Architecture` : "Core Technical Gaps"}
+                {(profile.technicalSkills || []).length > 0 ? `Master ${profile.technicalSkills[0]} & System Architecture` : "Core Technical Gaps"}
               </h4>
               <p className="text-[10px] text-white/40 leading-relaxed line-clamp-2">
                 Focused week-by-week execution path closing target role skill gaps.

@@ -761,11 +761,11 @@ export default function FileUploadAnalyzer({
                     )}
                   </div>
 
-                  {analysisResult.extractedDetails.technicalSkills && analysisResult.extractedDetails.technicalSkills.length > 0 && (
+                  {analysisResult.extractedDetails.technicalSkills && (analysisResult.extractedDetails.technicalSkills || []).length > 0 && (
                     <div className="pt-2 border-t border-white/5 space-y-1">
                       <span className="text-xs font-bold text-white/60 font-mono block">Extracted Core & Technical Skills:</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {analysisResult.extractedDetails.technicalSkills.map((sk, idx) => (
+                        {(analysisResult.extractedDetails.technicalSkills || []).map((sk, idx) => (
                           <span key={idx} className="px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[10px] font-mono rounded-md font-bold">
                             {sk}
                           </span>
@@ -774,11 +774,11 @@ export default function FileUploadAnalyzer({
                     </div>
                   )}
 
-                  {analysisResult.extractedDetails.softSkills && analysisResult.extractedDetails.softSkills.length > 0 && (
+                  {analysisResult.extractedDetails.softSkills && (analysisResult.extractedDetails.softSkills || []).length > 0 && (
                     <div className="pt-2 border-t border-white/5 space-y-1">
                       <span className="text-xs font-bold text-white/60 font-mono block">Extracted Leadership & Soft Skills:</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {analysisResult.extractedDetails.softSkills.map((sk, idx) => (
+                        {(analysisResult.extractedDetails.softSkills || []).map((sk, idx) => (
                           <span key={idx} className="px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[10px] font-mono rounded-md font-bold">
                             {sk}
                           </span>
@@ -831,13 +831,13 @@ export default function FileUploadAnalyzer({
                   </div>
                 )}
 
-                {analysisResult.skillGapAnalysis && analysisResult.skillGapAnalysis.length > 0 && (
+                {analysisResult.skillGapAnalysis && (analysisResult.skillGapAnalysis || []).length > 0 && (
                   <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
                     <h5 className="text-xs font-black text-purple-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <AlertTriangle className="w-4 h-4" /> Skill Gap & Competency Recommendations
                     </h5>
                     <ul className="space-y-1 text-xs text-white/80 font-mono">
-                      {analysisResult.skillGapAnalysis.map((gap, idx) => (
+                      {(analysisResult.skillGapAnalysis || []).map((gap, idx) => (
                         <li key={idx} className="flex items-start gap-1.5">
                           <span className="text-purple-400">→</span>
                           <span>{gap}</span>
@@ -856,7 +856,7 @@ export default function FileUploadAnalyzer({
                     <CheckCircle2 className="w-4 h-4" /> Resume Strengths & Competitive Edge
                   </h5>
                   <ul className="space-y-1.5 text-xs text-white/80">
-                    {analysisResult.keyStrengths?.map((s, idx) => (
+                    {(analysisResult.keyStrengths || []).map((s, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <span className="text-emerald-400 shrink-0">•</span>
                         <span>{s}</span>
@@ -871,7 +871,7 @@ export default function FileUploadAnalyzer({
                     <ShieldAlert className="w-4 h-4" /> Formatting Flaws & Red Flags
                   </h5>
                   <ul className="space-y-1.5 text-xs text-white/80">
-                    {analysisResult.criticalFlawsAndRisks?.map((f, idx) => (
+                    {(analysisResult.criticalFlawsAndRisks || []).map((f, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <span className="text-rose-400 shrink-0">•</span>
                         <span>{f}</span>
@@ -883,13 +883,13 @@ export default function FileUploadAnalyzer({
 
               {/* Missing Keywords & Missing Sections Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {analysisResult.missingKeywords && analysisResult.missingKeywords.length > 0 && (
+                {analysisResult.missingKeywords && (analysisResult.missingKeywords || []).length > 0 && (
                   <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
                     <h5 className="text-xs font-black text-amber-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <FileCode className="w-4 h-4" /> Critical Missing ATS Keywords
                     </h5>
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {analysisResult.missingKeywords.map((kw, idx) => (
+                      {(analysisResult.missingKeywords || []).map((kw, idx) => (
                         <span key={idx} className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-mono rounded-lg">
                           {kw}
                         </span>
@@ -898,13 +898,13 @@ export default function FileUploadAnalyzer({
                   </div>
                 )}
 
-                {analysisResult.missingSections && analysisResult.missingSections.length > 0 && (
+                {analysisResult.missingSections && (analysisResult.missingSections || []).length > 0 && (
                   <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
                     <h5 className="text-xs font-black text-rose-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <Layers className="w-4 h-4" /> Recommended Missing Sections
                     </h5>
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {analysisResult.missingSections.map((sec, idx) => (
+                      {(analysisResult.missingSections || []).map((sec, idx) => (
                         <span key={idx} className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px] font-mono rounded-lg">
                           {sec}
                         </span>
@@ -915,13 +915,13 @@ export default function FileUploadAnalyzer({
               </div>
 
               {/* SECTION 5 REQUIREMENT: ATS Bullet Improvements */}
-              {analysisResult.atsBulletImprovements && analysisResult.atsBulletImprovements.length > 0 && (
+              {analysisResult.atsBulletImprovements && (analysisResult.atsBulletImprovements || []).length > 0 && (
                 <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
                   <h5 className="text-xs font-black text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-emerald-400" /> Recommended STAR Method Bullet Point Rewrites
                   </h5>
                   <div className="space-y-3">
-                    {analysisResult.atsBulletImprovements.map((bullet, idx) => (
+                    {(analysisResult.atsBulletImprovements || []).map((bullet, idx) => (
                       <div key={idx} className="bg-[#181818] border border-white/5 rounded-xl p-3 space-y-2 text-xs relative">
                         <div className="text-rose-400/80 line-through pr-12">
                           <span className="font-mono text-[9px] uppercase text-rose-400 block font-bold">Original Draft</span>
@@ -955,13 +955,13 @@ export default function FileUploadAnalyzer({
 
               {/* RECOMMENDED PROJECTS & CERTIFICATIONS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {analysisResult.recommendedProjects && analysisResult.recommendedProjects.length > 0 && (
+                {analysisResult.recommendedProjects && (analysisResult.recommendedProjects || []).length > 0 && (
                   <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
                     <h5 className="text-xs font-black text-cyan-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <Briefcase className="w-4 h-4" /> Recommended High-Impact Portfolio Projects
                     </h5>
                     <div className="space-y-2">
-                      {analysisResult.recommendedProjects.map((proj, idx) => (
+                      {(analysisResult.recommendedProjects || []).map((proj, idx) => (
                         <div key={idx} className="p-3 bg-black/60 rounded-lg border border-white/5 text-xs space-y-1">
                           <strong className="text-white block font-bold">{proj.title}</strong>
                           {proj.objective && <p className="text-white/70 text-[11px]">{proj.objective}</p>}
@@ -972,13 +972,13 @@ export default function FileUploadAnalyzer({
                   </div>
                 )}
 
-                {analysisResult.recommendedCertifications && analysisResult.recommendedCertifications.length > 0 && (
+                {analysisResult.recommendedCertifications && (analysisResult.recommendedCertifications || []).length > 0 && (
                   <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-3">
                     <h5 className="text-xs font-black text-purple-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <Award className="w-4 h-4" /> Recommended Industry Certifications
                     </h5>
                     <div className="space-y-2">
-                      {analysisResult.recommendedCertifications.map((cert, idx) => (
+                      {(analysisResult.recommendedCertifications || []).map((cert, idx) => (
                         <div key={idx} className="p-3 bg-black/60 rounded-lg border border-white/5 text-xs space-y-1">
                           <strong className="text-white block font-bold">{cert.name}</strong>
                           {cert.issuer && <span className="text-white/50 text-[10px] font-mono block">Issuer: {cert.issuer}</span>}
@@ -992,13 +992,13 @@ export default function FileUploadAnalyzer({
 
               {/* CAREER ROADMAP & INTERVIEW PREPARATION TIPS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {analysisResult.careerRoadmapSuggestions && analysisResult.careerRoadmapSuggestions.length > 0 && (
+                {analysisResult.careerRoadmapSuggestions && (analysisResult.careerRoadmapSuggestions || []).length > 0 && (
                   <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
                     <h5 className="text-xs font-black text-emerald-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <Compass className="w-4 h-4" /> Career Roadmap Suggestions
                     </h5>
                     <ul className="space-y-1.5 text-xs text-white/80 font-mono">
-                      {analysisResult.careerRoadmapSuggestions.map((rm, idx) => (
+                      {(analysisResult.careerRoadmapSuggestions || []).map((rm, idx) => (
                         <li key={idx} className="flex items-start gap-1.5">
                           <span className="text-emerald-400 font-bold">•</span>
                           <span>{rm}</span>
@@ -1008,13 +1008,13 @@ export default function FileUploadAnalyzer({
                   </div>
                 )}
 
-                {analysisResult.interviewPreparationTips && analysisResult.interviewPreparationTips.length > 0 && (
+                {analysisResult.interviewPreparationTips && (analysisResult.interviewPreparationTips || []).length > 0 && (
                   <div className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2">
                     <h5 className="text-xs font-black text-indigo-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <HelpCircle className="w-4 h-4" /> Interview Preparation Guidance
                     </h5>
                     <ul className="space-y-1.5 text-xs text-white/80 font-mono">
-                      {analysisResult.interviewPreparationTips.map((tip, idx) => (
+                      {(analysisResult.interviewPreparationTips || []).map((tip, idx) => (
                         <li key={idx} className="flex items-start gap-1.5">
                           <span className="text-indigo-400 font-bold">•</span>
                           <span>{tip}</span>
@@ -1032,7 +1032,7 @@ export default function FileUploadAnalyzer({
                     Visual & Formatting Recommendations
                   </h5>
                   <ul className="space-y-1.5 text-xs text-white/70 font-mono">
-                    {analysisResult.formattingSuggestions?.map((fs, idx) => (
+                    {(analysisResult.formattingSuggestions || []).map((fs, idx) => (
                       <li key={idx} className="flex items-start gap-1.5">
                         <span className="text-emerald-400">→</span>
                         <span>{fs}</span>
@@ -1046,7 +1046,7 @@ export default function FileUploadAnalyzer({
                     Step-by-Step Action Plan
                   </h5>
                   <ul className="space-y-1.5 text-xs text-white/70 font-mono">
-                    {analysisResult.recommendedActionableSteps?.map((step, idx) => (
+                    {(analysisResult.recommendedActionableSteps || []).map((step, idx) => (
                       <li key={idx} className="flex items-start gap-1.5">
                         <span className="text-emerald-400 font-bold">{idx + 1}.</span>
                         <span>{step}</span>

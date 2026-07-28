@@ -573,9 +573,9 @@ export default function UniversalProfessionEngine({
 
             {/* Quick Preset Roles for Current Domain */}
             <div className="pt-2">
-              <p className="text-[11px] font-medium text-slate-400 mb-2">Common Roles in {selectedDomain.name}:</p>
+              <p className="text-[11px] font-medium text-slate-400 mb-2">Common Roles in {selectedDomain?.name || "Selected Domain"}:</p>
               <div className="flex flex-wrap gap-2">
-                {selectedDomain.commonRoles.map((role) => (
+                {(selectedDomain?.commonRoles || []).map((role) => (
                   <button
                     key={role}
                     onClick={() => {
@@ -676,7 +676,7 @@ export default function UniversalProfessionEngine({
                       <BookOpen className="w-3.5 h-3.5 text-blue-400" /> Domain Terminology & Jargon
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {classificationResult.domainTerminology.map((term, i) => (
+                      {(classificationResult?.domainTerminology || []).map((term, i) => (
                         <span key={i} className="px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20 text-xs font-mono">
                           {term}
                         </span>
@@ -690,7 +690,7 @@ export default function UniversalProfessionEngine({
                       <Key className="w-3.5 h-3.5 text-emerald-400" /> Recruiter ATS Keywords
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {classificationResult.atsKeywords.map((kw, i) => (
+                      {(classificationResult?.atsKeywords || []).map((kw, i) => (
                         <span key={i} className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-xs font-medium">
                           {kw}
                         </span>
@@ -806,7 +806,7 @@ export default function UniversalProfessionEngine({
                     <BookOpen className="w-3.5 h-3.5 text-blue-400" /> Standard Domain Terminology
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {selectedDomain.sampleTerminology.map((term, i) => (
+                    {(selectedDomain?.sampleTerminology || []).map((term, i) => (
                       <span key={i} className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 text-xs font-mono border border-blue-500/20">
                         {term}
                       </span>
@@ -819,7 +819,7 @@ export default function UniversalProfessionEngine({
                     <Key className="w-3.5 h-3.5 text-emerald-400" /> High-Weight ATS Keywords
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {selectedDomain.sampleAtsKeywords.map((kw, i) => (
+                    {(selectedDomain?.sampleAtsKeywords || []).map((kw, i) => (
                       <span key={i} className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 text-xs font-medium border border-emerald-500/20">
                         {kw}
                       </span>
