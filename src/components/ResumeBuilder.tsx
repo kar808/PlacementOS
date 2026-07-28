@@ -691,16 +691,17 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
   };
 
   // Automatic AI Resume Generation ("Bestest AI Engine")
-  const handleAutoBuildResume = async () => {
+  const handleAutoBuildResume = async (overrideRole?: string) => {
     setIsAutoBuilding(true);
     setAutoBuildError(null);
+    const targetRoleToUse = overrideRole || autoBuildRole || profile.targetRoles?.[0] || "Software Engineer";
     try {
       let result;
       try {
         if (callServerEndpoint) {
           result = await callServerEndpoint("/api/placement/resume-autobuild", {
             profile,
-            targetRole: autoBuildRole,
+            targetRole: targetRoleToUse,
             strategy: selectedStrategy,
             userAnswers,
           });
@@ -710,7 +711,7 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               profile,
-              targetRole: autoBuildRole,
+              targetRole: targetRoleToUse,
               strategy: selectedStrategy,
               userAnswers,
             }),
@@ -719,18 +720,18 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
         }
       } catch (fetchErr: any) {
         console.warn("Backend API fetch for resume autobuild failed, switching to high-precision client fallback:", fetchErr);
-        result = generateClientFallbackResume(profile, autoBuildRole, selectedStrategy, userAnswers);
+        result = generateClientFallbackResume(profile, targetRoleToUse, selectedStrategy, userAnswers);
       }
 
       if (!result || !result.fullMarkdownText) {
-        result = generateClientFallbackResume(profile, autoBuildRole, selectedStrategy, userAnswers);
+        result = generateClientFallbackResume(profile, targetRoleToUse, selectedStrategy, userAnswers);
       }
 
       if (result && result.fullMarkdownText) {
         setGeneratedResumeData(result);
 
         const synthesizedFile: UploadedResumeFile = {
-          name: `AI_Generated_Resume_${autoBuildRole.replace(/\s+/g, "_")}.txt`,
+          name: `AI_Generated_Resume_${targetRoleToUse.replace(/\s+/g, "_")}.txt`,
           size: result.fullMarkdownText.length * 2,
           mimeType: "text/plain",
           base64Data: typeof window !== "undefined" ? btoa(unescape(encodeURIComponent(result.fullMarkdownText))) : "",
@@ -1122,7 +1123,7 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
               setSelectedTemplateStyle(classification.recommendedTemplateStyle);
             }
             setActiveSubTab("autobuild");
-            handleAutoBuildResume();
+            handleAutoBuildResume(classification.primaryProfession);
           }}
         />
       )}
@@ -1437,7 +1438,7 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
                 ⚡ Automatically verifies chronology, categorizes competencies, applies STAR method, and calculates ATS confidence.
               </p>
               <button
-                onClick={handleAutoBuildResume}
+                onClick={() => handleAutoBuildResume()}
                 disabled={isAutoBuilding}
                 className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-500 via-emerald-500 to-cyan-500 hover:opacity-90 disabled:opacity-50 text-black font-black text-xs font-mono uppercase tracking-wider rounded-xl transition-all shadow-xl shadow-amber-500/10 flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-95"
               >
@@ -1536,7 +1537,7 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
                           </div>
                         ))}
                         <button
-                          onClick={handleAutoBuildResume}
+                          onClick={() => handleAutoBuildResume()}
                           disabled={isAutoBuilding}
                           className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono text-[10px] font-black uppercase rounded-lg transition-all cursor-pointer mt-1"
                         >

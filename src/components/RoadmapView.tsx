@@ -23,6 +23,753 @@ interface RoadmapViewProps {
   onTargetRoleChange?: (role: string, industry?: string) => Promise<void> | void;
 }
 
+// Domain-specific stage data builder covering all major non-tech and tech professions
+function getDomainSpecificStageData(role: string, industry: string) {
+  const r = (role || "").toLowerCase();
+  const ind = (industry || "").toLowerCase();
+
+  // 1. Healthcare / Nursing / Medical
+  if (r.includes("nurse") || r.includes("doctor") || r.includes("health") || r.includes("medical") || r.includes("clinic") || r.includes("pharma") || ind.includes("health") || ind.includes("medical")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Foundational Clinical Care & Medical Protocols",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Focus on foundational patient assessment, medical terminology, and strict HIPAA compliance before advancing to complex care plans.",
+        learningTopics: ["Anatomy & Physiology Fundamentals", "Medical Terminology & Pathology", "Patient Assessment & Vitals Monitoring", "Pharmacology & Dosage Calculations", "HIPAA Compliance & EMR Data Privacy"],
+        recommendedTools: ["Epic Systems / Cerner EHR", "Stethoscope & Vitals Diagnostics", "UpToDate Clinical Decision Support", "PubMed Research Database", "Medscape Pharmacopeia"],
+        recommendedProjects: [
+          { title: "Clinical Workflow & Patient Triage Audit", description: "Audit emergency department patient intake and triage prioritization flow to minimize wait times.", keyDeliverables: ["Triage Protocol Matrix", "EMR Entry Audit", "Patient Safety Report"], portfolioImpact: "Demonstrates clinical compliance and operational rigor." }
+        ],
+        recommendedCertifications: [
+          { name: "BLS / ACLS Certification", issuer: "American Heart Association", relevance: "Essential Clinical Standard", estimatedCost: "$100" },
+          { name: "Certified Medical Assistant / NCLEX-RN Prep", issuer: "NCSBN / State Licensing", relevance: "Core Licensure Requirement", estimatedCost: "$200" }
+        ],
+        books: [{ title: "Bates' Guide to Physical Examination", author: "Lynn S. Bickley", whyRead: "Gold standard manual for physical health assessment." }],
+        courses: [{ title: "Human Anatomy & Physiology", platform: "Coursera / Duke", urlOrProvider: "Duke University", type: "Free" }],
+        practicePlatforms: [{ name: "UWorld Medical / NCLEX QBank", focus: "Clinical Case Scenarios & Board Questions" }],
+        interviewPreparation: [
+          { topic: "Patient Care Scenarios & Compassion", keyQuestions: ["How do you handle an uncooperative patient?", "Describe a time you noticed an incorrect dosage."], strategy: "Emphasize patient safety, protocol verification, and clear escalation." }
+        ],
+        portfolioTasks: ["Log 50 clinical simulation hours", "Audit EMR data privacy compliance", "Create patient discharge instruction checklist"],
+        networkingSuggestions: ["Connect with local hospital unit managers", "Join State Nursing or Medical Association", "Attend clinical research webinars"],
+        jobApplicationStrategy: ["Target residency and entry clinical programs", "Highlight clinical rotation hours on CV", "Submit applications to regional health systems"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "Specialized Clinical Management & EMR Workflows",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Develop sharp diagnostic reasoning, medication reconciliation, and interprofessional care team communication.",
+        learningTopics: ["Critical Care & Emergency Protocol", "Diagnostic Diagnostics Interpretation (ECG/Lab)", "Interprofessional Team Care Coordination", "Patient Advocacy & Informed Consent", "Infection Control & Sterile Technique"],
+        recommendedTools: ["Pyxis Automated Dispensing", "Cerner PowerChart", "3M Medical Coding", "UpToDate", "EHR Simulator"],
+        recommendedProjects: [
+          { title: "Medication Reconciliation & Safety Protocol Case Study", description: "Design a double-check verification framework reducing drug dosage errors in inpatient wards.", keyDeliverables: ["Medication Admin Checklist", "Safety Flowchart", "Staff Training Guide"], portfolioImpact: "Proves commitment to zero-defect patient care." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Critical Care Nurse (CCRN) / Specialist", issuer: "AACN / Specialty Board", relevance: "High Advanced Competency", estimatedCost: "$300" }
+        ],
+        books: [{ title: "Harrison's Principles of Internal Medicine", author: "Joseph Loscalzo et al.", whyRead: "Definitive clinical medicine reference." }],
+        courses: [{ title: "Clinical Terminology for Healthcare", platform: "Coursera / Pittsburgh", urlOrProvider: "Univ of Pittsburgh", type: "Free" }],
+        practicePlatforms: [{ name: "Osmosis Health Learning", focus: "Pathology & Clinical Reasoning Drills" }],
+        interviewPreparation: [
+          { topic: "Critical Care Decision Making", keyQuestions: ["Explain how you prioritize 3 deteriorating patients.", "Walk me through an emergency code situation."], strategy: "Use ABCs (Airway, Breathing, Circulation) framework." }
+        ],
+        portfolioTasks: ["Publish unit medication safety protocol", "Log specialized ICU/ER rotation hours", "Author patient advocacy guide"],
+        networkingSuggestions: ["Engage with specialty clinical committees", "Seek mentorship from Nurse Practitioners / Attending Physicians", "Attend annual clinical symposiums"],
+        jobApplicationStrategy: ["Target specialized inpatient wards and ICUs", "Request internal unit transfer interviews", "Highlight specialized certification credentials"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "Hospital Unit Leadership & Quality Metrics",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Master healthcare operational quality (HCAHPS), unit budgeting, and clinical risk mitigation.",
+        learningTopics: ["Clinical Trial Management & Ethics", "Healthcare Quality Metrics & HCAHPS", "Hospital Unit Leadership & Budgeting", "Complex Multi-System Pathology Management", "Telehealth Protocol Optimization"],
+        recommendedTools: ["Epic Cadence / Grand Central", "Midas Healthcare Analytics", "RedCap Research DB", "SAS Healthcare Analytics"],
+        recommendedProjects: [
+          { title: "Hospital Readmission Reduction Initiative", description: "Implement post-discharge follow-up care plans reducing 30-day readmissions by 18%.", keyDeliverables: ["Discharge Care Plan", "Metric Dashboard", "Executive Brief"], portfolioImpact: "Shows strategic healthcare management ability." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Healthcare Executive (FACHE) / Nurse Leader", issuer: "ACHE / ANCC", relevance: "Top Executive Credential", estimatedCost: "$450" }
+        ],
+        books: [{ title: "Understanding Healthcare Financial Management", author: "Louis C. Gapenski", whyRead: "Strategic healthcare budget and operations guide." }],
+        courses: [{ title: "Healthcare Quality Improvement", platform: "Harvard Online", urlOrProvider: "Harvard", type: "Paid" }],
+        practicePlatforms: [{ name: "NEJM Knowledge+", focus: "Adaptive Board Level Clinical Case Drills" }],
+        interviewPreparation: [
+          { topic: "Healthcare Quality & Leadership", keyQuestions: ["How do you improve unit HCAHPS scores?", "How do you manage staff burnout?"], strategy: "Focus on data-driven interventions and empathetic leadership." }
+        ],
+        portfolioTasks: ["Author hospital quality improvement report", "Lead interdisciplinary case study review", "Present findings to chief nursing officer"],
+        networkingSuggestions: ["Join Executive Healthcare Associations", "Participate in hospital policy boards", "Present poster sessions at medical conferences"],
+        jobApplicationStrategy: ["Target Charge Nurse, Unit Supervisor, or Clinical Manager roles", "Leverage executive recruiter contacts", "Highlight unit efficiency metrics"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "Enterprise Healthcare Administration & Policy",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself for Director, Chief Medical Officer, or Chief Nursing Officer executive leadership.",
+        learningTopics: ["Health Policy & Regulatory Auditing", "Enterprise Hospital System Administration", "Clinical Governance & Risk Management", "Executive Healthcare Leadership", "Value-Based Care Reimbursement Models"],
+        recommendedTools: ["Oracle Health Sciences", "Premier Healthcare Analytics", "Tableau Healthcare Intelligence"],
+        recommendedProjects: [
+          { title: "Enterprise Health System Quality Audit", description: "Lead comprehensive JCAHO accreditation audit across 5 outpatient care centers.", keyDeliverables: ["JCAHO Audit Dossier", "Risk Mitigation Roadmap", "C-Suite Presentation"], portfolioImpact: "Establishes executive healthcare leadership." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Professional in Healthcare Quality (CPHQ)", issuer: "NAHQ", relevance: "Executive Quality Standard", estimatedCost: "$400" }
+        ],
+        books: [{ title: "The Leadership Challenge in Healthcare", author: "Stephen L. Walston", whyRead: "Executive guidance for leading healthcare organizations." }],
+        courses: [{ title: "Executive Healthcare Leadership", platform: "edX / Johns Hopkins", urlOrProvider: "Johns Hopkins", type: "Paid" }],
+        practicePlatforms: [{ name: "IHI Open School", focus: "Healthcare Quality & Executive Safety Leadership" }],
+        interviewPreparation: [
+          { topic: "C-Suite Healthcare Strategy", keyQuestions: ["How do you transition a health system to value-based care?", "Describe your multi-million dollar capital budgeting approach."], strategy: "Align clinical excellence with financial sustainability." }
+        ],
+        portfolioTasks: ["Deliver C-Suite health system audit", "Publish white paper on value-based care", "Structure multi-department clinical budget"],
+        networkingSuggestions: ["Connect with hospital CEOs and VPs", "Serve on regional health advisory boards", "Keynote at healthcare leadership summits"],
+        jobApplicationStrategy: ["Engage executive search firms", "Apply for CNO/CMO/VP Clinical Operations roles", "Negotiate executive compensation package"]
+      }
+    };
+  }
+
+  // 2. Legal / Law / Compliance
+  if (r.includes("law") || r.includes("legal") || r.includes("attorney") || r.includes("paralegal") || r.includes("counsel") || ind.includes("legal") || ind.includes("law")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Legal Method, Case Analysis & Brief Writing",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Master statutory interpretation, IRAC legal writing method, and primary precedent research on Westlaw/LexisNexis.",
+        learningTopics: ["Legal Method & Case Law Analysis", "Statutory Interpretation & Research", "Legal Writing & Memorandum Drafting", "Civil Procedure & Torts Basics", "Professional Responsibility & Ethics Rules"],
+        recommendedTools: ["Westlaw Precision", "LexisNexis Advance", "Clio Practice Management", "Adobe Acrobat Pro Legal", "Fastcase"],
+        recommendedProjects: [
+          { title: "Statutory Analysis & Memorandum of Law", description: "Draft a comprehensive legal memorandum analyzing tort liability in a breach of contract dispute.", keyDeliverables: ["Legal Memorandum", "Case Citation Index", "Statutory Summary"], portfolioImpact: "Demonstrates rigorous legal reasoning and citation skill." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Paralegal (CP)", issuer: "NALA", relevance: "Core Industry Credential", estimatedCost: "$250" }
+        ],
+        books: [{ title: "Point Made: How to Write Like Top Advocates", author: "Ross Guberman", whyRead: "Master persuasive legal brief drafting." }],
+        courses: [{ title: "An Introduction to American Law", platform: "Coursera / Penn Law", urlOrProvider: "UPenn", type: "Free" }],
+        practicePlatforms: [{ name: "Westlaw Research Drills", focus: "Boolean Query Mastery & Shepardizing" }],
+        interviewPreparation: [
+          { topic: "Legal Reasoning & Citation", keyQuestions: ["Walk me through how you Shepardize a case.", "How do you structure an IRAC memo?"], strategy: "Demonstrate precision, thorough research, and ethical awareness." }
+        ],
+        portfolioTasks: ["Publish 10-page memorandum of law", "Build legal research citation index", "Draft client intake questionnaire"],
+        networkingSuggestions: ["Join local or state Bar Association student section", "Reach out to law firm associates for informational interviews", "Attend local court proceedings"],
+        jobApplicationStrategy: ["Target paralegal, legal assistant, or summer associate roles", "Submit writing sample alongside resume", "Apply to regional law firms and corporate legal departments"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "Contract Drafting, Discovery & Trial Prep",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Build strong transactional drafting skills, master E-Discovery tools, and prepare for Bar Exam / licensing requirements.",
+        learningTopics: ["Contract Drafting & Negotiation", "Litigation Discovery & E-Discovery Protocols", "Corporate Governance & M&A Fundamentals", "Intellectual Property & Licensing", "Evidence & Trial Strategy"],
+        recommendedTools: ["Relativity E-Discovery", "Ironclad CLM", "Practical Law", "Clio Draft", "Lexis + AI"],
+        recommendedProjects: [
+          { title: "M&A Due Diligence & Contract Risk Matrix", description: "Analyze 50 commercial agreements for change of control clauses and indemnity liabilities.", keyDeliverables: ["Due Diligence Matrix", "Risk Executive Brief", "Redlined Contracts"], portfolioImpact: "Proves corporate transactional competence." }
+        ],
+        recommendedCertifications: [
+          { name: "CIPP/US Certified Information Privacy Professional", issuer: "IAPP", relevance: "Top Corporate Privacy Credential", estimatedCost: "$550" }
+        ],
+        books: [{ title: "Working with Contracts: What Law School Doesn't Teach You", author: "Charles M. Fox", whyRead: "Practical transactional law guide." }],
+        courses: [{ title: "Contract Law: From Trust to Promise to Contract", platform: "edX / Harvard Law", urlOrProvider: "Harvard", type: "Free" }],
+        practicePlatforms: [{ name: "BarMax / Kaplan Legal QBank", focus: "Bar Exam & Legal Doctrine Practice" }],
+        interviewPreparation: [
+          { topic: "Contract Negotiation & Risk", keyQuestions: ["How do you negotiate limitation of liability clauses?", "Describe an E-discovery document review project."], strategy: "Emphasize risk mitigation, precision, and client business goals." }
+        ],
+        portfolioTasks: ["Redline complex commercial agreement", "Draft full discovery request package", "Create corporate board resolutions deck"],
+        networkingSuggestions: ["Participate in Inns of Court meetings", "Connect with in-house legal counsels on LinkedIn", "Attend corporate law practice groups"],
+        jobApplicationStrategy: ["Target junior associate and corporate compliance roles", "Highlight transactional redlining experience", "Leverage law school career placement services"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "Regulatory Compliance & High-Stakes Litigation",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Focus on complex corporate litigation, regulatory compliance audits (SEC/GDPR), and cross-border deal structuring.",
+        learningTopics: ["Complex Commercial Litigation", "Regulatory Compliance & Regulatory Audits", "Antitrust & Competition Law", "Cross-Border Transactional Structuring", "Appellate Advocacy"],
+        recommendedTools: ["Lex Machina Judicial Analytics", "LawGeex AI Contract Review", "RelativityOne"],
+        recommendedProjects: [
+          { title: "Regulatory Compliance Audit & Defense Brief", description: "Structure regulatory compliance framework for GDPR and SEC disclosure compliance.", keyDeliverables: ["Compliance Audit Manual", "Regulatory Defense Brief", "Executive Board Presentation"], portfolioImpact: "Distinguishes you as a senior corporate legal strategist." }
+        ],
+        recommendedCertifications: [
+          { name: "State Bar Exam Licensure / LL.M.", issuer: "State Bar Association", relevance: "Full Attorney Practice License", estimatedCost: "$1,000" }
+        ],
+        books: [{ title: "The Legal Analyst: A Toolkit for Thinking About the Law", author: "Ward Farnsworth", whyRead: "Strategic legal analysis principles." }],
+        courses: [{ title: "Corporate & Commercial Law", platform: "Coursera / Illinois", urlOrProvider: "Univ of Illinois", type: "Free" }],
+        practicePlatforms: [{ name: "LexisNexis Practical Guidance", focus: "Transactional Drafting & Deal Structuring" }],
+        interviewPreparation: [
+          { topic: "Regulatory Strategy & Corporate Governance", keyQuestions: ["How do you advise a board on SEC compliance?", "Walk me through an internal corporate investigation."], strategy: "Balance legal exposure with strategic business objectives." }
+        ],
+        portfolioTasks: ["Author appellate amicus brief", "Structure enterprise data privacy compliance manual", "Manage complex M&A closing folder"],
+        networkingSuggestions: ["Join American Bar Association Section of Business Law", "Speak on legal technology and compliance panels", "Build relationships with senior law firm partners"],
+        jobApplicationStrategy: ["Target mid/senior associate and Senior Counsel positions", "Leverage legal headhunters", "Negotiate law firm billable hour and compensation structures"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "General Counsel & Executive Legal Leadership",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself for Chief Legal Officer, General Counsel, or Equity Partner roles in top firms.",
+        learningTopics: ["General Counsel Leadership & Board Governance", "Crisis Management & Internal Investigations", "High-Stakes Settlement & Arbitration", "Legal Department Budgeting & Legal Tech Automation"],
+        recommendedTools: ["SimpleLegal", "Onit Enterprise Legal Management", "Mitratech"],
+        recommendedProjects: [
+          { title: "Enterprise Legal Risk & Litigation Strategy Framework", description: "Design an enterprise dispute resolution and risk mitigation blueprint for global operations.", keyDeliverables: ["Risk Mitigation Policy", "Board Resolution Draft", "Outside Counsel Budgeting Guide"], portfolioImpact: "Demonstrates Chief Legal Officer leadership." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Corporate Compliance & Ethics Professional (CCEP)", issuer: "SCCE", relevance: "Executive Compliance Benchmark", estimatedCost: "$450" }
+        ],
+        books: [{ title: "The Indispensable Counsel", author: "Jonathan Bellis", whyRead: "Guide for inside counsel and general counsel leadership." }],
+        courses: [{ title: "Executive Legal Leadership", platform: "Harvard Law Executive Education", urlOrProvider: "Harvard Law", type: "Paid" }],
+        practicePlatforms: [{ name: "ACC (Association of Corporate Counsel) Resource Hub", focus: "In-House Legal Strategy" }],
+        interviewPreparation: [
+          { topic: "General Counsel & Board Advisory", keyQuestions: ["How do you manage a public PR crisis with litigation risk?", "How do you optimize outside counsel legal spend?"], strategy: "Demonstrate executive leadership, risk management, and ROI focus." }
+        ],
+        portfolioTasks: ["Publish enterprise dispute resolution blueprint", "Draft annual legal department budget", "Present board advisory paper"],
+        networkingSuggestions: ["Engage with Association of Corporate Counsel (ACC)", "Connect with Managing Partners & Board Members", "Write articles for Law360 or Harvard Law Blog"],
+        jobApplicationStrategy: ["Engage executive legal search consultants", "Target General Counsel & VP of Legal roles", "Structure executive compensation and equity packages"]
+      }
+    };
+  }
+
+  // 3. Accounting, Banking & Finance
+  if (r.includes("account") || r.includes("finance") || r.includes("bank") || r.includes("audit") || r.includes("tax") || r.includes("investment") || ind.includes("finance") || ind.includes("account")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Financial Accounting, Modeling & Audit Fundamentals",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Master GAAP/IFRS principles, 3-statement financial modeling in Excel, and baseline corporate tax rules.",
+        learningTopics: ["Financial Accounting Principles (GAAP/IFRS)", "3-Statement Financial Modeling", "Cost Accounting & Variance Analysis", "Corporate Tax Basics", "Excel Advanced Formulas & Financial Functions"],
+        recommendedTools: ["Microsoft Excel (Advanced)", "QuickBooks Online", "Xero Accounting", "CapIQ Basics", "Tableau Financials"],
+        recommendedProjects: [
+          { title: "3-Statement Financial Model & Valuation Audit", description: "Build an interconnected DCF financial model projecting 5-year revenue, income, and cash flow.", keyDeliverables: ["Dynamic Excel Model", "Valuation Summary Pitchbook", "Sensitivity Analysis Table"], portfolioImpact: "Proves mastery of core corporate finance valuation." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Public Accountant (CPA) Exam Part 1", issuer: "AICPA / NASBA", relevance: "Gold Standard Accounting License", estimatedCost: "$300" },
+          { name: "CFA Level 1 Candidate", issuer: "CFA Institute", relevance: "Top Investment Credential", estimatedCost: "$1,000" }
+        ],
+        books: [{ title: "Financial Statement Analysis", author: "K.R. Subramanyam", whyRead: "Essential guide to reading and analyzing balance sheets." }],
+        courses: [{ title: "Financial Accounting Fundamentals", platform: "Coursera / Wharton", urlOrProvider: "Wharton", type: "Free" }],
+        practicePlatforms: [{ name: "Corporate Finance Institute (CFI)", focus: "Financial Modeling & Accounting Drills" }],
+        interviewPreparation: [
+          { topic: "3-Statement Accounting Walkthrough", keyQuestions: ["If depreciation increases by $10, how does it affect the 3 statements?", "Explain working capital."], strategy: "Trace changes line by line through Income Statement -> Cash Flow -> Balance Sheet." }
+        ],
+        portfolioTasks: ["Publish 3-statement financial model in Excel", "Build corporate valuation pitchbook", "Audit sample balance sheet for variances"],
+        networkingSuggestions: ["Join local CPA or Financial Analysts Society", "Reach out to Big 4 accountants for coffee chats", "Attend university finance alumni panels"],
+        jobApplicationStrategy: ["Apply for Financial Analyst, Staff Accountant, or Audit Associate roles", "Attach financial modeling portfolio to applications", "Target regional accounting firms and corporate finance teams"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "M&A LBO Modeling, Risk Analysis & ERP Systems",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Master LBO valuation, M&A deal modeling, internal controls, and enterprise ERP systems like SAP/Oracle.",
+        learningTopics: ["Mergers & Acquisitions (M&A) LBO Modeling", "Corporate Audit Standards & Internal Controls", "Working Capital Management", "Capital Structure & WACC Optimization", "Financial Statement Fraud Detection"],
+        recommendedTools: ["Bloomberg Terminal", "FactSet", "SAP Financials ERP", "Oracle Financials Cloud", "PowerBI"],
+        recommendedProjects: [
+          { title: "M&A Buy-Side LBO Valuation & Due Diligence", description: "Model a $500M leveraged buyout transaction with debt tranche scheduling and IRR calculation.", keyDeliverables: ["LBO Model Deck", "M&A Pitchbook", "Debt Coverage Sensitivity Table"], portfolioImpact: "Demonstrates investment banking / private equity modeling capability." }
+        ],
+        recommendedCertifications: [
+          { name: "Financial Modeling & Valuation Analyst (FMVA)", issuer: "CFI", relevance: "High Practical Credential", estimatedCost: "$497" }
+        ],
+        books: [{ title: "Investment Banking: Valuation, LBOs, M&A", author: "Joshua Rosenbaum", whyRead: "Industry standard Wall Street handbook." }],
+        courses: [{ title: "Business & Financial Modeling", platform: "Coursera / Wharton", urlOrProvider: "Wharton", type: "Free" }],
+        practicePlatforms: [{ name: "Wall Street Prep / Wall Street Oasis QBank", focus: "Finance Technical Interviews & Valuation" }],
+        interviewPreparation: [
+          { topic: "Valuation & LBO Technicals", keyQuestions: ["Walk me through a DCF.", "What drives returns in an LBO?", "When would you use EV/EBITDA vs P/E?"], strategy: "State valuation formulas cleanly and explain economic rationale." }
+        ],
+        portfolioTasks: ["Build complete M&A LBO model", "Design internal audit control matrix", "Analyze 10-K filings for red flags"],
+        networkingSuggestions: ["Connect with Investment Banking & Private Equity associates", "Join CFA Society local networking groups", "Participate in financial modeling competitions"],
+        jobApplicationStrategy: ["Target Senior Financial Analyst, M&A Associate, or Senior Auditor roles", "Submit pitchbooks during application follow-ups", "Leverage finance boutique headhunters"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "Treasury Management, Hedging & International Tax",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Focus on corporate treasury, currency hedging, transfer pricing, and strategic capital allocation.",
+        learningTopics: ["Derivatives Risk Management & Hedging", "Enterprise Risk Management (ERM)", "International Financial Reporting Standards (IFRS)", "Tax Structuring & Transfer Pricing", "Treasury & Liquidity Management"],
+        recommendedTools: ["Refinitiv Eikon", "Anaplan Financial Planning", "Workday Financial Management"],
+        recommendedProjects: [
+          { title: "Enterprise Capital Budgeting & Hedging Strategy", description: "Structure foreign exchange risk hedging and multi-currency treasury management model.", keyDeliverables: ["Treasury Policy Manual", "Hedging Sensitivity Model", "CFO Presentation"], portfolioImpact: "Demonstrates senior corporate treasury capability." }
+        ],
+        recommendedCertifications: [
+          { name: "Chartered Financial Analyst (CFA) Charter", issuer: "CFA Institute", relevance: "Elite Investment License", estimatedCost: "$1,200" }
+        ],
+        books: [{ title: "Options, Futures, and Other Derivatives", author: "John C. Hull", whyRead: "Definitive guide to financial risk management." }],
+        courses: [{ title: "Advanced Corporate Finance", platform: "edX / MITx", urlOrProvider: "MIT", type: "Paid" }],
+        practicePlatforms: [{ name: "FactSet Learning Academy", focus: "Portfolio Analytics & Equity Research" }],
+        interviewPreparation: [
+          { topic: "Corporate Finance & Capital Structure", keyQuestions: ["How do you determine optimal capital structure?", "How do you hedge against FX volatility?"], strategy: "Link financial risk management to shareholder value creation." }
+        ],
+        portfolioTasks: ["Structure multi-currency hedging model", "Draft international tax transfer policy", "Author capital allocation policy paper"],
+        networkingSuggestions: ["Engage with Association for Financial Professionals (AFP)", "Attend treasury executive summits", "Build relationships with corporate CFOs"],
+        jobApplicationStrategy: ["Apply for Finance Manager, Treasury Director, or VP Finance positions", "Highlight multi-million dollar budget management experience", "Negotiate performance bonuses and stock options"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "CFO Leadership, SEC Filings & IPO Strategy",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Prepare for Chief Financial Officer (CFO), Partner, or Managing Director executive roles.",
+        learningTopics: ["CFO Strategic Financial Leadership", "Capital Allocation & Dividend Policy", "Investor Relations & SEC Filings (10-K/10-Q)", "Strategic Corporate Restructuring", "ESG Financial Audit"],
+        recommendedTools: ["Adaptive Insights", "OneStream Software", "HighRadius AI Treasury"],
+        recommendedProjects: [
+          { title: "Corporate Restructuring & Initial Public Offering (IPO) Deck", description: "Prepare complete S-1 registration filing and financial prospectus for an enterprise stock listing.", keyDeliverables: ["S-1 Prospectus Draft", "Investor Roadshow Deck", "Valuation Range Matrix"], portfolioImpact: "Establishes CFO / Partner level financial leadership." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Treasury Professional (CTP)", issuer: "AFP", relevance: "Executive Treasury Standard", estimatedCost: "$800" }
+        ],
+        books: [{ title: "The CFO Guidebook", author: "Steven M. Bragg", whyRead: "Comprehensive manual for chief financial officers." }],
+        courses: [{ title: "Chief Financial Officer Program", platform: "Columbia Business School", urlOrProvider: "Columbia", type: "Paid" }],
+        practicePlatforms: [{ name: "AICPA Executive Learning", focus: "Corporate Governance & Financial Strategy" }],
+        interviewPreparation: [
+          { topic: "CFO Executive Board Strategy", keyQuestions: ["How do you communicate bad quarterly earnings to investors?", "Walk me through an S-1 filing process."], strategy: "Display investor relations poise, transparency, and strategic vision." }
+        ],
+        portfolioTasks: ["Deliver S-1 IPO registration prospectus", "Present investor roadshow deck", "Formulate 5-year capital allocation strategy"],
+        networkingSuggestions: ["Connect with private equity general partners and board chairs", "Speak at CFO Leadership Conferences", "Write market commentary for financial journals"],
+        jobApplicationStrategy: ["Engage executive search consultants", "Apply for CFO, VP Finance, or Managing Director roles", "Structure executive equity, carried interest, and compensation terms"]
+      }
+    };
+  }
+
+  // 4. Skilled Trades, Civil / Mechanical / Electrical Engineering
+  if (r.includes("electric") || r.includes("plumb") || r.includes("hvac") || r.includes("civil") || r.includes("mech") || r.includes("construct") || r.includes("arch") || ind.includes("construct") || ind.includes("trade") || ind.includes("engineering")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Blueprints, Safety Standards & Diagnostic Fundamentals",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Master schematic blueprint reading, National Electrical/Building Codes, multimeter diagnostics, and OSHA safety standards.",
+        learningTopics: ["Blueprint Reading & Architectural Schematics", "National Electrical Code (NEC) / Building Regulations", "Circuit Theory & Multimeter Diagnostics", "Power Tool Safety & OSHA Standards", "CAD Fundamentals (AutoCAD 2D)"],
+        recommendedTools: ["AutoCAD 2D/3D", "Fluke Digital Multimeter", "Hand & Power Tools", "Revit BIM Basics", "OSHA Safety Guidelines"],
+        recommendedProjects: [
+          { title: "Residential Single-Line Layout & Load Calculation", description: "Design 2,500 sq ft residential electrical distribution scheme meeting NEC safety standards.", keyDeliverables: ["Single-Line Diagram", "Load Calculation Sheet", "Panel Schedule"], portfolioImpact: "Proves practical trade knowledge and code compliance." }
+        ],
+        recommendedCertifications: [
+          { name: "OSHA 30-Hour Construction Safety Card", issuer: "OSHA / Department of Labor", relevance: "Essential Site Standard", estimatedCost: "$160" },
+          { name: "Apprentice / Journeyman Trade License", issuer: "State Licensing Board", relevance: "Mandatory Practice License", estimatedCost: "$150" }
+        ],
+        books: [{ title: "Ugly's Electrical References", author: "Charles R. Miller", whyRead: "Essential pocket reference for trade professionals." }],
+        courses: [{ title: "Introduction to Engineering Mechanics", platform: "Coursera / Georgia Tech", urlOrProvider: "Georgia Tech", type: "Free" }],
+        practicePlatforms: [{ name: "Interplay Learning Trades Simulators", focus: "Virtual HVAC & Electrical Troubleshooting" }],
+        interviewPreparation: [
+          { topic: "Site Safety & Troubleshooting", keyQuestions: ["How do you troubleshoot a tripped circuit breaker?", "Walk me through OSHA lock-out/tag-out procedures."], strategy: "Prioritize human safety, systematic diagnostic isolation, and code adherence." }
+        ],
+        portfolioTasks: ["Create CAD single-line electrical schematic", "Complete OSHA 30 safety compliance log", "Perform panel load balancing calculation"],
+        networkingSuggestions: ["Join local trade union or contractor association", "Connect with senior Journeymen and Master Electricians", "Attend local trade tool expos"],
+        jobApplicationStrategy: ["Apply for Apprentice, Technician, or Field Engineering positions", "Highlight hands-on shop or field log hours", "Submit applications to regional contracting firms"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "PLC Automation, 3D CAD/BIM & Field Execution",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Master PLC ladder logic, 3D SolidWorks/Revit modeling, and building automation control systems.",
+        learningTopics: ["Programmable Logic Controllers (PLC Wiring & Ladder Logic)", "3D Mechanical Design & Finite Element Analysis (FEA)", "Building Information Modeling (BIM)", "HVAC Load Estimation & Psychrometrics", "Construction Estimating & Quantity Surveying"],
+        recommendedTools: ["SolidWorks", "Autodesk Revit BIM", "Siemens TIA Portal / Allen-Bradley PLC", "RSLogix 5000", "Procore Construction Management"],
+        recommendedProjects: [
+          { title: "Industrial Motor Control & PLC Automation Panel", description: "Wire and program a PLC-driven motor control cabinet with safety interlocks and HMI screen.", keyDeliverables: ["Ladder Logic Code", "Cabinet Wiring Diagram", "Bill of Materials"], portfolioImpact: "Demonstrates advanced industrial automation and trade skill." }
+        ],
+        recommendedCertifications: [
+          { name: "FE (Fundamentals of Engineering) Exam", issuer: "NCEES", relevance: "First Step to Professional Engineer License", estimatedCost: "$225" },
+          { name: "EPA 608 Universal Certification (HVAC)", issuer: "EPA", relevance: "Mandatory Refrigerant License", estimatedCost: "$150" }
+        ],
+        books: [{ title: "Shigley's Mechanical Engineering Design", author: "Richard G. Budynas", whyRead: "Definitive textbook on mechanical component design." }],
+        courses: [{ title: "3D CAD Fundamental Design", platform: "Coursera / Autodesk", urlOrProvider: "Autodesk", type: "Free" }],
+        practicePlatforms: [{ name: "NCEES Exam Practice Drills", focus: "FE & PE Engineering Exam Questions" }],
+        interviewPreparation: [
+          { topic: "PLC Logic & BIM Clash Detection", keyQuestions: ["Explain how you debug a PLC ladder logic loop.", "How do you resolve BIM structural clashes?"], strategy: "Demonstrate methodical technical troubleshooting and software fluency." }
+        ],
+        portfolioTasks: ["Publish PLC ladder logic program", "Build 3D Revit BIM building model", "Conduct HVAC psychrometric load analysis"],
+        networkingSuggestions: ["Join IEEE, ASME, or ASCE local professional chapters", "Attend BIM and industrial automation expos", "Connect with project managers at general contracting firms"],
+        jobApplicationStrategy: ["Target Journeyman, Automation Specialist, or Field Engineer roles", "Include CAD/BIM portfolio link in application", "Leverage trade union placement offices"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "PE Licensure, High-Voltage Systems & Project Management",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Achieve Professional Engineer (PE) or Master Contractor status, and lead multi-million dollar project execution using Primavera P6.",
+        learningTopics: ["Structural Analysis & Geotechnical Engineering", "High-Voltage Distribution & Transformer Testing", "SCADA Systems & Industrial Control Networks", "Construction Project Scheduling (Primavera P6)", "Energy Audit & LEED Certification"],
+        recommendedTools: ["Primavera P6", "ETAP Electrical Power System Analysis", "ANSYS Mechanical", "ETABS Structural"],
+        recommendedProjects: [
+          { title: "Multi-Storey Structural Load & Electrical Distribution Design", description: "Conduct structural FEA and electrical load distribution for a 5-storey commercial building.", keyDeliverables: ["Structural FEA Report", "ETAP Power Grid Simulation", "Primavera P6 Schedule"], portfolioImpact: "Proves senior engineering project delivery capability." }
+        ],
+        recommendedCertifications: [
+          { name: "PE (Professional Engineer) License", issuer: "NCEES / State Board", relevance: "Gold Standard Engineering License", estimatedCost: "$350" },
+          { name: "Master Electrician / Contractor License", issuer: "State Licensing Board", relevance: "Full Trade Contracting Credential", estimatedCost: "$300" }
+        ],
+        books: [{ title: "Standard Handbook for Civil Engineers", author: "Jonathan T. Ricketts", whyRead: "Comprehensive engineering reference guide." }],
+        courses: [{ title: "Construction Management Specialization", platform: "Coursera / Columbia", urlOrProvider: "Columbia", type: "Free" }],
+        practicePlatforms: [{ name: "SolidWorks CSWP Practice", focus: "Certified SolidWorks Professional Modeling" }],
+        interviewPreparation: [
+          { topic: "Project Management & Code Compliance", keyQuestions: ["How do you manage project delays and liquidated damages?", "Walk me through an ETAP power grid simulation."], strategy: "Emphasize budget management, schedule adherence, and zero safety violations." }
+        ],
+        portfolioTasks: ["Deliver full ETAP power distribution audit", "Create Primavera P6 master construction schedule", "Complete LEED energy efficiency report"],
+        networkingSuggestions: ["Connect with Senior Project Directors and Firm Principals", "Speak at regional engineering and construction conferences", "Join AGC (Associated General Contractors) committees"],
+        jobApplicationStrategy: ["Target Senior Project Engineer, Master Contractor, or Construction Manager roles", "Highlight PE stamp capability and project budget history", "Negotiate project completion bonuses"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "Master Contracting, Megaprojects & Executive Leadership",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself as Director of Engineering, Chief Construction Officer, or Founder of a master contracting enterprise.",
+        learningTopics: ["Chief Engineering Management & Construction Contracts", "Enterprise Asset Management & Maintenance Reliability", "Sustainable Building Standards & Net-Zero Energy", "Dispute Resolution & Field Audit Leadership"],
+        recommendedTools: ["Autodesk Construction Cloud", "Maximo Asset Management", "Navisworks Manage"],
+        recommendedProjects: [
+          { title: "Enterprise Megaproject Master Plan & Field Safety Audit", description: "Oversee $20M infrastructure project execution including BIM clash detection and safety compliance.", keyDeliverables: ["BIM Clash Audit Report", "Master Project Plan", "Safety Compliance Dossier"], portfolioImpact: "Establishes Director of Engineering / Master Contractor leadership." }
+        ],
+        recommendedCertifications: [
+          { name: "Project Management Professional (PMP)", issuer: "PMI", relevance: "Global Project Management Benchmark", estimatedCost: "$405" },
+          { name: "LEED AP Building Design + Construction", issuer: "USGBC", relevance: "Top Sustainability Credential", estimatedCost: "$350" }
+        ],
+        books: [{ title: "Project Management for Construction", author: "Chris Hendrickson", whyRead: "Guide to managing large-scale construction projects." }],
+        courses: [{ title: "Executive Engineering Management", platform: "edX / MIT", urlOrProvider: "MIT", type: "Paid" }],
+        practicePlatforms: [{ name: "PMI Learning Hub", focus: "PMP & Construction Leadership Scenarios" }],
+        interviewPreparation: [
+          { topic: "Executive Megaproject Leadership", keyQuestions: ["How do you manage $50M+ capital construction risks?", "Describe your dispute resolution strategy with sub-contractors."], strategy: "Display executive poise, legal acumen, and operational efficiency." }
+        ],
+        portfolioTasks: ["Deliver $20M megaproject master plan", "Publish sustainable building net-zero framework", "Structure corporate safety manual"],
+        networkingSuggestions: ["Join Executive Construction Roundtables", "Connect with infrastructure developers and government officials", "Keynote at global engineering summits"],
+        jobApplicationStrategy: ["Engage executive engineering headhunters", "Target VP Engineering, Chief Construction Officer, or Principal Partner roles", "Structure equity, profit-sharing, and executive package"]
+      }
+    };
+  }
+
+  // 5. Education & Teaching
+  if (r.includes("teacher") || r.includes("educat") || r.includes("school") || r.includes("profess") || r.includes("lectur") || r.includes("instruct") || ind.includes("educat")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Pedagogy, Lesson Planning & Classroom Management",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Master lesson planning using Bloom's Taxonomy, classroom engagement strategies, and formative assessment methods.",
+        learningTopics: ["Pedagogical Foundations & Learning Theories", "Lesson Planning & Curriculum Alignment", "Classroom Management Strategies", "Bloom's Taxonomy & Formative Assessment", "Student Engagement & Differentiated Instruction"],
+        recommendedTools: ["Canvas LMS", "Google Classroom", "Blackboard Learn", "Nearpod", "Kahoot / Quizlet"],
+        recommendedProjects: [
+          { title: "4-Week Curriculum & Formative Assessment Plan", description: "Design a unit curriculum with clear learning objectives, rubrics, and interactive class activities.", keyDeliverables: ["Unit Syllabus", "4 Lesson Plans", "Grading Rubrics"], portfolioImpact: "Proves lesson preparation and structured teaching competence." }
+        ],
+        recommendedCertifications: [
+          { name: "State Educator Teaching License / Credential", issuer: "State Board of Education", relevance: "Mandatory School Teaching License", estimatedCost: "$200" },
+          { name: "Google Certified Educator Level 1", issuer: "Google for Education", relevance: "High EdTech Credential", estimatedCost: "$10" }
+        ],
+        books: [{ title: "The First Days of School", author: "Harry K. Wong", whyRead: "Classic handbook on classroom management and lesson organization." }],
+        courses: [{ title: "Foundations of Teaching for Learning", platform: "Coursera / Commonwealth", urlOrProvider: "Commonwealth of Learning", type: "Free" }],
+        practicePlatforms: [{ name: "Praxis Subject Prep QBank", focus: "Teacher Licensing Subject Knowledge Exams" }],
+        interviewPreparation: [
+          { topic: "Classroom Management & Pedagogy", keyQuestions: ["How do you handle a disruptive student?", "Walk me through how you differentiate instruction for diverse learners."], strategy: "Emphasize proactive classroom management, positive reinforcement, and student empathy." }
+        ],
+        portfolioTasks: ["Publish 4-week unit syllabus", "Design student grading rubric", "Build Google Classroom course module"],
+        networkingSuggestions: ["Join State Teachers Association", "Connect with school principal alumni", "Participate in local education workshops"],
+        jobApplicationStrategy: ["Target public and private school teaching positions", "Submit sample lesson plans with applications", "Attend school district job fairs"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "Instructional Design & E-Learning Technology",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Build interactive e-learning modules with Articulate 360/Canvas, and master data-driven student outcome analysis.",
+        learningTopics: ["Instructional Design & E-Learning Authoring", "Educational Psychology & Special Education Integration", "Data-Driven Student Outcome Tracking", "Blended Learning & Hybrid Classroom Management", "Parent-Teacher Stakeholder Communication"],
+        recommendedTools: ["Articulate 360 / Storyline", "CamStudio / Loom", "Edpuzzle", "Padlet", "Turnitin"],
+        recommendedProjects: [
+          { title: "Interactive E-Learning Course Module & Outcomes Audit", description: "Build an interactive online learning module using Articulate/Canvas with built-in analytics.", keyDeliverables: ["E-Learning SCORM Module", "Student Assessment Dataset", "Outcome Analysis Report"], portfolioImpact: "Demonstrates modern instructional technology skills." }
+        ],
+        recommendedCertifications: [
+          { name: "National Board Certification (NBCT) Candidate", issuer: "NBPTS", relevance: "Gold Standard Teaching Excellence", estimatedCost: "$475" }
+        ],
+        books: [{ title: "Teach Like a Champion 3.0", author: "Doug Lemov", whyRead: "63 concrete techniques for building student engagement." }],
+        courses: [{ title: "Instructional Design Foundations", platform: "Coursera / Illinois", urlOrProvider: "Univ of Illinois", type: "Free" }],
+        practicePlatforms: [{ name: "Edutopia Professional Learning", focus: "Evidence-Based Classroom Case Studies" }],
+        interviewPreparation: [
+          { topic: "Instructional Technology & Data", keyQuestions: ["How do you use assessment data to modify your instruction?", "Describe a time you integrated technology effectively."], strategy: "Focus on measurable student growth and learning engagement metrics." }
+        ],
+        portfolioTasks: ["Author interactive SCORM e-learning module", "Conduct student learning outcome data analysis", "Build parent communication portal guide"],
+        networkingSuggestions: ["Join Association for Supervision and Curriculum Development (ASCD)", "Attend EdTech conferences", "Connect with Instructional Designers"],
+        jobApplicationStrategy: ["Apply for Lead Teacher, Department Chair, or Instructional Designer roles", "Highlight EdTech and e-learning portfolio", "Leverage district referral networks"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "Curriculum Reform & Educational Administration",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Lead curriculum reform, school district equity programs, and prepare for administrator/principal licensure.",
+        learningTopics: ["School Leadership & Departmental Management", "Curriculum Reform & Educational Policy", "Grant Writing & Academic Research", "Special Needs & Inclusive Education Policy", "Institutional Accreditation Standards"],
+        recommendedTools: ["PowerSchool SIS", "Infinite Campus", "Qualtrics Research", "SPSS Academic"],
+        recommendedProjects: [
+          { title: "School District Curriculum Audit & Equity Improvement Plan", description: "Audit math/reading proficiency data across 1,000 students and propose targeted intervention strategies.", keyDeliverables: ["Curriculum Audit Report", "Intervention Flowchart", "School Board Presentation"], portfolioImpact: "Shows academic leadership and administrative readiness." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Educational Leader / Principal License", issuer: "State Board of Education", relevance: "School Administration Credential", estimatedCost: "$350" }
+        ],
+        books: [{ title: "Understanding by Design", author: "Grant Wiggins", whyRead: "Framework for designing curriculum backwards from desired results." }],
+        courses: [{ title: "Educational Leadership & School Management", platform: "edX / Harvard", urlOrProvider: "Harvard", type: "Paid" }],
+        practicePlatforms: [{ name: "ASCD Leadership Hub", focus: "School Administration & Policy Drills" }],
+        interviewPreparation: [
+          { topic: "School Administration & Board Leadership", keyQuestions: ["How do you manage faculty resistance to curriculum changes?", "How do you allocate district educational budgets?"], strategy: "Demonstrate collaborative leadership, policy awareness, and fiscal responsibility." }
+        ],
+        portfolioTasks: ["Deliver school district curriculum audit", "Author educational grant proposal", "Present equity improvement plan to school board"],
+        networkingSuggestions: ["Connect with Superintendents and School Board Members", "Join National Association of Secondary School Principals (NASSP)", "Present at state education conferences"],
+        jobApplicationStrategy: ["Target Assistant Principal, Principal, or Curriculum Director positions", "Highlight district-wide metric improvements", "Negotiate administrative salary scale"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "Institutional Strategy & Higher Education Policy",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself for School Superintendent, University Dean, or Chief Academic Officer leadership.",
+        learningTopics: ["Institutional Strategy & Educational Policy Drafting", "Higher Education Governance & Accreditation", "Faculty Mentorship & Tenured Research Management", "Educational Endowment & Grant Leadership"],
+        recommendedTools: ["Ellucian Banner", "Workday Education", "Canvas Admin Portal"],
+        recommendedProjects: [
+          { title: "Institutional Accreditation Dossier & Strategic Growth Plan", description: "Lead regional university/school accreditation self-study review across 12 academic departments.", keyDeliverables: ["Accreditation Report", "Faculty Development Plan", "Trustee Presentation"], portfolioImpact: "Establishes Dean / Superintendent level academic authority." }
+        ],
+        recommendedCertifications: [
+          { name: "Doctor of Education (Ed.D.) / Ph.D.", issuer: "Accredited University", relevance: "Terminal Academic Credential", estimatedCost: "Degree" }
+        ],
+        books: [{ title: "How College Works", author: "Daniel F. Chambliss", whyRead: "Insightful study into institutional higher education success." }],
+        courses: [{ title: "Higher Education Administration", platform: "Coursera / Penn", urlOrProvider: "UPenn", type: "Paid" }],
+        practicePlatforms: [{ name: "Chronicle of Higher Education Hub", focus: "Executive Academic Leadership" }],
+        interviewPreparation: [
+          { topic: "Executive Academic Leadership", keyQuestions: ["How do you lead a multi-million dollar university endowment capital campaign?", "Walk me through an institutional accreditation crisis."], strategy: "Display vision, stakeholder alignment, and academic integrity." }
+        ],
+        portfolioTasks: ["Deliver university accreditation self-study dossier", "Publish educational policy white paper", "Structure faculty tenure framework"],
+        networkingSuggestions: ["Connect with University Trustees and State Education Commissioners", "Keynote at global education summits", "Write for Chronicle of Higher Education"],
+        jobApplicationStrategy: ["Engage executive academic search consultants", "Target Dean, Provost, Superintendent, or CAO positions", "Structure executive academic contracts"]
+      }
+    };
+  }
+
+  // 6. Business, Product, Marketing, Sales & Management
+  if (r.includes("product") || r.includes("market") || r.includes("sales") || r.includes("biz") || r.includes("business") || r.includes("consult") || r.includes("manager") || ind.includes("business") || ind.includes("market")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Product Requirements, Customer Discovery & Funnels",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Master user discovery interviews, drafting PRDs, market research, and core growth funnels.",
+        learningTopics: ["Product Lifecycle Management & PRD Drafting", "Customer Discovery & User Interviewing", "Market Research & Competitive Intelligence", "Conversion Rate Optimization (CRO)", "Agile Scrum & Kanban Fundamentals"],
+        recommendedTools: ["Figma / Miro", "Jira Software & Confluence", "Google Analytics 4", "HubSpot CRM", "Mixpanel / Amplitude"],
+        recommendedProjects: [
+          { title: "Product Requirements Document (PRD) & User Interview Case Study", description: "Conduct 15 customer discovery interviews and author an end-to-end PRD for a mobile application feature.", keyDeliverables: ["PRD Document", "User Interview Insights Matrix", "Figma Wireframe Deck"], portfolioImpact: "Proves core product management and user empathy skills." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Scrum Product Owner (CSPO) / PSPO I", issuer: "Scrum Alliance / Scrum.org", relevance: "Core Agile Product License", estimatedCost: "$300" },
+          { name: "HubSpot Inbound Marketing Certification", issuer: "HubSpot Academy", relevance: "High Marketing Credential", estimatedCost: "Free" }
+        ],
+        books: [{ title: "Inspired: How to Create Tech Products Customers Love", author: "Marty Cagan", whyRead: "Definitive product management playbook." }],
+        courses: [{ title: "Becoming a Product Manager", platform: "LinkedIn Learning / Coursera", urlOrProvider: "Top Instructors", type: "Free" }],
+        practicePlatforms: [{ name: "Exponent (TryExponent)", focus: "Product Management & Business Case Interviews" }],
+        interviewPreparation: [
+          { topic: "Product Sense & User Interviewing", keyQuestions: ["How do you prioritize feature requests?", "Improve your favorite mobile application."], strategy: "Follow Framework: User Persona -> Pain Points -> Solution Options -> Success Metrics." }
+        ],
+        portfolioTasks: ["Publish PRD for a mobile app feature", "Build Figma wireframe prototype", "Create Google Analytics 4 conversion funnel"],
+        networkingSuggestions: ["Join Product School and Mind the Product communities", "Connect with Associate Product Managers on LinkedIn", "Attend local product meetups"],
+        jobApplicationStrategy: ["Target Associate Product Manager, Growth Marketer, or Business Analyst roles", "Attach PRD case studies to applications", "Apply to tech startups and digital agencies"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "GTM Strategy, Unit Economics & Conversion Analytics",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Focus on GTM launch campaigns, CAC/LTV unit economics, A/B testing, and sales conversion pipelines.",
+        learningTopics: ["Growth Marketing & CAC/LTV Unit Economics", "A/B Testing & Hypothesis Validation", "Go-To-Market (GTM) Launch Strategy", "Funnel Conversion Analytics", "Pricing Strategy & Monetization Models"],
+        recommendedTools: ["Optimizely / VWO", "Salesforce CRM", "Tableau / Looker", "Notion Product Hub", "Google Tag Manager"],
+        recommendedProjects: [
+          { title: "Go-To-Market (GTM) Strategy & Conversion Campaign", description: "Design launch funnel and paid customer acquisition campaign targeting $50k ARR growth.", keyDeliverables: ["GTM Pitch Deck", "A/B Test Analytics Matrix", "Unit Economic Model"], portfolioImpact: "Demonstrates growth marketing and business revenue orientation." }
+        ],
+        recommendedCertifications: [
+          { name: "Project Management Professional (PMP)", issuer: "PMI", relevance: "Gold Standard Management Credential", estimatedCost: "$405" },
+          { name: "Google Analytics 4 Individual Qualification", issuer: "Google", relevance: "Standard Analytics Certification", estimatedCost: "Free" }
+        ],
+        books: [{ title: "Lean Analytics", author: "Alistair Croll", whyRead: "Mastering metrics that matter for business growth." }],
+        courses: [{ title: "Digital Product Management", platform: "Coursera / Darden", urlOrProvider: "Univ of Virginia", type: "Free" }],
+        practicePlatforms: [{ name: "Reforge Case Studies", focus: "Growth, Product & Monetization Strategy" }],
+        interviewPreparation: [
+          { topic: "Product Execution & Metrics", keyQuestions: ["How do you measure success for Instagram Stories?", "A key metric dropped by 10%. How do you diagnose it?"], strategy: "Break metrics down into Acquisition, Activation, Retention, Referral, Revenue (AARRR)." }
+        ],
+        portfolioTasks: ["Deliver full Go-To-Market launch playbook", "Build CAC/LTV unit economic calculator", "Conduct A/B testing experiment case study"],
+        networkingSuggestions: ["Participate in ProductTank meetups", "Connect with Senior PMs and Growth Leads", "Engage in Reforge community discussions"],
+        jobApplicationStrategy: ["Apply for Product Manager, Growth Lead, or Marketing Manager roles", "Include live GTM case study in application portfolio", "Leverage product management referral networks"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "Enterprise Platform Strategy & Churn Prevention",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Master enterprise product roadmapping, churn diagnostics, cross-functional stakeholder alignment, and B2B pricing.",
+        learningTopics: ["Enterprise Product Portfolio Management", "Cross-Functional Executive Alignment", "Strategic Mergers & Strategic Partnerships", "Enterprise Sales Pipeline Architecture", "Churn Reduction & Customer Retention Strategy"],
+        recommendedTools: ["Productboard", "Salesforce Revenue Cloud", "Gainsight Customer Success", "Snowflake Business Intelligence"],
+        recommendedProjects: [
+          { title: "Enterprise Platform Roadmap & Churn Prevention Overhaul", description: "Analyze 10,000 user activity logs to reduce annual churn rate by 4.2% across enterprise tiers.", keyDeliverables: ["Product Roadmap Deck", "Churn Diagnostics Dashboard", "Executive Strategy Brief"], portfolioImpact: "Proves senior product and revenue leadership." }
+        ],
+        recommendedCertifications: [
+          { name: "SAFe Product Manager / Product Owner (POPM)", issuer: "Scaled Agile", relevance: "Top Enterprise Scaling Credential", estimatedCost: "$595" }
+        ],
+        books: [{ title: "Escaping the Build Trap", author: "Melissa Perri", whyRead: "How effective product management creates real value." }],
+        courses: [{ title: "Product Strategy", platform: "Kellogg Executive Education", urlOrProvider: "Northwestern", type: "Paid" }],
+        practicePlatforms: [{ name: "Product School Case Study Library", focus: "Executive Product & Business Strategy" }],
+        interviewPreparation: [
+          { topic: "Product Strategy & Executive Alignment", keyQuestions: ["How do you balance tech debt vs strategic features?", "Design a 3-year product strategy for a legacy enterprise platform."], strategy: "Align product outcomes with company financial targets and competitive moat." }
+        ],
+        portfolioTasks: ["Publish 3-year enterprise product roadmap", "Build churn diagnostics dashboard", "Deliver B2B pricing strategy analysis"],
+        networkingSuggestions: ["Connect with VPs of Product and Chief Revenue Officers", "Attend Product Leader Summits", "Write strategic breakdown essays on LinkedIn"],
+        jobApplicationStrategy: ["Target Group Product Manager, Senior PM, or Director of Product roles", "Highlight portfolio revenue and ARR expansion metrics", "Negotiate equity and bonus packages"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "CPO / CMO Executive Leadership & Global Expansion",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself for Chief Product Officer (CPO), Chief Marketing Officer (CMO), or General Manager executive roles.",
+        learningTopics: ["Chief Product / Marketing Officer Leadership", "Corporate Mergers & Portfolio Restructuring", "Executive Board Communications", "Global Brand Strategy & Crisis Response"],
+        recommendedTools: ["Gartner Market Research", "Forrester Wave Analytics", "Workday Executive Management"],
+        recommendedProjects: [
+          { title: "Global Market Expansion & Product Portfolio Strategy", description: "Formulate 3-year product expansion playbook into APAC/EMEA markets targeting $10M new ARR.", keyDeliverables: ["Expansion Strategy Prospectus", "Board Pitch Deck", "Financial Forecast Model"], portfolioImpact: "Establishes C-Suite Product/Marketing Executive authority." }
+        ],
+        recommendedCertifications: [
+          { name: "Executive Chief Product Officer Program", issuer: "INSEAD / Wharton", relevance: "Elite Executive Benchmark", estimatedCost: "$2,500" }
+        ],
+        books: [{ title: "The Hard Thing About Hard Things", author: "Ben Horowitz", whyRead: "Unfiltered insights on building and leading businesses." }],
+        courses: [{ title: "Executive Product Leadership", platform: "Stanford Executive Education", urlOrProvider: "Stanford", type: "Paid" }],
+        practicePlatforms: [{ name: "McKinsey Business Case Library", focus: "Executive Case Interview & Strategic Leadership" }],
+        interviewPreparation: [
+          { topic: "C-Suite Executive Leadership & Board Advisory", keyQuestions: ["How do you pivot an entire enterprise product portfolio?", "Describe your M&A product integration blueprint."], strategy: "Focus on corporate valuation, market dominance, and shareholder value." }
+        ],
+        portfolioTasks: ["Deliver $10M ARR global product expansion playbook", "Present board strategy deck", "Structure enterprise M&A product integration plan"],
+        networkingSuggestions: ["Connect with Venture Capital Partners and Tech Board Chairs", "Keynote at global Product summits", "Write strategic commentary for Forbes / Harvard Business Review"],
+        jobApplicationStrategy: ["Engage executive search firms", "Apply for CPO, CMO, VP Product, or GM roles", "Structure executive compensation, stock options, and severance terms"]
+      }
+    };
+  }
+
+  // 7. Default Software / AI / Cyber / Data Engineering (Fallback)
+  return {
+    beginner: {
+      stageName: "Beginner Stage",
+      stageTitle: "Foundations & Core Principles",
+      timeline: "Weeks 1-3 (Estimated 50 Hours)",
+      mentorAdvice: "Build non-negotiable fundamentals. Master language nuances, Git workflows, and baseline problem-solving before moving to complex frameworks.",
+      learningTopics: ["Data Structures (Arrays, HashMaps, Trees)", "Algorithms (Sorting, Searching, Recursion)", "Clean Code & Refactoring Principles", "Version Control (Git/GitHub)", "RESTful API Specification"],
+      recommendedTools: ["VS Code / JetBrains", "Git & GitHub CLI", "Postman", "Docker Desktop", "Terminal / Bash"],
+      recommendedProjects: [
+        { title: `${role} Baseline Service Engine`, description: "Build a clean REST API service with input validation, modular routing, and persistent DB storage.", keyDeliverables: ["REST Endpoints", "Input Validation", "Unit Tests"], portfolioImpact: "Demonstrates production code structure and hygiene." },
+        { title: "Algorithmic Solver Suite", description: "Implement core algorithms from scratch with space/time complexity benchmarks.", keyDeliverables: ["Custom Implementations", "Benchmark Report", "Documentation"], portfolioImpact: "Proves deep computer science fundamentals." }
+      ],
+      recommendedCertifications: [
+        { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", relevance: "High for Cloud Fundamentals", estimatedCost: "$100" },
+        { name: "Meta Professional Software Certificate", issuer: "Meta / Coursera", relevance: "Strong for Industry Basics", estimatedCost: "Free / $39/mo" }
+      ],
+      books: [
+        { title: "Clean Code", author: "Robert C. Martin", whyRead: "Essential principles for writing readable, maintainable software." },
+        { title: "Grokking Algorithms", author: "Aditya Bhargava", whyRead: "Visual and intuitive breakdown of core algorithmic concepts." }
+      ],
+      courses: [
+        { title: "CS50: Introduction to Computer Science", platform: "edX / Harvard", urlOrProvider: "Harvard University", type: "Free" },
+        { title: "Data Structures & Algorithms Masterclass", platform: "Udemy / Coursera", urlOrProvider: "Top Instructors", type: "Paid" }
+      ],
+      practicePlatforms: [
+        { name: "LeetCode", focus: "Easy/Medium Data Structure Problems" },
+        { name: "HackerRank", focus: "Domain Language Fundamentals & SQL" }
+      ],
+      interviewPreparation: [
+        { topic: "Behavioral Fundamentals (Tell Me About Yourself)", keyQuestions: ["Walk me through your background.", "Why are you targeting this role?"], strategy: "Structure answers using Present-Past-Future narrative arc." },
+        { topic: "Basic Data Structure Code Walkthroughs", keyQuestions: ["How does a HashMap work internally?", "Explain O(1) vs O(n) complexity."], strategy: "Write clean pseudocode and state space-time trade-offs explicitly." }
+      ],
+      portfolioTasks: ["Create GitHub account with clean README profile", "Setup personal developer domain or portfolio site", "Publish first open-source repository with full documentation"],
+      networkingSuggestions: ["Connect with 10 college alumni working in target roles", "Join local tech Discord / Slack communities", "Follow top technical leaders in your industry on LinkedIn"],
+      jobApplicationStrategy: ["Audit resume against target role job descriptions", "Identify 20 target companies for early bookmarking", "Setup job alerts on LinkedIn and Wellfound"]
+    },
+    intermediate: {
+      stageName: "Intermediate Stage",
+      stageTitle: "Architecture & Framework Mastery",
+      timeline: "Weeks 4-7 (Estimated 80 Hours)",
+      mentorAdvice: "Transition from writing code to engineering software. Focus on database design, asynchronous processing, and automated testing.",
+      learningTopics: ["Relational & NoSQL Database Schema Design", "Asynchronous Programming & Event Loops", "Authentication (JWT, OAuth2, Session)", "Caching Strategies (Redis)", "Docker Containerization"],
+      recommendedTools: ["Redis", "PostgreSQL / MongoDB", "Docker Compose", "GitHub Actions", "Swagger / OpenAPI"],
+      recommendedProjects: [
+        { title: "Real-time Collaborative Dashboard", description: "Build a multi-user platform featuring WebSockets, caching, and state synchronization.", keyDeliverables: ["WebSocket Server", "Redis Cache", "Role-based Access"], portfolioImpact: "Proves ability to engineer responsive real-time applications." },
+        { title: "E-Commerce Micro-services API", description: "Design order processing and inventory modules with transaction isolation.", keyDeliverables: ["DB Transactions", "Stripe API Integration", "Docker Compose"], portfolioImpact: "Shows readiness for real-world commercial software." }
+      ],
+      recommendedCertifications: [
+        { name: "AWS Certified Developer Associate", issuer: "Amazon Web Services", relevance: "Very High for Backend & Cloud", estimatedCost: "$150" },
+        { name: "MongoDB Certified Developer", issuer: "MongoDB Inc", relevance: "High for NoSQL Systems", estimatedCost: "$150" }
+      ],
+      books: [
+        { title: "Designing Data-Intensive Applications", author: "Martin Kleppmann", whyRead: "The gold standard text on distributed systems, storage engines, and data consistency." },
+        { title: "Refactoring: Improving Existing Code", author: "Martin Fowler", whyRead: "Master code transformation patterns without altering external behavior." }
+      ],
+      courses: [
+        { title: "Full Stack Open", platform: "University of Helsinki", urlOrProvider: "Helsinki Uni", type: "Free" },
+        { title: "Docker & Kubernetes: The Complete Guide", platform: "Udemy", urlOrProvider: "Stephen Grider", type: "Paid" }
+      ],
+      practicePlatforms: [
+        { name: "NeetCode 150", focus: "Curated LeetCode Medium Pattern Practice" },
+        { name: "System Design Primer", focus: "Foundational System Design Concepts" }
+      ],
+      interviewPreparation: [
+        { topic: "Technical Deep-Dive into Projects", keyQuestions: ["Why did you choose PostgreSQL over MongoDB for this project?", "How did you handle race conditions?"], strategy: "Use STAR format emphasizing technical trade-offs and metrics." },
+        { topic: "Medium Level Algorithmic Problem Solving", keyQuestions: ["Two Pointers, Sliding Window, Dynamic Programming basics."], strategy: "Always think aloud before writing code." }
+      ],
+      portfolioTasks: ["Host live working demo on Vercel/Render/AWS", "Write technical blog explaining a project challenge solved", "Record 2-minute video walkthrough of your capstone app"],
+      networkingSuggestions: ["Request 3 informational interviews with senior engineers", "Attend virtual or local tech meetups", "Engage thoughtfully on engineering blog posts on LinkedIn"],
+      jobApplicationStrategy: ["Apply to 10 safe companies to build interview momentum", "Customize resume keywords for each application", "Leverage campus or alumni referral requests"]
+    },
+    advanced: {
+      stageName: "Advanced Stage",
+      stageTitle: "System Design & Enterprise Scale",
+      timeline: "Weeks 8-10 (Estimated 90 Hours)",
+      mentorAdvice: "Focus on scalability, fault tolerance, and CI/CD pipelines. Demonstrate that you can write code that runs reliably at scale.",
+      learningTopics: ["Distributed Systems Architecture", "Microservices vs Monoliths", "Message Queues (Kafka / RabbitMQ)", "CI/CD Pipeline Automation", "Performance Monitoring & Logging"],
+      recommendedTools: ["Kubernetes", "Apache Kafka", "Prometheus & Grafana", "Terraform", "JMeter / k6"],
+      recommendedProjects: [
+        { title: "Distributed Task Scheduler & Queue", description: "Engineered a fault-tolerant message queue supporting retry policies and dead-letter queues.", keyDeliverables: ["Worker Pool", "DLQ Handling", "Prometheus Metrics"], portfolioImpact: "Distinguishes you as an advanced systems engineer." },
+        { title: "High-Throughput Analytics Service", description: "Process millions of events with streaming ingestion and automated aggregation.", keyDeliverables: ["Kafka Pipeline", "Grafana Dashboard", "Load Testing"], portfolioImpact: "Demonstrates enterprise-grade data engineering capability." }
+      ],
+      recommendedCertifications: [
+        { name: "AWS Solutions Architect Associate", issuer: "AWS", relevance: "Top Industry Standard", estimatedCost: "$150" },
+        { name: "CKAD: Certified Kubernetes Application Developer", issuer: "Linux Foundation", relevance: "Gold standard for Kubernetes", estimatedCost: "$395" }
+      ],
+      books: [
+        { title: "System Design Interview – An Insider's Guide", author: "Alex Xu", whyRead: "Step-by-step framework for tackling high-stakes system design rounds." },
+        { title: "Building Microservices", author: "Sam Newman", whyRead: "Comprehensive guide to modelling, integrating, and deploying microservices." }
+      ],
+      courses: [
+        { title: "Grokking the System Design Interview", platform: "Educative.io / Design Gurus", urlOrProvider: "Design Gurus", type: "Paid" },
+        { title: "Kubernetes for Developers", platform: "Linux Foundation", urlOrProvider: "CNCF", type: "Free / Paid" }
+      ],
+      practicePlatforms: [
+        { name: "ByteByteGo", focus: "Visual System Design Architectures" },
+        { name: "LeetCode Hard & Company Specifics", focus: "FAANG / Tier 1 High-Frequency Questions" }
+      ],
+      interviewPreparation: [
+        { topic: "System Design Whiteboarding", keyQuestions: ["Design URL Shortener (TinyURL)", "Design Rate Limiter", "Design Messaging App"], strategy: "Follow 4-step framework: Requirements -> API & Schema -> High Level -> Deep Dives." },
+        { topic: "Behavioral Leadership & STAR Mastery", keyQuestions: ["Describe a time you disagreed with a teammate.", "How do you handle scope creep?"], strategy: "Emphasize ownership, data, and positive resolution." }
+      ],
+      portfolioTasks: ["Implement automated CI/CD deployment with test coverage badges", "Conduct k6 load testing and document max RPS benchmarks in README", "Publish System Design diagram case study"],
+      networkingSuggestions: ["Reach out to engineering managers and hiring leads directly", "Ask for warm introductions via mutual LinkedIn connections", "Share your system design diagrams on tech forums"],
+      jobApplicationStrategy: ["Target tier-1 companies and high-growth startups", "Follow up on all applications after 5 business days", "Pitch customized value propositions in cold emails"]
+    },
+    expert: {
+      stageName: "Expert Stage",
+      stageTitle: "Production Mastery & Career Acceleration",
+      timeline: "Weeks 11-12+ (Ongoing Mastery)",
+      mentorAdvice: "Position yourself as an indispensable asset. Focus on high-level production optimization, executive presence, and salary negotiation.",
+      learningTopics: ["Production Zero-Downtime Deployments", "Security Audit & Vulnerability Scanning", "FinOps & Cloud Cost Optimization", "Technical Leadership & Mentorship", "Executive Compensation Negotiation"],
+      recommendedTools: ["Snyk / SonarQube", "AWS CloudWatch / Datadog", "OpenTelemetry", "Helm", "GitLab CI"],
+      recommendedProjects: [
+        { title: "Open-Source Infrastructure SDK / Plugin", description: "Created and published an open-source library on npm/PyPI with thorough test coverage and automated release workflow.", keyDeliverables: ["NPM Package", "95%+ Test Coverage", "Documentation"], portfolioImpact: "Establishes industry authority and technical leadership." },
+        { title: "Enterprise Security & Performance Audit", description: "Audited multi-service application for OWASP Top 10 vulnerabilities and reduced cloud bill by 30%.", keyDeliverables: ["Audit Report", "Cost Breakdown", "Remediation PRs"], portfolioImpact: "Demonstrates executive business mindset and production vigilance." }
+      ],
+      recommendedCertifications: [
+        { name: "AWS Certified DevOps Engineer Professional", issuer: "AWS", relevance: "Elite Senior Level Credential", estimatedCost: "$300" },
+        { name: "Google Professional Cloud Architect", issuer: "Google Cloud", relevance: "Elite Cloud Credential", estimatedCost: "$200" }
+      ],
+      books: [
+        { title: "The Software Engineer's Guidebook", author: "Gergely Orosz", whyRead: "Navigating senior tech career growth, engineering leadership, and tech companies." },
+        { title: "Never Split the Difference", author: "Chris Voss", whyRead: "Tactical negotiation skills for securing maximum compensation." }
+      ],
+      courses: [
+        { title: "Pragmatic Senior Engineer Course", platform: "Gergely Orosz Blog & Guides", urlOrProvider: "The Pragmatic Engineer", type: "Paid" },
+        { title: "Advanced Distributed Systems", platform: "MIT OpenCourseWare", urlOrProvider: "MIT", type: "Free" }
+      ],
+      practicePlatforms: [
+        { name: "Pramp / Interviewing.io", focus: "Live Mock Interviews with Senior FAANG Engineers" },
+        { name: "Levels.fyi", focus: "Market Compensation Intelligence & Equity Valuation" }
+      ],
+      interviewPreparation: [
+        { topic: "Executive & Bar Raiser Rounds", keyQuestions: ["How do you prioritize technical debt vs product features?", "Tell me about a project that failed."], strategy: "Speak with business impact metrics and executive maturity." },
+        { topic: "Compensation & Offer Negotiation", keyQuestions: ["What are your salary expectations?", "We have a strict salary band."], strategy: "Never give a hard number first; benchmark using Levels.fyi data." }
+      ],
+      portfolioTasks: ["Maintain active open-source library", "Give a tech talk or host a webinar", "Publish comprehensive career portfolio case study"],
+      networkingSuggestions: ["Build direct relationships with executive recruiters", "Mentor junior developers in open-source or campus groups", "Engage with CTOs and VPs of Engineering on industry developments"],
+      jobApplicationStrategy: ["Execute high-touch multi-channel application campaign", "Leverage competing job offers for negotiation leverage", "Evaluate total compensation package including equity & benefits"]
+    }
+  };
+}
+
 // Client-side Fallback Builder for instant personalized roadmap generation
 export function generateDefaultEnterpriseRoadmap(
   profile: StudentProfile,
@@ -118,6 +865,9 @@ export function generateDefaultEnterpriseRoadmap(
     ];
   }
 
+  // Get domain-tailored stage details (learning topics, tools, projects, certs, books, courses, practice platforms, interview prep)
+  const domainStages = getDomainSpecificStageData(role, ind);
+
   return {
     generatedAt: new Date().toISOString(),
     inputs: { 
@@ -138,157 +888,29 @@ export function generateDefaultEnterpriseRoadmap(
       currentSkills: skills,
       missingSkills: missing,
       targetProfession: `${role} (${ind}, ${country})`,
-      skillGapSummary: `Calculated a 32% skill gap focused on production distributed systems and cloud infrastructure.`,
+      skillGapSummary: `Calculated a 32% skill gap focused on ${ind} domain execution and specialized tools.`,
       skillGapScore: 32,
       resumeStrengthScore: 78,
-      resumeStrengthSummary: `Solid educational background from ${profile.college || "University"}. Needs quantified bullet points and live project metrics.`,
+      resumeStrengthSummary: `Solid educational background from ${profile.college || "University"}. Needs quantified bullet points and real-world portfolio metrics.`,
       interviewReadinessScore: 70,
-      interviewReadinessSummary: "Strong theoretical knowledge; needs structured System Design whiteboarding practice.",
+      interviewReadinessSummary: `Strong theoretical knowledge; needs structured domain scenario practice for ${role}.`,
       mentorExecutiveVerdict: `Targeting ${role} in ${country} within ${ind} is highly feasible within 60-90 days. Follow this personalized 4-stage execution matrix.`
     },
     stages: {
       beginner: {
-        stageName: "Beginner Stage",
-        stageTitle: "Foundations & Core Principles",
-        timeline: "Weeks 1-3 (Estimated 50 Hours)",
-        mentorAdvice: "Build non-negotiable fundamentals. Master language nuances, Git workflows, and baseline problem-solving before moving to complex frameworks.",
-        learningTopics: ["Data Structures (Arrays, HashMaps, Trees)", "Algorithms (Sorting, Searching, Recursion)", "Clean Code & Refactoring Principles", "Version Control (Git/GitHub)", "RESTful API Specification"],
-        recommendedProjects: [
-          { title: `${role} Baseline Service Engine`, description: "Build a clean REST API service with input validation, modular routing, and persistent DB storage.", keyDeliverables: ["REST Endpoints", "Input Validation", "Unit Tests"], portfolioImpact: "Demonstrates production code structure and hygiene." },
-          { title: "Algorithmic Solver Suite", description: "Implement core algorithms from scratch with space/time complexity benchmarks.", keyDeliverables: ["Custom Implementations", "Benchmark Report", "Documentation"], portfolioImpact: "Proves deep computer science fundamentals." }
-        ],
-        recommendedCertifications: [
-          { name: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", relevance: "High for Cloud Fundamentals", estimatedCost: "$100" },
-          { name: "Meta Professional Software Certificate", issuer: "Meta / Coursera", relevance: "Strong for Industry Basics", estimatedCost: "Free / $39/mo" }
-        ],
-        recommendedTools: ["VS Code / JetBrains", "Git & GitHub CLI", "Postman", "Docker Desktop", "Terminal / Bash"],
-        books: [
-          { title: "Clean Code", author: "Robert C. Martin", whyRead: "Essential principles for writing readable, maintainable software." },
-          { title: "Grokking Algorithms", author: "Aditya Bhargava", whyRead: "Visual and intuitive breakdown of core algorithmic concepts." }
-        ],
-        courses: [
-          { title: "CS50: Introduction to Computer Science", platform: "edX / Harvard", urlOrProvider: "Harvard University", type: "Free" },
-          { title: "Data Structures & Algorithms Masterclass", platform: "Udemy / Coursera", urlOrProvider: "Top Instructors", type: "Paid" }
-        ],
-        practicePlatforms: [
-          { name: "LeetCode", focus: "Easy/Medium Data Structure Problems" },
-          { name: "HackerRank", focus: "Domain Language Fundamentals & SQL" }
-        ],
-        interviewPreparation: [
-          { topic: "Behavioral Fundamentals (Tell Me About Yourself)", keyQuestions: ["Walk me through your background.", "Why are you targeting this role?"], strategy: "Structure answers using Present-Past-Future narrative arc." },
-          { topic: "Basic Data Structure Code Walkthroughs", keyQuestions: ["How does a HashMap work internally?", "Explain O(1) vs O(n) complexity."], strategy: "Write clean pseudocode and state space-time trade-offs explicitly." }
-        ],
-        portfolioTasks: ["Create GitHub account with clean README profile", "Setup personal developer domain or portfolio site", "Publish first open-source repository with full documentation"],
-        networkingSuggestions: ["Connect with 10 college alumni working in target roles", "Join local tech Discord / Slack communities", "Follow top technical leaders in your industry on LinkedIn"],
-        jobApplicationStrategy: ["Audit resume against target role job descriptions", "Identify 20 target companies for early bookmarking", "Setup job alerts on LinkedIn and Wellfound"],
+        ...domainStages.beginner,
         milestones: beginnerMilestones
       },
       intermediate: {
-        stageName: "Intermediate Stage",
-        stageTitle: "Architecture & Framework Mastery",
-        timeline: "Weeks 4-7 (Estimated 80 Hours)",
-        mentorAdvice: "Transition from writing code to engineering software. Focus on database design, asynchronous processing, and automated testing.",
-        learningTopics: ["Relational & NoSQL Database Schema Design", "Asynchronous Programming & Event Loops", "Authentication (JWT, OAuth2, Session)", "Caching Strategies (Redis)", "Docker Containerization"],
-        recommendedProjects: [
-          { title: "Real-time Collaborative Dashboard", description: "Build a multi-user platform featuring WebSockets, caching, and state synchronization.", keyDeliverables: ["WebSocket Server", "Redis Cache", "Role-based Access"], portfolioImpact: "Proves ability to engineer responsive real-time applications." },
-          { title: "E-Commerce Micro-services API", description: "Design order processing and inventory modules with transaction isolation.", keyDeliverables: ["DB Transactions", "Stripe API Integration", "Docker Compose"], portfolioImpact: "Shows readiness for real-world commercial software." }
-        ],
-        recommendedCertifications: [
-          { name: "AWS Certified Developer Associate", issuer: "Amazon Web Services", relevance: "Very High for Backend & Cloud", estimatedCost: "$150" },
-          { name: "MongoDB Certified Developer", issuer: "MongoDB Inc", relevance: "High for NoSQL Systems", estimatedCost: "$150" }
-        ],
-        recommendedTools: ["Redis", "PostgreSQL / MongoDB", "Docker Compose", "GitHub Actions", "Swagger / OpenAPI"],
-        books: [
-          { title: "Designing Data-Intensive Applications", author: "Martin Kleppmann", whyRead: "The gold standard text on distributed systems, storage engines, and data consistency." },
-          { title: "Refactoring: Improving Existing Code", author: "Martin Fowler", whyRead: "Master code transformation patterns without altering external behavior." }
-        ],
-        courses: [
-          { title: "Full Stack Open", platform: "University of Helsinki", urlOrProvider: "Helsinki Uni", type: "Free" },
-          { title: "Docker & Kubernetes: The Complete Guide", platform: "Udemy", urlOrProvider: "Stephen Grider", type: "Paid" }
-        ],
-        practicePlatforms: [
-          { name: "NeetCode 150", focus: "Curated LeetCode Medium Pattern Practice" },
-          { name: "System Design Primer", focus: "Foundational System Design Concepts" }
-        ],
-        interviewPreparation: [
-          { topic: "Technical Deep-Dive into Projects", keyQuestions: ["Why did you choose PostgreSQL over MongoDB for this project?", "How did you handle race conditions?"], strategy: "Use STAR format emphasizing technical trade-offs and metrics." },
-          { topic: "Medium Level Algorithmic Problem Solving", keyQuestions: ["Two Pointers, Sliding Window, Dynamic Programming basics."], strategy: "Always think aloud before writing code." }
-        ],
-        portfolioTasks: ["Host live working demo on Vercel/Render/AWS", "Write technical blog explaining a project challenge solved", "Record 2-minute video walkthrough of your capstone app"],
-        networkingSuggestions: ["Request 3 informational interviews with senior engineers", "Attend virtual or local tech meetups", "Engage thoughtfully on engineering blog posts on LinkedIn"],
-        jobApplicationStrategy: ["Apply to 10 safe companies to build interview momentum", "Customize resume keywords for each application", "Leverage campus or alumni referral requests"],
+        ...domainStages.intermediate,
         milestones: intermediateMilestones
       },
       advanced: {
-        stageName: "Advanced Stage",
-        stageTitle: "System Design & Enterprise Scale",
-        timeline: "Weeks 8-10 (Estimated 90 Hours)",
-        mentorAdvice: "Focus on scalability, fault tolerance, and CI/CD pipelines. Demonstrate that you can write code that runs reliably at scale.",
-        learningTopics: ["Distributed Systems Architecture", "Microservices vs Monoliths", "Message Queues (Kafka / RabbitMQ)", "CI/CD Pipeline Automation", "Performance Monitoring & Logging"],
-        recommendedProjects: [
-          { title: "Distributed Task Scheduler & Queue", description: "Engineered a fault-tolerant message queue supporting retry policies and dead-letter queues.", keyDeliverables: ["Worker Pool", "DLQ Handling", "Prometheus Metrics"], portfolioImpact: "Distinguishes you as an advanced systems engineer." },
-          { title: "High-Throughput Analytics Service", description: "Process millions of events with streaming ingestion and automated aggregation.", keyDeliverables: ["Kafka Pipeline", "Grafana Dashboard", "Load Testing"], portfolioImpact: "Demonstrates enterprise-grade data engineering capability." }
-        ],
-        recommendedCertifications: [
-          { name: "AWS Solutions Architect Associate", issuer: "AWS", relevance: "Top Industry Standard", estimatedCost: "$150" },
-          { name: "CKAD: Certified Kubernetes Application Developer", issuer: "Linux Foundation", relevance: "Gold standard for Kubernetes", estimatedCost: "$395" }
-        ],
-        recommendedTools: ["Kubernetes", "Apache Kafka", "Prometheus & Grafana", "Terraform", "JMeter / k6"],
-        books: [
-          { title: "System Design Interview – An Insider's Guide", author: "Alex Xu", whyRead: "Step-by-step framework for tackling high-stakes system design rounds." },
-          { title: "Building Microservices", author: "Sam Newman", whyRead: "Comprehensive guide to modelling, integrating, and deploying microservices." }
-        ],
-        courses: [
-          { title: "Grokking the System Design Interview", platform: "Educative.io / Design Gurus", urlOrProvider: "Design Gurus", type: "Paid" },
-          { title: "Kubernetes for Developers", platform: "Linux Foundation", urlOrProvider: "CNCF", type: "Free / Paid" }
-        ],
-        practicePlatforms: [
-          { name: "ByteByteGo", focus: "Visual System Design Architectures" },
-          { name: "LeetCode Hard & Company Specifics", focus: "FAANG / Tier 1 High-Frequency Questions" }
-        ],
-        interviewPreparation: [
-          { topic: "System Design Whiteboarding", keyQuestions: ["Design URL Shortener (TinyURL)", "Design Rate Limiter", "Design Messaging App"], strategy: "Follow 4-step framework: Requirements -> API & Schema -> High Level -> Deep Dives." },
-          { topic: "Behavioral Leadership & STAR Mastery", keyQuestions: ["Describe a time you disagreed with a teammate.", "How do you handle scope creep?"], strategy: "Emphasize ownership, data, and positive resolution." }
-        ],
-        portfolioTasks: ["Implement automated CI/CD deployment with test coverage badges", "Conduct k6 load testing and document max RPS benchmarks in README", "Publish System Design diagram case study"],
-        networkingSuggestions: ["Reach out to engineering managers and hiring leads directly", "Ask for warm introductions via mutual LinkedIn connections", "Share your system design diagrams on tech forums"],
-        jobApplicationStrategy: ["Target tier-1 companies and high-growth startups", "Follow up on all applications after 5 business days", "Pitch customized value propositions in cold emails"],
+        ...domainStages.advanced,
         milestones: advancedMilestones
       },
       expert: {
-        stageName: "Expert Stage",
-        stageTitle: "Production Mastery & Career Acceleration",
-        timeline: "Weeks 11-12+ (Ongoing Mastery)",
-        mentorAdvice: "Position yourself as an indispensable asset. Focus on high-level production optimization, executive presence, and salary negotiation.",
-        learningTopics: ["Production Zero-Downtime Deployments", "Security Audit & Vulnerability Scanning", "FinOps & Cloud Cost Optimization", "Technical Leadership & Mentorship", "Executive Compensation Negotiation"],
-        recommendedProjects: [
-          { title: "Open-Source Infrastructure SDK / Plugin", description: "Created and published an open-source library on npm/PyPI with thorough test coverage and automated release workflow.", keyDeliverables: ["NPM Package", "95%+ Test Coverage", "Documentation"], portfolioImpact: "Establishes industry authority and technical leadership." },
-          { title: "Enterprise Security & Performance Audit", description: "Audited multi-service application for OWASP Top 10 vulnerabilities and reduced cloud bill by 30%.", keyDeliverables: ["Audit Report", "Cost Breakdown", "Remediation PRs"], portfolioImpact: "Demonstrates executive business mindset and production vigilance." }
-        ],
-        recommendedCertifications: [
-          { name: "AWS Certified DevOps Engineer Professional", issuer: "AWS", relevance: "Elite Senior Level Credential", estimatedCost: "$300" },
-          { name: "Google Professional Cloud Architect", issuer: "Google Cloud", relevance: "Elite Cloud Credential", estimatedCost: "$200" }
-        ],
-        recommendedTools: ["Snyk / SonarQube", "AWS CloudWatch / Datadog", "OpenTelemetry", "Helm", "GitLab CI"],
-        books: [
-          { title: "The Software Engineer's Guidebook", author: "Gergely Orosz", whyRead: "Navigating senior tech career growth, engineering leadership, and tech companies." },
-          { title: "Never Split the Difference", author: "Chris Voss", whyRead: "Tactical negotiation skills for securing maximum compensation." }
-        ],
-        courses: [
-          { title: "Pragmatic Senior Engineer Course", platform: "Gergely Orosz Blog & Guides", urlOrProvider: "The Pragmatic Engineer", type: "Paid" },
-          { title: "Advanced Distributed Systems", platform: "MIT OpenCourseWare", urlOrProvider: "MIT", type: "Free" }
-        ],
-        practicePlatforms: [
-          { name: "Pramp / Interviewing.io", focus: "Live Mock Interviews with Senior FAANG Engineers" },
-          { name: "Levels.fyi", focus: "Market Compensation Intelligence & Equity Valuation" }
-        ],
-        interviewPreparation: [
-          { topic: "Executive & Bar Raiser Rounds", keyQuestions: ["How do you prioritize technical debt vs product features?", "Tell me about a project that failed."], strategy: "Speak with business impact metrics and executive maturity." },
-          { topic: "Compensation & Offer Negotiation", keyQuestions: ["What are your salary expectations?", "We have a strict salary band."], strategy: "Never give a hard number first; benchmark using Levels.fyi data." }
-        ],
-        portfolioTasks: ["Maintain active open-source library", "Give a tech talk or host a webinar", "Publish comprehensive career portfolio case study"],
-        networkingSuggestions: ["Build direct relationships with executive recruiters", "Mentor junior developers in open-source or campus groups", "Engage with CTOs and VPs of Engineering on industry developments"],
-        jobApplicationStrategy: ["Execute high-touch multi-channel application campaign", "Leverage competing job offers for negotiation leverage", "Evaluate total compensation package including equity & benefits"],
+        ...domainStages.expert,
         milestones: expertMilestones
       }
     }
