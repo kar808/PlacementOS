@@ -1032,13 +1032,14 @@ export default function App() {
         performanceTrends,
         seed: Math.floor(Math.random() * 1000000)
       });
+      const questionsList = Array.isArray(data) ? data : (Array.isArray(data?.questions) ? data.questions : []);
       setActiveInterviewRole(role);
       localStorage.setItem("placement_active_interview_role", role);
       setInterviewSession({
-        questions: data,
+        questions: questionsList,
         currentQuestionIndex: 0,
         chatHistory: [],
-        status: "ongoing",
+        status: questionsList.length > 0 ? "ongoing" : "idle",
         category: interviewType,
         experienceLevel,
         domain,

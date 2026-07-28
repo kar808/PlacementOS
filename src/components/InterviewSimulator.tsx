@@ -255,8 +255,9 @@ export function InterviewSimulator({
   const animFrameRef = useRef<number | null>(null);
   const silenceCheckIntervalRef = useRef<any>(null);
 
-  const currentQuestion: MockInterviewQuestion | undefined = session.questions[session.currentQuestionIndex];
-  const currentAnswerItem = session.chatHistory[session.currentQuestionIndex];
+  const questionsList = Array.isArray(session?.questions) ? session.questions : [];
+  const currentQuestion: MockInterviewQuestion | undefined = questionsList[session?.currentQuestionIndex || 0];
+  const currentAnswerItem = (Array.isArray(session?.chatHistory) ? session.chatHistory : [])[session?.currentQuestionIndex || 0];
   const isQuestionAnswered = Boolean(currentAnswerItem && currentAnswerItem.role === "student" && currentAnswerItem.feedback !== undefined);
 
   const effectiveDomain = selectedDomain === "Custom Domain" 
@@ -1083,8 +1084,8 @@ export function InterviewSimulator({
       {/* SUBTAB 1: PRACTICE STUDIO */}
       {activeSubTab === "practice" && (
         <div className="space-y-6">
-          {/* STEP 1: INTERVIEW CONFIGURATION CARD (If Idle) */}
-          {session.status === "idle" && (
+          {/* STEP 1: INTERVIEW CONFIGURATION CARD (If Idle or No Active Question) */}
+          {(session.status === "idle" || (session.status === "ongoing" && !currentQuestion) || !["ongoing", "completed"].includes(session.status)) && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 space-y-8 shadow-xl">
               <div className="space-y-1">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -1287,7 +1288,7 @@ export function InterviewSimulator({
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-xs font-bold border border-indigo-500/30">
-                      Question {session.currentQuestionIndex + 1} of {session.questions.length}
+                      Question {(session.currentQuestionIndex || 0) + 1} of {questionsList.length}
                     </span>
                     <span className="px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono text-xs border border-slate-700">
                       {currentQuestion.type?.toUpperCase()}
@@ -1322,13 +1323,13 @@ export function InterviewSimulator({
                 {/* Progress Bar & Status */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-                    <span>Interview Progress ({Math.round(((session.currentQuestionIndex + (isQuestionAnswered ? 1 : 0)) / session.questions.length) * 100)}% Completed)</span>
-                    <span>{session.chatHistory.filter((i) => i.role === "student").length} of {session.questions.length} Answered • ~{Math.max(1, (session.questions.length - session.currentQuestionIndex) * 2)} min remaining</span>
+                    <span>Interview Progress ({Math.round((((session.currentQuestionIndex || 0) + (isQuestionAnswered ? 1 : 0)) / (questionsList.length || 1)) * 100)}% Completed)</span>
+                    <span>{(session.chatHistory || []).filter((i) => i.role === "student").length} of {questionsList.length} Answered • ~{Math.max(1, (questionsList.length - (session.currentQuestionIndex || 0)) * 2)} min remaining</span>
                   </div>
                   <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700/50">
                     <div
                       className="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-full transition-all duration-300"
-                      style={{ width: `${Math.round(((session.currentQuestionIndex + (isQuestionAnswered ? 1 : 0)) / session.questions.length) * 100)}%` }}
+                      style={{ width: `${Math.round((((session.currentQuestionIndex || 0) + (isQuestionAnswered ? 1 : 0)) / (questionsList.length || 1)) * 100)}%` }}
                     />
                   </div>
                 </div>
@@ -1642,7 +1643,7 @@ export function InterviewSimulator({
                       onClick={onNextQuestion}
                       className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2 cursor-pointer"
                     >
-                      <span>{session.currentQuestionIndex + 1 < session.questions.length ? "Proceed to Next Question" : "View Final Assessment Report"}</span>
+                      <span>{(session.currentQuestionIndex || 0) + 1 < questionsList.length ? "Proceed to Next Question" : "View Final Assessment Report"}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -1739,7 +1740,7 @@ export function InterviewSimulator({
                   {completedAnswers.map((item, idx) => (
                     <div key={idx} className="p-5 bg-slate-800/50 border border-slate-700/60 rounded-2xl space-y-4">
                       <div className="flex items-center justify-between gap-4 border-b border-slate-700/60 pb-3">
-                        <span className="font-bold text-sm text-white">Q{idx + 1}: {session.questions[idx]?.question}</span>
+                        <span className="font-bold text-sm text-white">Q{idx + 1}: {questionsList[idx]?.question}</span>
                         <span className="text-sm font-black font-mono text-emerald-400">{item.score}%</span>
                       </div>
 

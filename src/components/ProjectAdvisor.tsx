@@ -30,6 +30,12 @@ export default function ProjectAdvisor({
 
   const isCodingLevelLow = profile.codingLevel === "None" || profile.codingLevel === "Beginner";
 
+  const projectList = Array.isArray(projects)
+    ? projects
+    : (Array.isArray((projects as any)?.projects)
+        ? (projects as any).projects
+        : (Array.isArray((projects as any)?.data) ? (projects as any).data : []));
+
   return (
     <div className="space-y-8">
       {/* Role selector card */}
@@ -84,9 +90,9 @@ export default function ProjectAdvisor({
         </div>
       </div>
 
-      {projects ? (
+      {projectList.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {(projects || []).map((project, idx) => (
+          {projectList.map((project, idx) => (
             <div key={idx} className="bg-[#111] border border-white/10 rounded-xl p-6 shadow-lg flex flex-col justify-between space-y-6 transition-all duration-300 hover:scale-[1.02] hover:border-emerald-500/20">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-white/10 pb-2">

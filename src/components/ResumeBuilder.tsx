@@ -1523,7 +1523,7 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
                         <span>Targeted AI Clarification Questions (Optional - Boosts Resume Precision)</span>
                       </div>
                       <div className="space-y-2">
-                        {generatedResumeData.professionClassification.clarificationQuestions.map((q, idx) => (
+                        {(generatedResumeData?.professionClassification?.clarificationQuestions || []).map((q, idx) => (
                           <div key={idx} className="space-y-1">
                             <label className="text-[11px] text-white/80 block font-sans">{q}</label>
                             <input
@@ -2078,7 +2078,7 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
                     <AlertCircle className="w-4 h-4" /> Weak Phrases Identified
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {currSuggestions.weakPhrasesDetected.map((phrase, i) => (
+                    {(currSuggestions?.weakPhrasesDetected || []).map((phrase, i) => (
                       <span key={i} className="px-2 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-mono rounded font-bold">
                         "{phrase}"
                       </span>
@@ -2413,7 +2413,7 @@ ${(projects[1]?.bullets || []).map(b => `- ${b}`).join("\n")}
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
-                    {currSuggestions.atsBulletImprovements
+                    {(currSuggestions?.atsBulletImprovements || [])
                       .filter((item) => {
                         if (!suggestionsSearchQuery) return true;
                         const q = suggestionsSearchQuery.toLowerCase();
