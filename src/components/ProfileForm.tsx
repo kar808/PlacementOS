@@ -443,7 +443,7 @@ export default function ProfileForm({ profile, onSave, onAutoSave, hrAnalysis }:
               {formData.technicalSkills.length === 0 && (
                 <span className="text-xs text-white/40 p-1 font-mono">No skills added yet</span>
               )}
-              {formData.technicalSkills.map((skill) => (
+              {(formData.technicalSkills || []).map((skill) => (
                 <span key={skill} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono bg-white/5 text-white border border-white/10 shadow-sm">
                   {skill}
                   <button type="button" onClick={() => handleRemoveTech(skill)} className="text-white/40 hover:text-white transition-colors">
@@ -478,7 +478,7 @@ export default function ProfileForm({ profile, onSave, onAutoSave, hrAnalysis }:
               {formData.nonTechnicalSkills.length === 0 && (
                 <span className="text-xs text-white/40 p-1 font-mono">No skills added yet</span>
               )}
-              {formData.nonTechnicalSkills.map((skill) => (
+              {(formData.nonTechnicalSkills || []).map((skill) => (
                 <span key={skill} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono bg-white/5 text-white border border-white/10 shadow-sm">
                   {skill}
                   <button type="button" onClick={() => handleRemoveNonTech(skill)} className="text-white/40 hover:text-white transition-colors">
@@ -694,7 +694,7 @@ export default function ProfileForm({ profile, onSave, onAutoSave, hrAnalysis }:
               {formData.targetRoles.length === 0 && (
                 <span className="text-xs text-white/40 p-1 font-mono">No target roles specified</span>
               )}
-              {formData.targetRoles.map((role) => (
+              {(formData.targetRoles || []).map((role) => (
                 <span key={role} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono bg-white/5 text-white border border-white/10 shadow-sm">
                   {role}
                   <button type="button" onClick={() => handleRemoveRole(role)} className="text-white/40 hover:text-white transition-colors">
@@ -726,7 +726,7 @@ export default function ProfileForm({ profile, onSave, onAutoSave, hrAnalysis }:
               {formData.targetCompanies.length === 0 && (
                 <span className="text-xs text-white/40 p-1 font-mono">No target companies specified</span>
               )}
-              {formData.targetCompanies.map((company) => (
+              {(formData.targetCompanies || []).map((company) => (
                 <span key={company} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono bg-white/5 text-white border border-white/10 shadow-sm">
                   {company}
                   <button type="button" onClick={() => handleRemoveCompany(company)} className="text-white/40 hover:text-white transition-colors">

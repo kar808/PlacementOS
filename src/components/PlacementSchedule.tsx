@@ -954,7 +954,7 @@ export default function PlacementSchedule({ profile, onTargetRoleChange }: Place
                         <div className="space-y-1">
                           <span className="text-[8px] font-black text-white/30 uppercase tracking-widest font-mono block">Required Skill Gaps</span>
                           <div className="flex flex-wrap gap-1">
-                            {dl.skillGaps.map((gap, idx) => (
+                            {(dl?.skillGaps || []).map((gap, idx) => (
                               <span key={idx} className="text-[9px] bg-white/5 border border-white/5 text-white/70 px-1.5 py-0.5 rounded font-mono">
                                 {gap}
                               </span>
@@ -1224,7 +1224,7 @@ export default function PlacementSchedule({ profile, onTargetRoleChange }: Place
                   <div className="p-3.5 bg-black/40 border border-white/5 rounded-xl space-y-2">
                     <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block font-mono">Skill Gaps to Bridge</span>
                     <div className="flex flex-wrap gap-1.5">
-                      {selectedTask.skillGaps.map((gap, idx) => (
+                      {(selectedTask?.skillGaps || []).map((gap, idx) => (
                         <span key={idx} className="text-[10px] bg-white/5 border border-white/10 text-white/80 px-2 py-0.5 rounded font-mono">
                           • {gap}
                         </span>

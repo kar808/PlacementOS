@@ -1025,7 +1025,7 @@ export default function RoadmapView({
               Verified Current Skills
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {analysis.currentSkills.map((sk, idx) => (
+              {(analysis?.currentSkills || []).map((sk, idx) => (
                 <span key={idx} className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
                   ✓ {sk}
                 </span>
@@ -1038,7 +1038,7 @@ export default function RoadmapView({
               Critical Skill Gaps to Bridge
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {analysis.missingSkills.map((sk, idx) => (
+              {(analysis?.missingSkills || []).map((sk, idx) => (
                 <span key={idx} className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-rose-500/10 text-rose-300 border border-rose-500/20">
                   ! {sk}
                 </span>
@@ -1168,7 +1168,7 @@ export default function RoadmapView({
             </div>
 
             <div className="space-y-3">
-              {allCurrentStageMilestones.map((m) => {
+              {(allCurrentStageMilestones || []).map((m) => {
                 const isDone = !!completedMilestones[m.id];
                 const note = userNotes[m.id] || "";
                 const isCustom = m.id.startsWith("custom_");
@@ -1243,7 +1243,7 @@ export default function RoadmapView({
                 <h3 className="text-xs font-extrabold text-white uppercase tracking-wider font-mono">Core Learning Topics</h3>
               </div>
               <ul className="space-y-2">
-                {currentStageObj.learningTopics.map((tp, idx) => (
+                {(currentStageObj?.learningTopics || []).map((tp, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-xs text-white/80 font-semibold">
                     <span className="text-emerald-400 font-mono font-bold">•</span>
                     <span>{tp}</span>
@@ -1259,7 +1259,7 @@ export default function RoadmapView({
                 <h3 className="text-xs font-extrabold text-white uppercase tracking-wider font-mono">Recommended Tool Stack</h3>
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
-                {currentStageObj.recommendedTools.map((tl, idx) => (
+                {(currentStageObj?.recommendedTools || []).map((tl, idx) => (
                   <span key={idx} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 text-white border border-white/10 flex items-center gap-1.5">
                     <ShieldCheck className="w-3 h-3 text-emerald-400" /> {tl}
                   </span>
@@ -1277,7 +1277,7 @@ export default function RoadmapView({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {currentStageObj.recommendedProjects.map((prj, idx) => (
+              {(currentStageObj?.recommendedProjects || []).map((prj, idx) => (
                 <div key={idx} className="bg-black/40 border border-white/10 p-5 rounded-2xl space-y-3 flex flex-col justify-between">
                   <div className="space-y-2">
                     <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase">Project Sprint 0{idx + 1}</span>
@@ -1287,7 +1287,7 @@ export default function RoadmapView({
                     <div className="space-y-1 pt-1">
                       <span className="text-[10px] font-bold text-white/40 uppercase block">Deliverables:</span>
                       <div className="flex flex-wrap gap-1">
-                        {prj.keyDeliverables.map((d, i) => (
+                        {(prj?.keyDeliverables || []).map((d, i) => (
                           <span key={i} className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-white/80 font-mono border border-white/5">
                             {d}
                           </span>
@@ -1315,7 +1315,7 @@ export default function RoadmapView({
               </div>
 
               <div className="space-y-3">
-                {currentStageObj.recommendedCertifications.map((cert, idx) => (
+                {(currentStageObj?.recommendedCertifications || []).map((cert, idx) => (
                   <div key={idx} className="bg-black/50 border border-white/5 p-3.5 rounded-xl flex items-start justify-between gap-3">
                     <div className="space-y-0.5">
                       <h4 className="text-xs font-black text-white">{cert.name}</h4>
@@ -1337,7 +1337,7 @@ export default function RoadmapView({
               </div>
 
               <div className="space-y-3">
-                {currentStageObj.courses.map((crs, idx) => (
+                {(currentStageObj?.courses || []).map((crs, idx) => (
                   <div key={idx} className="bg-black/50 border border-white/5 p-3.5 rounded-xl flex items-start justify-between gap-3">
                     <div className="space-y-0.5">
                       <h4 className="text-xs font-black text-white">{crs.title}</h4>
@@ -1366,7 +1366,7 @@ export default function RoadmapView({
               </div>
 
               <div className="space-y-3">
-                {currentStageObj.books.map((bk, idx) => (
+                {(currentStageObj?.books || []).map((bk, idx) => (
                   <div key={idx} className="bg-black/50 border border-white/5 p-3.5 rounded-xl space-y-1">
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-black text-white">"{bk.title}"</h4>
@@ -1386,7 +1386,7 @@ export default function RoadmapView({
               </div>
 
               <div className="space-y-3">
-                {currentStageObj.practicePlatforms.map((pf, idx) => (
+                {(currentStageObj?.practicePlatforms || []).map((pf, idx) => (
                   <div key={idx} className="bg-black/50 border border-white/5 p-3.5 rounded-xl flex items-center justify-between gap-2">
                     <span className="text-xs font-black text-white">{pf.name}</span>
                     <span className="text-xs text-emerald-400 font-mono font-semibold">{pf.focus}</span>
@@ -1408,13 +1408,13 @@ export default function RoadmapView({
               </div>
 
               <div className="space-y-4">
-                {currentStageObj.interviewPreparation.map((ip, idx) => (
+                {(currentStageObj?.interviewPreparation || []).map((ip, idx) => (
                   <div key={idx} className="bg-black/50 border border-white/5 p-3.5 rounded-xl space-y-2">
                     <h4 className="text-xs font-black text-white">{ip.topic}</h4>
                     <div className="space-y-1">
                       <span className="text-[10px] font-bold text-white/40 uppercase block">Sample Questions:</span>
                       <ul className="space-y-1">
-                        {ip.keyQuestions.map((q, i) => (
+                        {(ip?.keyQuestions || []).map((q, i) => (
                           <li key={i} className="text-[11px] text-white/70 italic font-medium">• "{q}"</li>
                         ))}
                       </ul>
@@ -1435,7 +1435,7 @@ export default function RoadmapView({
               </div>
 
               <ul className="space-y-2.5">
-                {currentStageObj.portfolioTasks.map((pt, idx) => (
+                {(currentStageObj?.portfolioTasks || []).map((pt, idx) => (
                   <li key={idx} className="bg-black/50 border border-white/5 p-3 rounded-xl flex items-center gap-2.5 text-xs text-white/80 font-semibold">
                     <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>{pt}</span>
@@ -1457,7 +1457,7 @@ export default function RoadmapView({
               </div>
 
               <ul className="space-y-2">
-                {currentStageObj.networkingSuggestions.map((net, idx) => (
+                {(currentStageObj?.networkingSuggestions || []).map((net, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-xs text-white/80 font-semibold">
                     <span className="text-emerald-400 font-mono font-bold font-mono">{idx + 1}.</span>
                     <span>{net}</span>
@@ -1474,7 +1474,7 @@ export default function RoadmapView({
               </div>
 
               <ul className="space-y-2">
-                {currentStageObj.jobApplicationStrategy.map((jas, idx) => (
+                {(currentStageObj?.jobApplicationStrategy || []).map((jas, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-xs text-white/80 font-semibold">
                     <span className="text-emerald-400 font-mono font-bold font-mono">→</span>
                     <span>{jas}</span>
@@ -1517,7 +1517,7 @@ export default function RoadmapView({
               <div className="pt-2 border-t border-white/5 space-y-2">
                 <span className="text-[10px] font-mono uppercase text-white/40 block font-bold">Adjacent / Alternative Roles:</span>
                 <div className="space-y-2">
-                  {analysis.alternativeCareerPaths.map((alt, idx) => (
+                  {(analysis?.alternativeCareerPaths || []).map((alt, idx) => (
                     <div key={idx} className="bg-black/50 border border-white/5 p-3 rounded-xl space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-emerald-300">{alt.roleTitle}</span>

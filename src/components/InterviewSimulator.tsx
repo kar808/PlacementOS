@@ -1069,7 +1069,7 @@ export function InterviewSimulator({
               </button>
             </div>
             <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 max-h-40 overflow-y-auto space-y-1 text-[11px] leading-snug text-slate-300">
-              {speechLogs.length > 0 ? (
+              {(speechLogs || []).length > 0 ? (
                 speechLogs.map((log, idx) => (
                   <div key={idx} className="border-b border-slate-900 pb-1">{log}</div>
                 ))
@@ -1358,7 +1358,7 @@ export function InterviewSimulator({
                       <div className="space-y-1 pt-2">
                         <span className="text-slate-400 font-mono text-[11px] block">Key Response Hints:</span>
                         <ul className="list-disc list-inside space-y-1 text-slate-300 pl-1">
-                          {clarificationData.helpfulHints.map((hint, idx) => (
+                          {(clarificationData?.helpfulHints || []).map((hint, idx) => (
                             <li key={idx}>{hint}</li>
                           ))}
                         </ul>
@@ -1822,7 +1822,7 @@ export function InterviewSimulator({
 
           {history.length > 0 ? (
             <div className="space-y-4">
-              {history.map((h) => {
+              {(history || []).map((h) => {
                 const isExpanded = expandedPastSessionId === h.id;
                 return (
                   <div key={h.id} className="border border-slate-800 rounded-xl overflow-hidden bg-slate-800/40">

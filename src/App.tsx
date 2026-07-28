@@ -993,8 +993,8 @@ export default function App() {
     setIsGeneratingInterview(true);
     try {
       const excludeQuestions = [
-        ...interviewSession.questions.map((q) => q.question),
-        ...interviewHistory.flatMap((h) => h.questionsAndAnswers.map((qa) => qa.question))
+        ...(Array.isArray(interviewSession?.questions) ? interviewSession.questions.map((q) => q.question) : []),
+        ...(Array.isArray(interviewHistory) ? interviewHistory.flatMap((h) => Array.isArray(h?.questionsAndAnswers) ? h.questionsAndAnswers.map((qa) => qa.question) : []) : [])
       ];
 
       const pastSessions = interviewHistory || [];

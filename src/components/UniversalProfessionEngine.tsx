@@ -646,7 +646,7 @@ export default function UniversalProfessionEngine({
                       The AI detected multiple sub-specializations for this role. Answering these quick questions will refine terminology and prevent domain confusion:
                     </p>
                     <div className="space-y-3">
-                      {classificationResult.clarificationQuestions.map((q, idx) => (
+                      {(classificationResult?.clarificationQuestions || []).map((q, idx) => (
                         <div key={idx} className="space-y-1.5">
                           <label className="text-xs text-slate-200 font-medium">{q}</label>
                           <input

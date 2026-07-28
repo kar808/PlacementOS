@@ -308,7 +308,7 @@ export default function FileUploadAnalyzer({
     }
 
     if (details.projects && details.projects.length > 0) {
-      const projectStr = details.projects.map(p => typeof p === 'string' ? p : `${p.title}: ${p.description || ''}`).join("; ");
+      const projectStr = (details?.projects || []).map(p => typeof p === 'string' ? p : `${p.title}: ${p.description || ''}`).join("; ");
       update.projects = profile.projects ? `${profile.projects}\n${projectStr}` : projectStr;
     }
 
