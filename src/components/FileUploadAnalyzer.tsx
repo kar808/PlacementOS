@@ -55,6 +55,7 @@ export default function FileUploadAnalyzer({
   const [analysisResult, setAnalysisResult] = useState<FileAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<boolean>(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [appliedSuccess, setAppliedSuccess] = useState<boolean>(false);
   const [showExtractedText, setShowExtractedText] = useState<boolean>(false);
   const [analysisProgressStep, setAnalysisProgressStep] = useState<string>("Uploading Resume...");
@@ -921,14 +922,27 @@ export default function FileUploadAnalyzer({
                   </h5>
                   <div className="space-y-3">
                     {analysisResult.atsBulletImprovements.map((bullet, idx) => (
-                      <div key={idx} className="bg-[#181818] border border-white/5 rounded-xl p-3 space-y-2 text-xs">
-                        <div className="text-rose-400/80 line-through">
+                      <div key={idx} className="bg-[#181818] border border-white/5 rounded-xl p-3 space-y-2 text-xs relative">
+                        <div className="text-rose-400/80 line-through pr-12">
                           <span className="font-mono text-[9px] uppercase text-rose-400 block font-bold">Original Draft</span>
                           "{bullet.before}"
                         </div>
-                        <div className="text-emerald-300 font-bold">
-                          <span className="font-mono text-[9px] uppercase text-emerald-400 block font-bold">ATS Optimized STAR Rewrite</span>
-                          "{bullet.after}"
+                        <div className="text-emerald-300 font-bold space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-mono text-[9px] uppercase text-emerald-400 block font-bold">ATS Optimized STAR Rewrite</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(bullet.after);
+                                setCopiedKey(`f-bullet-${idx}`);
+                                setTimeout(() => setCopiedKey(null), 2000);
+                              }}
+                              className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer bg-emerald-500/10 px-2 py-0.5 rounded-md"
+                            >
+                              {copiedKey === `f-bullet-${idx}` ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
+                              {copiedKey === `f-bullet-${idx}` ? "Copied!" : "Copy Bullet"}
+                            </button>
+                          </div>
+                          <p className="font-mono text-emerald-200">"{bullet.after}"</p>
                         </div>
                         <p className="text-[10px] text-white/50 leading-relaxed font-mono italic">
                           Why: {bullet.explanation}

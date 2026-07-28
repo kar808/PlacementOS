@@ -31,13 +31,16 @@ import {
   Plus,
   RotateCcw,
   Compass,
-  Download
+  Download,
+  Search,
+  Split,
+  History
 } from "lucide-react";
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import FileUploadAnalyzer from "./FileUploadAnalyzer";
 import UniversalProfessionEngine from "./UniversalProfessionEngine";
 import { UniversalProfessionClassification } from "../types";
-import { generateProfessionalResumePdf } from "../lib/pdfGenerator";
+import { generateProfessionalResumePdf, generateResumeSuggestionsPdf } from "../lib/pdfGenerator";
 
 interface ResumeBuilderProps {
   profile: StudentProfile;
@@ -81,6 +84,47 @@ export default function ResumeBuilder({
   const [jobDesc, setJobDesc] = useState("");
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  // Resume Suggestions Search, Version Comparison, and Copy State
+  const [suggestionsSearchQuery, setSuggestionsSearchQuery] = useState<string>("");
+  const [showVersionComparison, setShowVersionComparison] = useState<boolean>(false);
+  const [copiedBulletKey, setCopiedBulletKey] = useState<string | null>(null);
+
+  const handleCopyBulletWithFeedback = (text: string, key: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedBulletKey(key);
+    setTimeout(() => {
+      setCopiedBulletKey((prev) => (prev === key ? null : prev));
+    }, 2000);
+  };
+
+  const handleExportSuggestionsPdf = () => {
+    if (!currSuggestions) return;
+    const pdfDoc = generateResumeSuggestionsPdf({
+      candidateName: profile.name || "Candidate",
+      targetRole: profile.targetRoles?.[0] || autoBuildRole || "Target Profession",
+      atsScore: currSuggestions.optimizationScore ?? 82,
+      atsBreakdown: {
+        keywordMatchScore: currSuggestions.keywordMatchScore ?? 80,
+        readabilityScore: currSuggestions.atsReadabilityScore ?? 85,
+        impactQuantification: 82,
+        sectionsCompleteness: 88,
+      },
+      suggestedHeadline: currSuggestions.suggestedHeadline,
+      suggestedAboutSection: currSuggestions.suggestedAboutSection,
+      bulletRewrites: currSuggestions.atsBulletImprovements || [],
+      topExtractedKeywords: profile.technicalSkills || ["Problem Solving", "Domain Expertise", "Data Analysis"],
+      missingKeywords: currSuggestions.weakPhrasesDetected ? ["Agile Workflow", "Process Automation", "System Architecture"] : [],
+      actionableSteps: [
+        "Incorporate quantified impact metrics (%, $, hours saved) into every bullet point.",
+        "Add recommended industry keywords to raise ATS parser scores.",
+        "Update your LinkedIn headline with the suggested AI headline."
+      ]
+    });
+
+    pdfDoc.save(`Resume_Optimization_Suggestions_${profile.name ? profile.name.replace(/\s+/g, "_") : "Candidate"}.pdf`);
+  };
 
   // Automatic AI Resume Builder State ("Bestest AI Engine")
   const [autoBuildRole, setAutoBuildRole] = useState<string>(profile.targetRoles?.[0] || "Software Engineer");
@@ -2195,72 +2239,269 @@ ${projects[1].bullets.map(b => `- ${b}`).join("\n")}
       {/* Role-Specific ATS Customizer Suggestions */}
       {(activeSubTab === "tailor" || currSuggestions) && (
         <div className="bg-[#111] border border-white/10 rounded-2xl p-6 shadow-xl space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-4">
+          {/* Header Action Bar */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-white/10 pb-4">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider rounded-full font-mono mb-1.5">
-                <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" /> AI ATS Bullet Rewriter
+                <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" /> AI ATS Bullet Rewriter & LinkedIn Optimizer
               </div>
               <h3 className="font-extrabold text-white text-base tracking-tight">AI Tailored ATS Recommendations</h3>
               <p className="text-white/60 text-xs leading-relaxed max-w-2xl font-medium mt-0.5">
                 Quantifiable bullet improvements, action verbs, and LinkedIn profile optimizations generated for {activeVer?.title || "Active Resume Version"}.
               </p>
             </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Version Comparison Toggle */}
+              <button
+                type="button"
+                onClick={() => setShowVersionComparison(!showVersionComparison)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  showVersionComparison
+                    ? "bg-purple-500 text-white border-purple-400 shadow-lg shadow-purple-500/20"
+                    : "bg-white/5 hover:bg-white/10 text-white/80 border-white/10"
+                }`}
+              >
+                {showVersionComparison ? <History className="w-4 h-4 text-purple-200" /> : <Split className="w-4 h-4 text-purple-400" />}
+                {showVersionComparison ? "Exit Version Compare" : "Version Comparison"}
+              </button>
+
+              {/* Download PDF Button */}
+              {currSuggestions && (
+                <button
+                  type="button"
+                  onClick={handleExportSuggestionsPdf}
+                  className="px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-black font-mono font-black text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-500/10"
+                >
+                  <Download className="w-4 h-4" /> Download PDF Report
+                </button>
+              )}
+            </div>
           </div>
 
-          {currSuggestions?.atsBulletImprovements && (
-            <div className="space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-wider text-white/80 font-mono">
-                Recommended High-Impact Bullet Rewrites
-              </h4>
-              <div className="grid grid-cols-1 gap-4">
-                {currSuggestions.atsBulletImprovements.map((item, idx) => (
-                  <div key={idx} className="bg-black/40 border border-white/10 rounded-2xl p-5 space-y-3">
-                    <div className="p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl space-y-1">
-                      <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider font-mono">Before</span>
-                      <p className="text-xs text-rose-200/80 font-mono">{item.before}</p>
-                    </div>
+          {/* Full-Text Search Bar */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={suggestionsSearchQuery}
+              onChange={(e) => setSuggestionsSearchQuery(e.target.value)}
+              placeholder="Full-text search suggestions, bullet points, keywords, or LinkedIn copy..."
+              className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder:text-white/30 font-mono focus:outline-none focus:border-emerald-500/50 transition-colors"
+            />
+            {suggestionsSearchQuery && (
+              <button
+                onClick={() => setSuggestionsSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
-                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider font-mono">After (Quantified & Actionable)</span>
-                        <button
-                          onClick={() => handleCopy(item.after, idx, "bullet")}
-                          className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer"
-                        >
-                          {copiedText === `bullet-${idx}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                          {copiedText === `bullet-${idx}` ? "Copied" : "Copy Bullet"}
-                        </button>
-                      </div>
-                      <p className="text-xs text-emerald-200 font-bold font-mono">{getSimulatedRewrite(item.after)}</p>
-                    </div>
-
-                    <p className="text-[11px] text-white/50 font-medium leading-relaxed italic">
-                      💡 {item.explanation}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {currSuggestions?.suggestedHeadline && (
-            <div className="p-5 bg-black/40 border border-white/10 rounded-2xl space-y-3">
-              <div className="flex justify-between items-center">
-                <h4 className="text-xs font-black uppercase tracking-wider text-white/80 font-mono">
-                  Recommended LinkedIn Headline
+          {/* Side-by-Side Version Comparison View */}
+          {showVersionComparison ? (
+            <div className="space-y-4 animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <h4 className="text-xs font-black uppercase tracking-wider text-purple-300 font-mono flex items-center gap-1.5">
+                  <Split className="w-4 h-4" /> Side-by-Side Resume Text & Bullet Comparison
                 </h4>
-                <button
-                  onClick={() => handleCopy(currSuggestions.suggestedHeadline!, 0, "headline")}
-                  className="text-xs text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer"
-                >
-                  {copiedText === "headline-0" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedText === "headline-0" ? "Copied" : "Copy Headline"}
-                </button>
+                <span className="text-[10px] text-white/50 font-mono">
+                  Comparing Original Draft vs. AI-Optimized Version
+                </span>
               </div>
-              <p className="text-xs text-white/90 font-mono bg-white/5 p-3 rounded-xl border border-white/10">
-                {currSuggestions.suggestedHeadline}
-              </p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Left Pane: Original Version */}
+                <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 space-y-4">
+                  <div className="flex items-center justify-between border-b border-rose-500/20 pb-2">
+                    <span className="text-xs font-bold text-rose-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <FileText className="w-4 h-4" /> Original Draft / Before
+                    </span>
+                    <button
+                      onClick={() => handleCopyBulletWithFeedback(currSuggestions?.uploadedText || (currSuggestions?.atsBulletImprovements?.map(i => i.before).join("\n\n") || ""), "orig-all")}
+                      className="text-[10px] text-rose-300 hover:text-white font-mono flex items-center gap-1 cursor-pointer bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded-lg transition-colors"
+                    >
+                      {copiedBulletKey === "orig-all" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      {copiedBulletKey === "orig-all" ? "Copied All" : "Copy Original"}
+                    </button>
+                  </div>
+
+                  {currSuggestions?.uploadedText && (
+                    <div className="bg-black/60 border border-white/5 rounded-xl p-3 text-xs text-rose-200/80 font-mono leading-relaxed max-h-60 overflow-y-auto whitespace-pre-wrap">
+                      {currSuggestions.uploadedText}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <h5 className="text-[10px] font-bold text-rose-400 uppercase tracking-wider font-mono">Original Bullets:</h5>
+                    {(currSuggestions?.atsBulletImprovements || [])
+                      .filter(i => !suggestionsSearchQuery || i.before.toLowerCase().includes(suggestionsSearchQuery.toLowerCase()))
+                      .map((item, idx) => (
+                        <div key={idx} className="bg-black/40 border border-rose-500/15 rounded-xl p-3 space-y-1.5 relative group">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[9px] font-bold text-rose-400/80 font-mono">Draft Bullet #{idx + 1}</span>
+                            <button
+                              onClick={() => handleCopyBulletWithFeedback(item.before, `before-${idx}`)}
+                              className="text-[10px] text-rose-300 hover:text-white font-mono flex items-center gap-1 cursor-pointer"
+                              title="Copy original bullet"
+                            >
+                              {copiedBulletKey === `before-${idx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                              {copiedBulletKey === `before-${idx}` ? "Copied" : "Copy"}
+                            </button>
+                          </div>
+                          <p className="text-xs text-rose-200/80 font-mono">{item.before}</p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Right Pane: AI-Optimized Version */}
+                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 space-y-4">
+                  <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4" /> AI-Optimized Version / After
+                    </span>
+                    <button
+                      onClick={() => handleCopyBulletWithFeedback((currSuggestions?.atsBulletImprovements?.map(i => i.after).join("\n\n") || ""), "opt-all")}
+                      className="text-[10px] text-emerald-300 hover:text-white font-mono flex items-center gap-1 cursor-pointer bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded-lg transition-colors"
+                    >
+                      {copiedBulletKey === "opt-all" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      {copiedBulletKey === "opt-all" ? "Copied All" : "Copy Optimized"}
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h5 className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider font-mono">STAR Rewritten Bullets:</h5>
+                    {(currSuggestions?.atsBulletImprovements || [])
+                      .filter(i => !suggestionsSearchQuery || i.after.toLowerCase().includes(suggestionsSearchQuery.toLowerCase()) || i.explanation?.toLowerCase().includes(suggestionsSearchQuery.toLowerCase()))
+                      .map((item, idx) => (
+                        <div key={idx} className="bg-black/40 border border-emerald-500/20 rounded-xl p-3 space-y-2 relative">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[9px] font-bold text-emerald-400 font-mono">ATS Bullet #{idx + 1}</span>
+                            <button
+                              onClick={() => handleCopyBulletWithFeedback(item.after, `after-${idx}`)}
+                              className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer"
+                              title="Copy optimized bullet"
+                            >
+                              {copiedBulletKey === `after-${idx}` ? <Check className="w-3 h-3 text-emerald-300 animate-bounce" /> : <Copy className="w-3 h-3" />}
+                              {copiedBulletKey === `after-${idx}` ? "Copied!" : "Copy Bullet"}
+                            </button>
+                          </div>
+                          <p className="text-xs text-emerald-200 font-bold font-mono">{getSimulatedRewrite(item.after)}</p>
+                          <p className="text-[10px] text-white/50 italic leading-relaxed">💡 {item.explanation}</p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
             </div>
+          ) : (
+            /* Standard Recommendations Display */
+            <>
+              {currSuggestions?.atsBulletImprovements && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white/80 font-mono">
+                      Recommended High-Impact Bullet Rewrites
+                    </h4>
+                    {suggestionsSearchQuery && (
+                      <span className="text-[10px] text-emerald-400 font-mono">
+                        Filtered view
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {currSuggestions.atsBulletImprovements
+                      .filter((item) => {
+                        if (!suggestionsSearchQuery) return true;
+                        const q = suggestionsSearchQuery.toLowerCase();
+                        return (
+                          item.before.toLowerCase().includes(q) ||
+                          item.after.toLowerCase().includes(q) ||
+                          (item.explanation && item.explanation.toLowerCase().includes(q))
+                        );
+                      })
+                      .map((item, idx) => (
+                        <div key={idx} className="bg-black/40 border border-white/10 rounded-2xl p-5 space-y-3">
+                          <div className="p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider font-mono">Before (Original Draft)</span>
+                              <button
+                                onClick={() => handleCopyBulletWithFeedback(item.before, `before-std-${idx}`)}
+                                className="text-[10px] text-rose-300 hover:text-white font-mono flex items-center gap-1 cursor-pointer"
+                              >
+                                {copiedBulletKey === `before-std-${idx}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                {copiedBulletKey === `before-std-${idx}` ? "Copied" : "Copy"}
+                              </button>
+                            </div>
+                            <p className="text-xs text-rose-200/80 font-mono">{item.before}</p>
+                          </div>
+
+                          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider font-mono">After (Quantified & Actionable STAR Bullet)</span>
+                              <button
+                                onClick={() => handleCopyBulletWithFeedback(item.after, `after-std-${idx}`)}
+                                className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer bg-emerald-500/10 px-2 py-0.5 rounded-md"
+                              >
+                                {copiedBulletKey === `after-std-${idx}` ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
+                                {copiedBulletKey === `after-std-${idx}` ? "Copied!" : "Copy Bullet"}
+                              </button>
+                            </div>
+                            <p className="text-xs text-emerald-200 font-bold font-mono">{getSimulatedRewrite(item.after)}</p>
+                          </div>
+
+                          <p className="text-[11px] text-white/50 font-medium leading-relaxed italic">
+                            💡 {item.explanation}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {currSuggestions?.suggestedHeadline && (
+                <div className="p-5 bg-black/40 border border-white/10 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white/80 font-mono">
+                      Recommended LinkedIn Headline
+                    </h4>
+                    <button
+                      onClick={() => handleCopyBulletWithFeedback(currSuggestions.suggestedHeadline!, "headline-0")}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedBulletKey === "headline-0" ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedBulletKey === "headline-0" ? "Copied!" : "Copy Headline"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-white/90 font-mono bg-white/5 p-3 rounded-xl border border-white/10">
+                    {currSuggestions.suggestedHeadline}
+                  </p>
+                </div>
+              )}
+
+              {currSuggestions?.suggestedAboutSection && (
+                <div className="p-5 bg-black/40 border border-white/10 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white/80 font-mono">
+                      Recommended LinkedIn "About" Summary
+                    </h4>
+                    <button
+                      onClick={() => handleCopyBulletWithFeedback(currSuggestions.suggestedAboutSection!, "about-0")}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedBulletKey === "about-0" ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedBulletKey === "about-0" ? "Copied!" : "Copy Summary"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-white/90 font-mono bg-white/5 p-3 rounded-xl border border-white/10 whitespace-pre-wrap leading-relaxed">
+                    {currSuggestions.suggestedAboutSection}
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
