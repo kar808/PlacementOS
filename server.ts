@@ -948,11 +948,37 @@ function buildFallbackAnalyzeResponse(profile: any) {
       }
     },
     scores: {
-      placementProbability: 84,
-      atsScore: 80,
-      skillMatch: 82,
-      interviewScore: 76,
-      marketDemand: 88
+      overall: 82,
+      resume: {
+        score: 84,
+        loweringFactors: ["Unquantified project outcomes", `Keyword density needs tuning for ${targetRole}`],
+        fastestFix: "Rewrite experience bullet points with measurable results and target industry keywords."
+      },
+      linkedIn: {
+        score: 80,
+        loweringFactors: ["Missing featured project links", "Headline lacks target keywords"],
+        fastestFix: "Update headline with target role title and key domain tools."
+      },
+      skills: {
+        score: 82,
+        loweringFactors: ["Advanced framework depth", "Production architecture experience"],
+        fastestFix: "Complete 1 production-grade capstone project featuring cloud deployment."
+      },
+      interview: {
+        score: 78,
+        loweringFactors: ["Unrehearsed STAR behavioral responses", "Limited timed technical practice"],
+        fastestFix: "Practice top 10 role-specific behavioral questions aloud using the STAR method."
+      },
+      aptitude: {
+        score: 85,
+        loweringFactors: ["Speed on complex logic puzzles"],
+        fastestFix: "Practice 15 minutes of daily quantitative and analytical reasoning drills."
+      },
+      communication: {
+        score: 84,
+        loweringFactors: ["Conciseness in executive summaries"],
+        fastestFix: "Structure answers using the 60-second Situation-Impact elevator pitch."
+      }
     },
     recommendedRoles: (profile?.targetRoles && profile.targetRoles.length > 0 ? profile.targetRoles : ["Software Engineer", "Systems Analyst"]).map((role: string) => ({
       role,

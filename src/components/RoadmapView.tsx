@@ -625,7 +625,407 @@ function getDomainSpecificStageData(role: string, industry: string) {
     };
   }
 
-  // 7. Default Software / AI / Cyber / Data Engineering (Fallback)
+  // 7. AI / Machine Learning / Deep Learning / Data Science / NLP
+  if (r.includes("ai") || r.includes("machine learning") || r.includes("ml") || r.includes("data sci") || r.includes("nlp") || r.includes("deep learning") || r.includes("computer vision")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Math Foundations, Python & Data Preprocessing",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Master Python data science libraries (numpy, pandas, scikit-learn), linear algebra, and data cleaning before building neural nets.",
+        learningTopics: ["Linear Algebra & Matrix Calculus", "Python Data Science Stack (NumPy, Pandas)", "Exploratory Data Analysis (EDA)", "Supervised Machine Learning (Regression, Classification)", "Model Evaluation Metrics (F1, ROC-AUC)"],
+        recommendedTools: ["JupyterLab / Google Colab", "Python 3.11", "Scikit-Learn", "Pandas & NumPy", "Matplotlib / Seaborn"],
+        recommendedProjects: [
+          { title: "Predictive Analytics & Model Benchmark Suite", description: "Build automated pipeline for data cleaning, feature engineering, and cross-validated baseline modeling.", keyDeliverables: ["Jupyter Notebook", "Feature Importance Plot", "Scikit-Learn Pipeline"], portfolioImpact: "Proves mathematical and machine learning fundamentals." }
+        ],
+        recommendedCertifications: [
+          { name: "Supervised Machine Learning Specialization", issuer: "DeepLearning.AI / Stanford", relevance: "Gold Standard AI Entry", estimatedCost: "Free / $49/mo" }
+        ],
+        books: [{ title: "Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow", author: "Aurélien Géron", whyRead: "Practical, industry-standard machine learning guide." }],
+        courses: [{ title: "Machine Learning Specialization", platform: "Coursera / Stanford", urlOrProvider: "Andrew Ng", type: "Free" }],
+        practicePlatforms: [{ name: "Kaggle", focus: "Tabular Competitions & Exploratory Notebooks" }],
+        interviewPreparation: [
+          { topic: "Machine Learning Math & Algorithms", keyQuestions: ["Explain Bias-Variance Tradeoff.", "How does Gradient Descent minimize loss?"], strategy: "Derive loss functions clearly and explain regularization methods." }
+        ],
+        portfolioTasks: ["Publish Kaggle notebook with 100+ votes", "Build custom data preprocessing package", "Create baseline model comparison benchmark"],
+        networkingSuggestions: ["Join Kaggle community and PyData local chapters", "Connect with ML Engineers on LinkedIn", "Attend AI research webinars"],
+        jobApplicationStrategy: ["Target Junior ML Engineer, Data Analyst, or AI Research Assistant roles", "Link clean Kaggle and GitHub notebooks in resume", "Apply to tech companies building AI products"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "Deep Learning, PyTorch & RAG Architectures",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Focus on PyTorch tensor operations, Transformer architectures, Fine-tuning LLMs, and Retrieval-Augmented Generation (RAG).",
+        learningTopics: ["PyTorch Tensor Dynamics & Custom Layers", "Convolutional & Recurrent Neural Networks", "Transformer Architecture & Self-Attention Mechanisms", "Vector Databases & RAG Pipelines", "HuggingFace Transformers & Parameter-Efficient Fine-Tuning (LoRA)"],
+        recommendedTools: ["PyTorch 2.x", "HuggingFace Transformers", "LangChain / LlamaIndex", "Pinecone / ChromaDB", "Weights & Biases"],
+        recommendedProjects: [
+          { title: "Enterprise Knowledge Base RAG Assistant", description: "Engineered multi-modal Retrieval-Augmented Generation system over thousands of PDF documents using PyTorch and Vector DB.", keyDeliverables: ["Vector Search Engine", "PyTorch LLM Wrapper", "Streamlit UI"], portfolioImpact: "Demonstrates high-demand generative AI engineering competence." }
+        ],
+        recommendedCertifications: [
+          { name: "Deep Learning Specialization", issuer: "DeepLearning.AI", relevance: "Industry Core Credential", estimatedCost: "Free / $49/mo" },
+          { name: "AWS Certified Machine Learning - Specialty", issuer: "AWS", relevance: "Top Enterprise Cloud AI Standard", estimatedCost: "$300" }
+        ],
+        books: [{ title: "Designing Machine Learning Systems", author: "Chip Huyen", whyRead: "Essential blueprint for production ML pipelines." }],
+        courses: [{ title: "Hugging Face NLP Course", platform: "Hugging Face", urlOrProvider: "Hugging Face", type: "Free" }],
+        practicePlatforms: [{ name: "Papers With Code", focus: "Replicating State-of-the-Art Model Architectures" }],
+        interviewPreparation: [
+          { topic: "Deep Learning & Transformer Mechanics", keyQuestions: ["Walk me through Attention Mechanism equation.", "How does RAG differ from Model Fine-Tuning?"], strategy: "Explain trade-offs between context windows, latent space retrieval, and fine-tuning costs." }
+        ],
+        portfolioTasks: ["Deploy live RAG AI agent on Cloud Run / Vercel", "Publish open-source fine-tuned Hugging Face model", "Write technical blog breakdown of Transformer attention"],
+        networkingSuggestions: ["Participate in AI hackathons (HackMIT, LabLab.ai)", "Connect with Applied AI Scientists", "Share model benchmarks on Twitter/LinkedIn"],
+        jobApplicationStrategy: ["Apply for Machine Learning Engineer, AI Application Developer, or Data Scientist roles", "Highlight live AI API demo links", "Submit applications to AI-first startups"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "MLOps, Model Deployment & Distributed Training",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Master model quantization, TensorRT/vLLM serving, distributed multi-GPU training (DeepSpeed/FSDP), and automated MLOps pipelines.",
+        learningTopics: ["MLOps Pipeline Automation (Kubeflow/MLflow)", "Distributed GPU Training (DeepSpeed/FSDP)", "Model Quantization & Inference Optimization (vLLM/TensorRT)", "Model Drift Monitoring & Continuous Training", "Enterprise AI Security & Prompt Injection Mitigation"],
+        recommendedTools: ["vLLM / TensorRT", "Ray / Ray Train", "MLflow / Kubeflow", "Triton Inference Server", "Docker / Kubernetes"],
+        recommendedProjects: [
+          { title: "Distributed High-Throughput Model Serving Engine", description: "Engineered ultra-low latency inference microservice serving 1,000 requests/sec with vLLM, TensorRT, and Kubernetes.", keyDeliverables: ["Kubernetes Deployment Manifest", "TensorRT Optimization Pipeline", "Prometheus Latency Metrics"], portfolioImpact: "Proves enterprise-grade MLOps and AI infrastructure capability." }
+        ],
+        recommendedCertifications: [
+          { name: "Google Professional Machine Learning Engineer", issuer: "Google Cloud", relevance: "Elite Cloud ML Credential", estimatedCost: "$200" }
+        ],
+        books: [{ title: "Deep Learning", author: "Ian Goodfellow, Yoshua Bengio, Aaron Courville", whyRead: "The definitive textbook on deep learning theory." }],
+        courses: [{ title: "Full Stack Deep Learning", platform: "FSDL / UC Berkeley", urlOrProvider: "FSDL", type: "Free" }],
+        practicePlatforms: [{ name: "Triton & vLLM Documentation Labs", focus: "High-Throughput Model Serving Drills" }],
+        interviewPreparation: [
+          { topic: "ML System Design & MLOps", keyQuestions: ["Design a Recommendation System for Netflix", "How do you serve an 8B parameter model under 50ms latency?"], strategy: "Cover Data Pipeline -> Training -> Quantization -> Inference Serving -> Monitoring." }
+        ],
+        portfolioTasks: ["Publish open-source MLOps deployment boilerplate", "Benchmark vLLM vs Triton serving throughput", "Document multi-GPU distributed training setup"],
+        networkingSuggestions: ["Present at local PyTorch / MLOps meetups", "Connect with AI Engineering Managers and Lead Scientists", "Contribute to open-source AI projects (LangChain, vLLM)"],
+        jobApplicationStrategy: ["Target Senior ML Engineer, MLOps Specialist, or Lead AI Architect positions", "Demonstrate production inference throughput metrics", "Negotiate competitive equity & salary packages"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "Enterprise AI Architecture & Research Leadership",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself for Principal AI Scientist, VP of AI, or Chief AI Officer roles overseeing multi-million dollar AI infrastructure.",
+        learningTopics: ["Enterprise AI Governance & Ethics Strategy", "Multi-Modal Foundation Model Fine-Tuning", "AI Chip & Hardware Acceleration Strategy (H100/Groq)", "Executive AI Monetization & ROI Strategy"],
+        recommendedTools: ["NVIDIA NeMo Framework", "Anyscale / Ray Cluster", "Databricks AI"],
+        recommendedProjects: [
+          { title: "Enterprise Foundation Model Architecture Strategy", description: "Design multi-agent autonomous enterprise framework reducing customer support overhead by 60%.", keyDeliverables: ["AI Governance White Paper", "Multi-Agent System Architecture", "Executive ROI Model"], portfolioImpact: "Establishes C-Suite AI authority and vision." }
+        ],
+        recommendedCertifications: [
+          { name: "Executive Artificial Intelligence Program", issuer: "MIT Executive Education / Oxford", relevance: "Elite C-Suite Benchmark", estimatedCost: "$2,800" }
+        ],
+        books: [{ title: "Artificial Intelligence: A Modern Approach", author: "Stuart Russell & Peter Norvig", whyRead: "Comprehensive foundational AI bible." }],
+        courses: [{ title: "Stanford CS224N: Natural Language Processing with Deep Learning", platform: "Stanford University", urlOrProvider: "Stanford", type: "Free" }],
+        practicePlatforms: [{ name: "NeurIPS / ICML Paper Reviews", focus: "State-of-the-Art AI Research & Frontier Model Analysis" }],
+        interviewPreparation: [
+          { topic: "Executive AI Vision & Strategic Alignment", keyQuestions: ["How do you evaluate buy vs build for enterprise AI models?", "Describe your AI safety governance framework."], strategy: "Align cutting-edge AI capability with business profitability and risk mitigation." }
+        ],
+        portfolioTasks: ["Publish AI research paper or enterprise white paper", "Keynote at national AI conference", "Lead enterprise AI strategy audit"],
+        networkingSuggestions: ["Connect with AI Venture Capital Partners and CTOs", "Serve as peer reviewer for AI journals", "Write strategic AI opinion columns"],
+        jobApplicationStrategy: ["Engage specialized AI executive search firms", "Apply for Head of AI, VP of Machine Learning, or CAO roles", "Structure executive compensation, equity, and IP licensing terms"]
+      }
+    };
+  }
+
+  // 8. Cybersecurity / Information Security / Ethical Hacking / SOC
+  if (r.includes("cyber") || r.includes("sec") || r.includes("hack") || r.includes("pentest") || r.includes("soc") || ind.includes("security") || ind.includes("cyber")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Network Security, Linux & Threats",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Build solid network protocol mastery (TCP/IP, DNS, HTTP/S), Linux command line fluency, and baseline vulnerability assessment.",
+        learningTopics: ["OSI Model & TCP/IP Protocol Analysis", "Linux Command Line & Shell Scripting", "Common Attack Vectors (OWASP Top 10)", "Network Packet Sniffing (Wireshark)", "CompTIA Security+ Core Domains"],
+        recommendedTools: ["Wireshark", "Kali Linux", "Nmap Network Scanner", "Burp Suite Community", "Bash & Python"],
+        recommendedProjects: [
+          { title: "Network Audit & Vulnerability Scanning Dossier", description: "Perform authorized network scan and packet analysis across sandbox lab environment to identify unencrypted traffic.", keyDeliverables: ["Wireshark Packet Analysis", "Nmap Scan Dossier", "Vulnerability Audit Report"], portfolioImpact: "Proves hands-on network auditing and protocol mastery." }
+        ],
+        recommendedCertifications: [
+          { name: "CompTIA Security+", issuer: "CompTIA", relevance: "Baseline Global Security Standard", estimatedCost: "$392" },
+          { name: "Google Cybersecurity Professional Certificate", issuer: "Google / Coursera", relevance: "Strong Entry Credential", estimatedCost: "Free / $39/mo" }
+        ],
+        books: [{ title: "The Web Application Hacker's Handbook", author: "Dafydd Stuttard & Marcus Pinto", whyRead: "Definitive web penetration testing guide." }],
+        courses: [{ title: "Introduction to Cybersecurity", platform: "Coursera / NYU", urlOrProvider: "NYU Tandon", type: "Free" }],
+        practicePlatforms: [{ name: "TryHackMe", focus: "Pre-Security & Complete Beginner Modules" }],
+        interviewPreparation: [
+          { topic: "Network Security & Protocols", keyQuestions: ["Explain 3-way handshake in TCP.", "What is the difference between Symmetric and Asymmetric encryption?"], strategy: "Explain network packet flows clearly and state ports/protocols from memory." }
+        ],
+        portfolioTasks: ["Complete TryHackMe Top 10 Rooms badge", "Publish Nmap network scanning cheat sheet", "Build local Kali Linux security testing VM"],
+        networkingSuggestions: ["Join local OWASP chapter and ISSA student section", "Participate in beginner CTF competitions", "Connect with Security Analysts on LinkedIn"],
+        jobApplicationStrategy: ["Target Junior SOC Analyst, Information Security Assistant, or IT Security Specialist roles", "Highlight Security+ certification and TryHackMe ranks", "Apply to managed security service providers (MSSPs)"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "SIEM Operations, Penetration Testing & Incident Response",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Master SIEM log analysis (Splunk/Elastic), penetration testing with Metasploit/Burp Suite, and incident response playbooks.",
+        learningTopics: ["SIEM Log Analysis & Threat Detection (Splunk)", "Web Application Penetration Testing", "Metasploit & Exploitation Frameworks", "Incident Response & Forensics Playbooks", "Cloud Security Configuration (AWS GuardDuty/IAM)"],
+        recommendedTools: ["Splunk / Elastic SIEM", "Burp Suite Professional", "Metasploit Framework", "Autopsy Forensics", "AWS GuardDuty"],
+        recommendedProjects: [
+          { title: "SIEM Threat Detection & IR Playbook Suite", description: "Configure Splunk dashboard monitoring simulated brute-force and SQL injection attacks with automated alert playbooks.", keyDeliverables: ["Splunk Detection Rules", "Incident Response Playbook", "Attack Simulation Log"], portfolioImpact: "Demonstrates production SOC threat hunting and incident triage." }
+        ],
+        recommendedCertifications: [
+          { name: "Offensive Security Certified Professional (OSCP)", issuer: "OffSec", relevance: "Gold Standard Penetration Testing", estimatedCost: "$1,649" },
+          { name: "Certified Ethical Hacker (CEH)", issuer: "EC-Council", relevance: "Industry Recognized Benchmark", estimatedCost: "$1,199" }
+        ],
+        books: [{ title: "Practical Malware Analysis", author: "Michael Sikorski & Andrew Honig", whyRead: "Essential guide to reverse engineering malicious software." }],
+        courses: [{ title: "Practical Ethical Hacking", platform: "TCM Security", urlOrProvider: "Heath Adams", type: "Paid" }],
+        practicePlatforms: [{ name: "Hack The Box", focus: "Medium/Hard Retired Boxes & Pentesting Labs" }],
+        interviewPreparation: [
+          { topic: "Penetration Testing & SOC Incident Triage", keyQuestions: ["How do you remediate SQL Injection?", "Walk me through how you investigate a ransomware incident."], strategy: "Follow Containment -> Eradication -> Recovery -> Lessons Learned incident framework." }
+        ],
+        portfolioTasks: ["Reach Pro Hacker rank on Hack The Box", "Publish incident response playbook repository", "Author CVE writeup for lab vulnerability"],
+        networkingSuggestions: ["Participate in DEFCON local groups (DCG) and BSides conferences", "Engage with Red Teamers / Blue Teamers on Twitter", "Join Security Discord servers"],
+        jobApplicationStrategy: ["Apply for SOC Analyst L2, Penetration Tester, or Security Engineer positions", "Attach HTB/OSCP badges to resume", "Submit applications to financial and defense sectors"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "Zero-Trust Architecture & Enterprise Threat Hunting",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Focus on Zero-Trust network architecture, reverse engineering malware, DevSecOps pipeline automation, and regulatory audits (SOC2/ISO27001).",
+        learningTopics: ["Zero-Trust Network Architecture & SASE", "Reverse Engineering & Malware Dissection", "DevSecOps CI/CD Pipeline Integration (Snyk/SonarQube)", "Enterprise Compliance (SOC2, ISO 27001, NIST CSF)", "Cloud Infrastructure Penetration Testing"],
+        recommendedTools: ["Ghidra / IDA Pro", "Snyk / SonarQube", "Terraform Security (tfsec)", "CrowdStrike Falcon", "Wireshark Deep Inspection"],
+        recommendedProjects: [
+          { title: "Enterprise DevSecOps Pipeline & SOC2 Security Audit", description: "Implement automated static/dynamic vulnerability scanning in CI/CD pipeline reducing security debt by 85%.", keyDeliverables: ["DevSecOps Pipeline Script", "SOC2 Compliance Checklist", "Vulnerability Remediation PRs"], portfolioImpact: "Proves senior enterprise security engineering authority." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Information Systems Security Professional (CISSP)", issuer: "ISC2", relevance: "Premier Senior Security Credential", estimatedCost: "$749" },
+          { name: "Certified Information Security Manager (CISM)", issuer: "ISACA", relevance: "Top Security Management Standard", estimatedCost: "$575" }
+        ],
+        books: [{ title: "Building Secure and Reliable Systems", author: "Heather Adkins et al. (Google SRE Team)", whyRead: "Enterprise scale security design principles." }],
+        courses: [{ title: "SANS SEC504: Hacker Tools, Techniques & Incident Handling", platform: "GIAC / SANS", urlOrProvider: "SANS Institute", type: "Paid" }],
+        practicePlatforms: [{ name: "Blue Team Labs Online", focus: "Advanced SOC Threat Hunting & DFIR" }],
+        interviewPreparation: [
+          { topic: "Enterprise Security Architecture & Governance", keyQuestions: ["How do you implement Zero Trust in a legacy enterprise environment?", "Describe your strategy for securing multi-cloud infrastructure."], strategy: "Balance strict security policy controls with business usability." }
+        ],
+        portfolioTasks: ["Publish SOC2 compliance audit manual", "Deliver malware reverse engineering report", "Architect multi-cloud security blueprint"],
+        networkingSuggestions: ["Speak at regional security conferences (BSides, RSA)", "Connect with CISOs and Directors of Information Security", "Mentor junior security analysts"],
+        jobApplicationStrategy: ["Target Senior Security Engineer, Lead Pentester, or DevSecOps Architect roles", "Highlight CISSP/CISM credentials", "Leverage executive cybersecurity recruiters"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "CISO Executive Governance & Global Security Resilience",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself for Chief Information Security Officer (CISO) or VP of Cybersecurity executive leadership.",
+        learningTopics: ["Chief Information Security Officer (CISO) Governance", "Cyber Risk Quantification (FAIR Framework)", "Executive Crisis Management & Board Communication", "Nation-State Threat Intelligence Analysis"],
+        recommendedTools: ["Archer Risk Management", "CrowdStrike Horizon", "Palo Alto Panorama"],
+        recommendedProjects: [
+          { title: "Global Enterprise Cyber Resilience & CISO Strategy", description: "Formulate enterprise ransomware defense strategy and cyber risk quantification model protecting $500M assets.", keyDeliverables: ["CISO Strategy Prospectus", "Board Cyber Risk Report", "Incident Response Command Playbook"], portfolioImpact: "Establishes C-Suite Cybersecurity leadership." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Chief Information Security Officer (CCISO)", issuer: "EC-Council", relevance: "Elite Executive CISO Standard", estimatedCost: "$1,500" }
+        ],
+        books: [{ title: "CISO Desk Reference Guide", author: "Bill Bonney et al.", whyRead: "Practical guidance for executive security leaders." }],
+        courses: [{ title: "Cybersecurity Leadership", platform: "Harvard Kennedy School", urlOrProvider: "Harvard", type: "Paid" }],
+        practicePlatforms: [{ name: "MITRE ATT&CK Framework Labs", focus: "Nation-State Threat Intelligence & Advanced Persistence" }],
+        interviewPreparation: [
+          { topic: "C-Suite Risk Management & Crisis Command", keyQuestions: ["How do you present cyber risk metrics to the Board of Directors?", "Describe your response during a catastrophic zero-day breach."], strategy: "Focus on financial exposure reduction, regulatory compliance, and brand protection." }
+        ],
+        portfolioTasks: ["Deliver CISO enterprise risk report", "Present cyber crisis simulation to board", "Structure zero-trust migration roadmap"],
+        networkingSuggestions: ["Connect with CISO Executive Networks", "Keynote at global cybersecurity summits", "Write policy commentary for Dark Reading / SC Magazine"],
+        jobApplicationStrategy: ["Engage executive cybersecurity search firms", "Apply for CISO, VP Information Security, or CSO roles", "Structure executive compensation and liability insurance terms"]
+      }
+    };
+  }
+
+  // 9. Frontend Engineer / Web Developer / UI UX Design
+  if (r.includes("front") || r.includes("ui") || r.includes("ux") || r.includes("web design") || r.includes("react")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "HTML5, CSS3, Modern JavaScript & React Basics",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Master semantic HTML5, CSS Flexbox/Grid, ES6+ JavaScript, and core React component lifecycle.",
+        learningTopics: ["Semantic HTML5 & Accessibility (a11y)", "CSS3 Layouts (Flexbox, Grid, Responsive Media Queries)", "Modern JavaScript ES6+ (Promises, Async/Await, Array Methods)", "React 18 Component State & Hooks", "Tailwind CSS Utility First Styling"],
+        recommendedTools: ["VS Code", "Chrome DevTools", "Figma", "Git & GitHub", "npm / Vite"],
+        recommendedProjects: [
+          { title: "Responsive Interactive Dashboard", description: "Build pixel-perfect, accessible Web application dashboard with dark/light themes and dynamic filtering.", keyDeliverables: ["React Component Code", "Tailwind Styling", "Lighthouse 95+ Audit"], portfolioImpact: "Proves modern web interface development skill." }
+        ],
+        recommendedCertifications: [
+          { name: "Meta Front-End Developer Professional Certificate", issuer: "Meta / Coursera", relevance: "Gold Standard Entry Frontend Credential", estimatedCost: "Free / $39/mo" }
+        ],
+        books: [{ title: "Don't Make Me Think, Revisited", author: "Steve Krug", whyRead: "Essential manual for web usability and user experience." }],
+        courses: [{ title: "The Complete JavaScript Course", platform: "Udemy", urlOrProvider: "Jonas Schmedtmann", type: "Paid" }],
+        practicePlatforms: [{ name: "Frontend Mentor", focus: "Real-world HTML/CSS/JS Component Challenges" }],
+        interviewPreparation: [
+          { topic: "Frontend DOM & JavaScript Core", keyQuestions: ["Explain Event Delegation and Bubbling.", "Difference between let, const, and var."], strategy: "Explain closure, prototype chain, and browser rendering engine stages." }
+        ],
+        portfolioTasks: ["Achieve Lighthouse 95+ score on web project", "Build responsive navbar with mobile drawer", "Publish live demo on Vercel"],
+        networkingSuggestions: ["Join local React / Frontend Meetups", "Share component code snippets on Twitter / LinkedIn", "Connect with Senior Frontend Developers"],
+        jobApplicationStrategy: ["Target Junior Frontend Developer, Web Designer, or UI Developer roles", "Include live working links for all portfolio projects", "Apply to digital agencies and SaaS startups"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "Next.js, State Management & Design Systems",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Master Next.js App Router, SSR/SSG rendering patterns, global state (Zustand/Redux), and custom reusable design systems.",
+        learningTopics: ["Next.js 14 App Router & Server Components", "Global State Management (Zustand, Redux Toolkit, TanStack Query)", "Design Systems & Component Libraries (shadcn/ui, Radix)", "Web Performance & Core Web Vitals Optimization", "E2E Testing with Playwright / Cypress"],
+        recommendedTools: ["Next.js", "Zustand / Redux", "shadcn/ui", "Playwright", "Storybook"],
+        recommendedProjects: [
+          { title: "Full-Stack E-Commerce Web Application", description: "Engineered high-performance Next.js application featuring server-side rendering, shopping cart state, and stripe payment integration.", keyDeliverables: ["Next.js Repository", "Storybook Component Library", "Stripe Checkout Flow"], portfolioImpact: "Demonstrates production full-stack frontend engineering mastery." }
+        ],
+        recommendedCertifications: [
+          { name: "Google UX Design Professional Certificate", issuer: "Google / Coursera", relevance: "High UX/UI Design Benchmark", estimatedCost: "Free / $39/mo" }
+        ],
+        books: [{ title: "Refactoring UI", author: "Adam Wathan & Steve Schoger", whyRead: "Practical guide to designing beautiful interfaces." }],
+        courses: [{ title: "Epic React", platform: "Kent C. Dodds", urlOrProvider: "Kent C. Dodds", type: "Paid" }],
+        practicePlatforms: [{ name: "GreatFrontEnd", focus: "Frontend System Design & Coding Interview Questions" }],
+        interviewPreparation: [
+          { topic: "React Internals & Next.js Rendering", keyQuestions: ["How does React Virtual DOM reconciliation work?", "Explain SSR vs SSG vs ISR in Next.js."], strategy: "Detail component render cycles, memoization hooks, and bundle size reduction." }
+        ],
+        portfolioTasks: ["Publish open-source UI component library on npm", "Build Storybook documentation site", "Optimize LCP and CLS Core Web Vitals"],
+        networkingSuggestions: ["Contribute to open-source React/Next.js repositories", "Participate in Next.js Conf", "Connect with Product Designers and Frontend Leads"],
+        jobApplicationStrategy: ["Apply for Frontend Engineer, React Specialist, or UI/UX Engineer roles", "Highlight performance scores and npm package downloads", "Submit applications to high-growth tech companies"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "Micro-Frontends, WebGL & Enterprise Architecture",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Focus on Micro-Frontend architecture, WebGL/Three.js interactive graphics, complex animations, and web accessibility compliance.",
+        learningTopics: ["Micro-Frontends & Module Federation", "WebGL, Three.js & Canvas Performance", "Complex Motion & Layout Animations (Framer Motion)", "Enterprise Web Accessibility (WCAG 2.1 AA Compliance)", "Frontend Infrastructure & Automated Build Tooling"],
+        recommendedTools: ["Three.js / WebGL", "Module Federation", "Framer Motion", "Webpack / Turbopack", "Axe Accessibility"],
+        recommendedProjects: [
+          { title: "3D Interactive Product Visualizer & Design System", description: "Engineered 60fps WebGL product customization canvas integrated into enterprise design system with complete WCAG accessibility.", keyDeliverables: ["3D WebGL Canvas", "Module Federation Suite", "Accessibility Audit Dossier"], portfolioImpact: "Distinguishes you as an elite frontend design engineer." }
+        ],
+        recommendedCertifications: [
+          { name: "AWS Certified Developer Associate", issuer: "AWS", relevance: "Strong for Cloud Hosting & CDN Deployment", estimatedCost: "$150" }
+        ],
+        books: [{ title: "Micro Frontends in Action", author: "Michael Geers", whyRead: "Building scalable frontend web applications." }],
+        courses: [{ title: "Three.js Journey", platform: "Bruno Simon", urlOrProvider: "Bruno Simon", type: "Paid" }],
+        practicePlatforms: [{ name: "Codewars & CSS Battle", focus: "Advanced Layout Calculations & Graphic Code Drills" }],
+        interviewPreparation: [
+          { topic: "Frontend System Design", keyQuestions: ["Design Google Docs Collaborative Rich Text Editor", "Design Newsfeed with infinite scrolling and virtualized lists."], strategy: "Cover DOM Virtualization -> Memory Management -> Network Optimization -> State Sync." }
+        ],
+        portfolioTasks: ["Publish 3D WebGL interactive project", "Deliver accessibility compliance overhaul report", "Write technical guide on frontend micro-architecture"],
+        networkingSuggestions: ["Speak at regional Web Development conferences", "Connect with Engineering VPs and Design Directors", "Write technical frontend posts on Medium / DEV.to"],
+        jobApplicationStrategy: ["Target Senior Frontend Engineer, Staff UI Engineer, or Design Technologist positions", "Highlight 3D/WebGL and architecture case studies", "Negotiate top tech market compensation"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "Frontend Architect & Executive Design Leadership",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself for Principal Frontend Architect, VP of User Experience, or Head of Design Engineering.",
+        learningTopics: ["Enterprise Frontend Infrastructure Strategy", "Design System Governance across 100+ Engineers", "Web Assembly (WASM) Engine Optimization", "Executive Product & Design Strategy"],
+        recommendedTools: ["Figma Enterprise", "Chromatic Visual Testing", "Vercel Enterprise"],
+        recommendedProjects: [
+          { title: "Enterprise Design System & Micro-Frontend Blueprint", description: "Architected multi-brand design system powering 20 enterprise web products with unified CI/CD deployment.", keyDeliverables: ["Enterprise Design Token System", "Micro-Frontend Governance Plan", "Executive Performance Metrics"], portfolioImpact: "Establishes C-Suite Frontend & UX Architecture leadership." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Web Accessibility Specialist (WAS)", issuer: "IAAP", relevance: "Elite Accessibility Credential", estimatedCost: "$430" }
+        ],
+        books: [{ title: "Expressive Design Systems", author: "Yesenia Perez-Cruz", whyRead: "Scaling design systems across enterprise organizations." }],
+        courses: [{ title: "Frontend Architecture & Tech Leadership", platform: "Frontend Masters", urlOrProvider: "Top Instructors", type: "Paid" }],
+        practicePlatforms: [{ name: "Nielsen Norman Group UX Drills", focus: "Executive Usability Strategy & Interface Architecture" }],
+        interviewPreparation: [
+          { topic: "Executive Frontend Leadership & Product UX", keyQuestions: ["How do you govern design system adoption across 50 engineering teams?", "Describe your strategy for migrating monolithic frontend to micro-frontends."], strategy: "Emphasize velocity, component reuse, brand consistency, and rendering speed." }
+        ],
+        portfolioTasks: ["Deliver enterprise design system case study", "Present keynote on Web Vitals optimization", "Audit multi-brand web architecture"],
+        networkingSuggestions: ["Connect with CTOs, CPOs, and VPs of Engineering", "Organize local developer conferences", "Write influential design engineering essays"],
+        jobApplicationStrategy: ["Engage executive search consultants", "Apply for Principal Frontend Architect, Head of UX Engineering, or Director of UI roles", "Structure executive equity and compensation packages"]
+      }
+    };
+  }
+
+  // 10. Cloud / DevOps / Systems Administrator / SRE
+  if (r.includes("devops") || r.includes("cloud") || r.includes("sre") || r.includes("sysadmin") || ind.includes("cloud") || ind.includes("devops")) {
+    return {
+      beginner: {
+        stageName: "Beginner Stage",
+        stageTitle: "Linux SysAdmin, Networking & Docker Containers",
+        timeline: "Weeks 1-3 (Estimated 50 Hours)",
+        mentorAdvice: "Master Linux system administration, bash scripting, networking protocols, and basic Docker containerization.",
+        learningTopics: ["Linux Administration & Shell Scripting (Bash)", "Networking & Security Groups (SSH, DNS, Firewall, Subnets)", "Version Control & GitHub Actions", "Docker Containerization & Docker Compose", "AWS Cloud Core Services (EC2, S3, IAM, VPC)"],
+        recommendedTools: ["Ubuntu / RedHat Linux", "Bash / Shell", "Docker Desktop", "AWS CLI", "Git & GitHub Actions"],
+        recommendedProjects: [
+          { title: "Containerized Web Application & CI/CD Pipeline", description: "Package full-stack web application into Docker containers with automated GitHub Actions testing and AWS EC2 deployment.", keyDeliverables: ["Dockerfile & Compose Manifest", "GitHub Actions YAML", "Live EC2 Deployment"], portfolioImpact: "Proves foundational cloud deployment and DevOps hygiene." }
+        ],
+        recommendedCertifications: [
+          { name: "AWS Certified Cloud Practitioner", issuer: "AWS", relevance: "Essential Cloud Standard", estimatedCost: "$100" },
+          { name: "CompTIA Linux+", issuer: "CompTIA", relevance: "Strong SysAdmin Credential", estimatedCost: "$359" }
+        ],
+        books: [{ title: "The Linux Command Line", author: "William Shotts", whyRead: "Definitive manual for mastering Linux shell environment." }],
+        courses: [{ title: "Linux Administration Bootcamp", platform: "Udemy", urlOrProvider: "Jason Cannon", type: "Paid" }],
+        practicePlatforms: [{ name: "KodeKloud", focus: "Linux & Docker Hands-on Labs" }],
+        interviewPreparation: [
+          { topic: "Linux & Cloud Infrastructure Core", keyQuestions: ["Explain DNS resolution process step-by-step.", "How does a Docker container differ from a Virtual Machine?"], strategy: "Explain process isolation, cgroups, namespaces, and networking subnets accurately." }
+        ],
+        portfolioTasks: ["Write Bash script automating server backup", "Deploy multi-container app with Docker Compose", "Configure AWS VPC with public and private subnets"],
+        networkingSuggestions: ["Join local DevOps / AWS User Groups", "Connect with Cloud Engineers on LinkedIn", "Participate in open-source DevOps Discord communities"],
+        jobApplicationStrategy: ["Target Junior DevOps Engineer, Cloud Support Specialist, or Linux SysAdmin roles", "Highlight AWS certifications and GitHub Actions scripts", "Apply to cloud consultancies and SaaS companies"]
+      },
+      intermediate: {
+        stageName: "Intermediate Stage",
+        stageTitle: "Infrastructure as Code, Kubernetes & CI/CD",
+        timeline: "Weeks 4-7 (Estimated 80 Hours)",
+        mentorAdvice: "Master Infrastructure as Code (Terraform), Kubernetes cluster orchestration (Helm, K8s), and zero-downtime CI/CD pipelines.",
+        learningTopics: ["Infrastructure as Code (Terraform / OpenTofu)", "Kubernetes Orchestration (Pods, Services, Ingress, Deployments)", "Helm Chart Management", "Advanced CI/CD Automation (GitLab CI / ArgoCD)", "Cloud Security & IAM Policy Hardening"],
+        recommendedTools: ["Terraform", "Kubernetes (kubectl)", "Helm", "ArgoCD", "AWS / GCP"],
+        recommendedProjects: [
+          { title: "Automated Kubernetes Cluster Provisioning & GitOps Pipeline", description: "Provision AWS EKS cluster with Terraform, configuring ArgoCD for GitOps continuous deployment and Helm deployment.", keyDeliverables: ["Terraform HCL Code", "Helm Chart Repository", "ArgoCD GitOps Setup"], portfolioImpact: "Demonstrates high-demand enterprise cloud engineering competence." }
+        ],
+        recommendedCertifications: [
+          { name: "Certified Kubernetes Administrator (CKA)", issuer: "Linux Foundation / CNCF", relevance: "Gold Standard Kubernetes Credential", estimatedCost: "$395" },
+          { name: "AWS Certified Solutions Architect Associate", issuer: "AWS", relevance: "Premier Industry Benchmark", estimatedCost: "$150" }
+        ],
+        books: [{ title: "Terraform: Up & Running", author: "Yevgeniy Brikman", whyRead: "Practical guide to writing clean infrastructure code." }],
+        courses: [{ title: "Certified Kubernetes Administrator (CKA) with Practice Tests", platform: "KodeKloud / Udemy", urlOrProvider: "Mumshad Mannambeth", type: "Paid" }],
+        practicePlatforms: [{ name: "Killercoda", focus: "Live Interactive Kubernetes & Terraform Labs" }],
+        interviewPreparation: [
+          { topic: "Kubernetes & Infrastructure as Code", keyQuestions: ["How does Kubernetes handle self-healing?", "Explain Terraform state locking and backend configuration."], strategy: "Detail K8s control plane components (etcd, API server, scheduler) and HCL best practices." }
+        ],
+        portfolioTasks: ["Pass CKA certification exam", "Publish open-source Terraform module", "Setup automated GitOps deployment with ArgoCD"],
+        networkingSuggestions: ["Attend KubeCon / CloudNativeCon", "Connect with Senior DevOps and Cloud Architects", "Engage in Reddit r/devops and r/aws"],
+        jobApplicationStrategy: ["Apply for DevOps Engineer, Kubernetes Administrator, or Cloud Engineer positions", "Attach CKA badge and Terraform GitHub links to applications", "Submit applications to enterprise tech companies"]
+      },
+      advanced: {
+        stageName: "Advanced Stage",
+        stageTitle: "Observability, Chaos Engineering & SRE Practices",
+        timeline: "Weeks 8-10 (Estimated 90 Hours)",
+        mentorAdvice: "Focus on site reliability engineering (SLO/SLI metrics), observability stacks (Prometheus, Grafana, Jaeger), chaos engineering, and cost optimization (FinOps).",
+        learningTopics: ["Observability & Metrics Monitoring (Prometheus, Grafana, Datadog)", "Distributed Tracing (OpenTelemetry / Jaeger)", "Site Reliability Engineering (SLO, SLI, Error Budgets)", "Chaos Engineering & Fault Tolerance Testing", "Cloud FinOps & Infrastructure Cost Optimization"],
+        recommendedTools: ["Prometheus & Grafana", "OpenTelemetry", "Chaos Mesh / Gremlin", "Datadog", "Terraform Cloud"],
+        recommendedProjects: [
+          { title: "Enterprise Reliability & Grafana Observability Dashboard", description: "Engineered full observability stack with Prometheus, Grafana, and OpenTelemetry monitoring multi-service latency and error budgets.", keyDeliverables: ["Grafana Dashboards", "Prometheus Alert Rules", "SLO/SLI Documentation"], portfolioImpact: "Distinguishes you as an advanced Site Reliability Engineer." }
+        ],
+        recommendedCertifications: [
+          { name: "AWS Certified DevOps Engineer Professional", issuer: "AWS", relevance: "Elite Professional DevOps Credential", estimatedCost: "$300" },
+          { name: "Certified Kubernetes Application Developer (CKAD)", issuer: "CNCF", relevance: "Strong K8s Credential", estimatedCost: "$395" }
+        ],
+        books: [{ title: "Site Reliability Engineering: How Google Runs Production Systems", author: "Betsy Beyer et al. (Google SRE Team)", whyRead: "Definitive handbook on SRE practices." }],
+        courses: [{ title: "Site Reliability Engineering (SRE) Foundation", platform: "DevOps Institute / Coursera", urlOrProvider: "Top Instructors", type: "Free / Paid" }],
+        practicePlatforms: [{ name: "Chaos Engineering Labs", focus: "Resilience & Fault Tolerance Simulations" }],
+        interviewPreparation: [
+          { topic: "SRE Reliability & System Incidents", keyQuestions: ["How do you define SLOs and SLIs for an API service?", "Walk me through post-mortem after an enterprise outage."], strategy: "Emphasize blameless post-mortems, error budgets, and automated self-healing." }
+        ],
+        portfolioTasks: ["Publish enterprise Prometheus alert rules repository", "Deliver cloud cost optimization report saving 30% cloud bill", "Write SRE post-mortem case study"],
+        networkingSuggestions: ["Speak at DevOpsDays conferences", "Connect with Heads of Site Reliability and Cloud Infrastructure", "Write technical articles on Medium / Hashnode"],
+        jobApplicationStrategy: ["Target Senior SRE, Staff DevOps Engineer, or Infrastructure Architect roles", "Highlight AWS Professional certifications and SLA metrics", "Negotiate top tier compensation packages"]
+      },
+      expert: {
+        stageName: "Expert Stage",
+        stageTitle: "Principal Cloud Architect & Executive Infrastructure Vision",
+        timeline: "Weeks 11-12+ (Ongoing Mastery)",
+        mentorAdvice: "Position yourself for Principal Cloud Architect, VP of Infrastructure, or Head of Platform Engineering leading enterprise cloud transformations.",
+        learningTopics: ["Multi-Cloud Enterprise Architecture & Hybrid Migration", "Executive Cloud Governance & FinOps Leadership", "Disaster Recovery Strategy & 99.999% Availability Architecture", "Platform Engineering & Internal Developer Platforms (IDP)"],
+        recommendedTools: ["AWS Control Tower", "Google Cloud Anthos", "Backstage IDP"],
+        recommendedProjects: [
+          { title: "Multi-Cloud Migration & Enterprise IDP Blueprint", description: "Designed multi-cloud architecture and Internal Developer Platform (Backstage) reducing developer deployment friction by 70%.", keyDeliverables: ["Enterprise Cloud Migration Strategy", "Internal Developer Platform Setup", "C-Suite FinOps Forecast"], portfolioImpact: "Establishes C-Suite Infrastructure & Cloud Architecture authority." }
+        ],
+        recommendedCertifications: [
+          { name: "Google Professional Cloud Architect", issuer: "Google Cloud", relevance: "Elite Cloud Architect Standard", estimatedCost: "$200" },
+          { name: "AWS Certified Solutions Architect Professional", issuer: "AWS", relevance: "Top Architectural Standard", estimatedCost: "$300" }
+        ],
+        books: [{ title: "Cloud Strategy", author: "Gregor Hohpe", whyRead: "Navigating cloud transformation for enterprise leaders." }],
+        courses: [{ title: "Enterprise Cloud Architecture", platform: "Carnegie Mellon / edX", urlOrProvider: "CMU", type: "Paid" }],
+        practicePlatforms: [{ name: "AWS Architecture Center Case Studies", focus: "Enterprise Multi-Region System Design" }],
+        interviewPreparation: [
+          { topic: "Executive Cloud Strategy & Enterprise Governance", keyQuestions: ["How do you migrate 500 legacy monolithic workloads to multi-cloud?", "Describe your enterprise FinOps governance model."], strategy: "Align cloud elasticity, security compliance, and multi-million dollar cost governance." }
+        ],
+        portfolioTasks: ["Deliver enterprise multi-cloud migration playbook", "Keynote at global Cloud conference", "Structure zero-downtime DR protocol"],
+        networkingSuggestions: ["Connect with CTOs, VPs of Infrastructure, and Cloud Partners", "Keynote at AWS re:Invent or Google Cloud Next", "Write white papers on Platform Engineering"],
+        jobApplicationStrategy: ["Engage executive cloud search firms", "Apply for Principal Architect, VP of Infrastructure, or Head of Platform roles", "Structure executive compensation, equity, and advisory roles"]
+      }
+    };
+  }
+
+  // 11. Default Software Engineering (Fallback)
   return {
     beginner: {
       stageName: "Beginner Stage",
