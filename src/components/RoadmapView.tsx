@@ -2180,7 +2180,7 @@ export default function RoadmapView({
               <div>
                 <span className="text-[10px] font-mono uppercase text-white/40 block font-bold mb-1">Emerging Skills to Acquire:</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {(analysis.emergingSkills || ["AI Co-pilots", "Data Literacy", "Cloud Operations", "Domain Compliance"]).map((sk, idx) => (
+                  {(Array.isArray(analysis?.emergingSkills) ? analysis.emergingSkills : ["AI Co-pilots", "Data Literacy", "Cloud Operations", "Domain Compliance"]).map((sk, idx) => (
                     <span key={idx} className="px-2.5 py-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[11px] font-bold rounded-md">
                       ⚡ {sk}
                     </span>

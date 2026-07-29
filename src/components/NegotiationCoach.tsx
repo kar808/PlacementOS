@@ -117,7 +117,7 @@ export default function NegotiationCoach({
                 <h4 className="font-bold text-white text-sm font-extrabold">Recruiter Objections Playbook</h4>
               </div>
               <div className="space-y-4">
-                {advice.responseToHrQuestions?.map((item, idx) => (
+                {(Array.isArray(advice?.responseToHrQuestions) ? advice.responseToHrQuestions : []).map((item, idx) => (
                   <div key={idx} className="space-y-1.5">
                     <p className="text-[11px] font-bold text-rose-400 font-mono leading-snug">Objection: "{item.question}"</p>
                     <div className="bg-black/30 p-3 rounded-lg border border-white/5 text-xs text-white/90 leading-normal italic">

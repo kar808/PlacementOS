@@ -193,14 +193,47 @@ export function InterviewSimulator({
   callServerEndpoint,
   onTargetRoleChange
 }: InterviewSimulatorProps) {
-  // Navigation & Config state
+  // Navigation & Config state initialized from localStorage
   const [activeSubTab, setActiveSubTab] = useState<"practice" | "trends" | "history">("practice");
-  const [selectedCategory, setSelectedCategory] = useState<string>("Technical");
-  const [selectedLevel, setSelectedLevel] = useState<string>("Mid Level");
-  const [selectedDomain, setSelectedDomain] = useState<string>("Software Engineering & IT");
-  const [customDomainText, setCustomDomainText] = useState<string>("");
-  const [selectedRole, setSelectedRole] = useState<string>(profile.targetRoles?.[0] || "Software Engineer");
-  const [questionCount, setQuestionCount] = useState<number>(3);
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    return localStorage.getItem("vorynexa_interview_category") || "Technical";
+  });
+  const [selectedLevel, setSelectedLevel] = useState<string>(() => {
+    return localStorage.getItem("vorynexa_interview_level") || "Mid Level";
+  });
+  const [selectedDomain, setSelectedDomain] = useState<string>(() => {
+    return localStorage.getItem("vorynexa_interview_domain") || "Software Engineering & IT";
+  });
+  const [customDomainText, setCustomDomainText] = useState<string>(() => {
+    return localStorage.getItem("vorynexa_interview_custom_domain") || "";
+  });
+  const [selectedRole, setSelectedRole] = useState<string>(() => {
+    return localStorage.getItem("vorynexa_interview_role") || profile?.targetRoles?.[0] || "Software Engineer";
+  });
+  const [questionCount, setQuestionCount] = useState<number>(() => {
+    const saved = localStorage.getItem("vorynexa_interview_qcount");
+    return saved ? parseInt(saved, 10) : 3;
+  });
+
+  // Sync state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem("vorynexa_interview_category", selectedCategory);
+  }, [selectedCategory]);
+  useEffect(() => {
+    localStorage.setItem("vorynexa_interview_level", selectedLevel);
+  }, [selectedLevel]);
+  useEffect(() => {
+    localStorage.setItem("vorynexa_interview_domain", selectedDomain);
+  }, [selectedDomain]);
+  useEffect(() => {
+    localStorage.setItem("vorynexa_interview_custom_domain", customDomainText);
+  }, [customDomainText]);
+  useEffect(() => {
+    if (selectedRole) localStorage.setItem("vorynexa_interview_role", selectedRole);
+  }, [selectedRole]);
+  useEffect(() => {
+    localStorage.setItem("vorynexa_interview_qcount", String(questionCount));
+  }, [questionCount]);
 
   // Active session input & timer
   const [userAnswerInput, setUserAnswerInput] = useState("");
@@ -869,8 +902,11 @@ export function InterviewSimulator({
     }
   };
 
+  const safeHistory = Array.isArray(history) ? history : [];
+  const safeSession = session || { questions: [], currentQuestionIndex: 0, chatHistory: [], status: "idle" };
+
   // Compute 8-dimension historical trends data
-  const trendData = history.slice().reverse().map((h, i) => ({
+  const trendData = safeHistory.slice().reverse().map((h, i) => ({
     round: `Round ${i + 1}`,
     score: h.overallScore,
     communication: h.metrics?.communication ?? h.metrics?.communicationClarity ?? 70,
@@ -884,7 +920,7 @@ export function InterviewSimulator({
   }));
 
   // Compute completed session stats
-  const completedAnswers = session.chatHistory.filter((item) => item.role === "student" && item.score !== undefined);
+  const completedAnswers = (Array.isArray(safeSession?.chatHistory) ? safeSession.chatHistory : []).filter((item) => item.role === "student" && item.score !== undefined);
   const overallAverageScore = completedAnswers.length > 0
     ? Math.round(completedAnswers.reduce((sum, item) => sum + (item.score || 0), 0) / completedAnswers.length)
     : 0;
@@ -998,7 +1034,7 @@ export function InterviewSimulator({
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>Analytics & Trends ({history.length})</span>
+            <span>Analytics & Trends ({safeHistory.length})</span>
           </button>
 
           <button
@@ -1813,16 +1849,16 @@ export function InterviewSimulator({
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <History className="w-5 h-5 text-indigo-400" />
-              <span>Past Interview Records ({history.length})</span>
+              <span>Past Interview Records ({safeHistory.length})</span>
             </h2>
             <p className="text-xs text-slate-400">
               Review and export completed candidate interview sessions.
             </p>
           </div>
 
-          {history.length > 0 ? (
+          {safeHistory.length > 0 ? (
             <div className="space-y-4">
-              {(history || []).map((h) => {
+              {safeHistory.map((h) => {
                 const isExpanded = expandedPastSessionId === h.id;
                 return (
                   <div key={h.id} className="border border-slate-800 rounded-xl overflow-hidden bg-slate-800/40">

@@ -626,12 +626,12 @@ export default function UniversalProfessionEngine({
                   <div className="flex items-center gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
                     <div className="text-right">
                       <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">AI Confidence</p>
-                      <p className={`text-lg font-extrabold ${classificationResult.confidenceScore >= 80 ? "text-emerald-400" : "text-amber-400"}`}>
-                        {classificationResult.confidenceScore}%
+                      <p className={`text-lg font-extrabold ${(classificationResult.confidenceScore ?? 85) >= 80 ? "text-emerald-400" : "text-amber-400"}`}>
+                        {classificationResult.confidenceScore ?? 85}%
                       </p>
                     </div>
-                    <div className={`p-2 rounded-lg ${classificationResult.confidenceScore >= 80 ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
-                      {classificationResult.confidenceScore >= 80 ? <ShieldCheck className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                    <div className={`p-2 rounded-lg ${(classificationResult.confidenceScore ?? 85) >= 80 ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+                      {(classificationResult.confidenceScore ?? 85) >= 80 ? <ShieldCheck className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
                     </div>
                   </div>
                 </div>
@@ -713,7 +713,7 @@ export default function UniversalProfessionEngine({
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Standardized structure tailored to expectations of recruiters in {classificationResult.industry}.
+                      Standardized structure tailored to expectations of recruiters in {classificationResult.industry && classificationResult.industry !== "." ? classificationResult.industry : classificationResult.specialization || selectedDomain?.name || "this domain"}.
                     </p>
                   </div>
 

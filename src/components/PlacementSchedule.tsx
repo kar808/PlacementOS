@@ -58,6 +58,11 @@ interface CompanyDeadline {
   skillGaps: string[];
 }
 
+export const formatDeadline = (dl?: string) => {
+  if (!dl) return "Immediate Target";
+  return dl.replace(/^(\d+)([a-zA-Z]+)$/, "$1 $2");
+};
+
 export const MAJOR_CAREER_DOMAINS = [
   { id: "software", name: "Software & Tech", defaultRole: "Software Engineer" },
   { id: "datascience", name: "Data Science & AI", defaultRole: "Data Scientist" },
@@ -784,7 +789,7 @@ export default function PlacementSchedule({ profile, onTargetRoleChange }: Place
               Tactical Campaign Schedule — <span className="text-emerald-400">{activeRole}</span>
             </h2>
             <p className="text-xs text-white/60 max-w-2xl leading-relaxed">
-              Based on your target role (<strong className="text-white">{activeRole}</strong>) in <strong className="text-white">{activeDomain}</strong> and placement deadline (<strong className="text-white">{profile.placementDeadline || "Immediate Target"}</strong>), we've generated a customized day-by-day tactical action map.
+              Based on your target role (<strong className="text-white">{activeRole}</strong>) in <strong className="text-white">{activeDomain}</strong> and placement deadline (<strong className="text-white">{formatDeadline(profile.placementDeadline)}</strong>), we've generated a customized day-by-day tactical action map.
             </p>
           </div>
 
@@ -823,7 +828,7 @@ export default function PlacementSchedule({ profile, onTargetRoleChange }: Place
           <div className="bg-black/20 border border-white/5 p-4 rounded-xl flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block font-mono">Target Deadline</span>
-              <span className="text-sm font-extrabold text-white truncate font-mono block max-w-[150px]">{profile.placementDeadline || "Immediate Target"}</span>
+              <span className="text-sm font-extrabold text-white truncate font-mono block max-w-[150px]">{formatDeadline(profile.placementDeadline)}</span>
             </div>
             <Clock className="w-8 h-8 text-white/10" />
           </div>

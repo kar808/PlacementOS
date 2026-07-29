@@ -57,7 +57,7 @@ export default function JobOutreach({
         </button>
       </div>
 
-      {strategy ? (
+      {strategy && (strategy.strategy || (Array.isArray(strategy.outreach) && strategy.outreach.length > 0)) ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Channel and Strategy Column */}
           <div className="lg:col-span-1 space-y-6">

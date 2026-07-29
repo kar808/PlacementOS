@@ -622,7 +622,7 @@ export default function App() {
     }
   };
 
-  const buildClientFallbackResponse = (endpoint: string, body: any) => {
+  const buildClientFallbackResponse = (endpoint: string, body: any): any => {
     const profile = body?.profile || {};
     const targetRole = body?.targetRole || profile?.targetRoles?.[0] || "Target Professional";
     
@@ -680,6 +680,153 @@ export default function App() {
           "Add key industry certifications to the top summary block."
         ]
       };
+    }
+
+    if (endpoint.includes("job-search")) {
+      const role = body?.targetRoles?.[0] || body?.role || targetRole;
+      return {
+        strategy: `Target direct recruiter channels, specialized job portals, and warm alumni networks for ${role} roles. Optimize your LinkedIn headline and ATS resume with relevant keywords to increase response rates.`,
+        channels: [
+          "LinkedIn Direct Recruiter Outreach",
+          "Specialized Tech & Domain Portals",
+          "Company Careers Pages",
+          "Alumni Network Referrals"
+        ],
+        outreach: [
+          {
+            channel: "LinkedIn Recruiter InMail",
+            subject: `Experienced ${role} | Exploring High-Impact Opportunities`,
+            message: `Hi [Recruiter Name],\n\nI noticed [Company] is scaling its team. With expertise in ${profile?.technicalSkills?.[0] || "core domain technologies"} and proven experience in project execution, I would love to connect and share how my background aligns with your team's goals.\n\nBest regards,\n${profile?.name || "Candidate"}`
+          },
+          {
+            channel: "Email Outreach",
+            subject: `Application for ${role} Role - ${profile?.name || "Candidate"}`,
+            message: `Dear Hiring Manager,\n\nI am writing to express my strong interest in the ${role} position at [Company]. My technical background includes key achievements in ${profile?.technicalSkills?.join(", ") || "software design, problem solving, and system optimization"}.\n\nI have attached my resume for your review and look forward to discussing how I can contribute to your team.\n\nSincerely,\n${profile?.name || "Candidate"}`
+          },
+          {
+            channel: "Alumni / Warm Referral",
+            subject: `Connecting with a fellow Alum`,
+            message: `Hi [Alum Name],\n\nI hope you're doing well! I'm an ambitious professional pursuing opportunities in ${role}. I saw your great work at [Company] and would love to ask 2-3 quick questions about your team's culture and current projects.\n\nThanks so much for your time!\n\nBest,\n${profile?.name || "Candidate"}`
+          }
+        ]
+      };
+    }
+
+    if (endpoint.includes("interview/questions")) {
+      const role = body?.role || targetRole;
+      const count = Number(body?.questionCount) || 3;
+      const questions = [
+        {
+          id: `q_${Date.now()}_1`,
+          question: `Walk me through a key project you built or managed as a ${role}. What were the technical or operational constraints, and how did you overcome them?`,
+          type: "technical",
+          interviewType: body?.interviewType || "Technical",
+          experienceLevel: body?.experienceLevel || "Professional",
+          domainCategory: body?.domain || "Engineering",
+          expectedFocus: "Clear problem framing, technical ownership, decision trade-offs, and measurable outcomes."
+        },
+        {
+          id: `q_${Date.now()}_2`,
+          question: `Describe a time when you faced a critical bug, unexpected roadblock, or tight deadline. How did you triage the issue and communicate with stakeholders?`,
+          type: "behavioral",
+          interviewType: body?.interviewType || "Technical",
+          experienceLevel: body?.experienceLevel || "Professional",
+          domainCategory: body?.domain || "Engineering",
+          expectedFocus: "STAR method (Situation, Task, Action, Result), composure under stress, and clear stakeholder updates."
+        },
+        {
+          id: `q_${Date.now()}_3`,
+          question: `What domain-specific tools, best practices, and testing strategies do you employ as a ${role} to maintain high quality and standards?`,
+          type: "domain",
+          interviewType: body?.interviewType || "Technical",
+          experienceLevel: body?.experienceLevel || "Professional",
+          domainCategory: body?.domain || "Engineering",
+          expectedFocus: "Proficiency in modern industry tools, automated testing, quality control, and continuous integration."
+        }
+      ];
+      return questions.slice(0, count);
+    }
+
+    if (endpoint.includes("interview/evaluate")) {
+      return {
+        overallScore: 82,
+        feedback: "Solid response with good structure. Consider elaborating more on specific metrics, team impact, and technical trade-offs to boost your rating.",
+        communicationClarity: 85,
+        technicalDepth: 80,
+        problemSolving: 82,
+        culturalFit: 84,
+        keyStrengths: [
+          "Clear structure and articulate explanation",
+          "Demonstrated problem-solving mindset"
+        ],
+        areasOfImprovement: [
+          "Include concrete quantitative metrics (e.g., % improvement, time saved)",
+          "Elaborate on architectural or operational trade-offs"
+        ],
+        idealResponseOutline: "1. Brief Context & Goal -> 2. Specific Action Taken & Technical Architecture -> 3. Quantified Business/Team Impact."
+      };
+    }
+
+    if (endpoint.includes("projects")) {
+      const role = body?.targetRole || targetRole;
+      return [
+        {
+          title: `Enterprise ${role} System`,
+          difficulty: "Advanced",
+          description: `Build a production-grade enterprise dashboard for ${role} workflows featuring real-time data visualization, role-based access control, and automated reporting.`,
+          tools: ["TypeScript", "React", "Node.js", "PostgreSQL", "Docker"],
+          deliverables: [
+            "Role-based access control (RBAC) authentication",
+            "Real-time WebSocket data updates",
+            "Comprehensive unit and integration test suite"
+          ],
+          portfolioImpact: "Demonstrates full-stack engineering expertise and enterprise readiness to recruiters."
+        },
+        {
+          title: `AI-Powered Optimization Engine`,
+          difficulty: "Intermediate",
+          description: `Develop a smart analytics pipeline using modern LLM models to parse unstructured data and provide real-time recommendations.`,
+          tools: ["Python", "FastAPI", "Gemini API", "Tailwind CSS"],
+          deliverables: [
+            "Asynchronous API pipeline with response streaming",
+            "Custom caching layer for high-throughput responses",
+            "Responsive dashboard UI with interactive filters"
+          ],
+          portfolioImpact: "Highlights AI integration capabilities and modern full-stack development skills."
+        }
+      ];
+    }
+
+    if (endpoint.includes("negotiate")) {
+      return {
+        strategy: "Focus on market data benchmarks, your unique skill alignment, and value-add contributions to justify a 15-20% compensation increase.",
+        suggestedEmailDraft: `Dear [Recruiter/Hiring Manager Name],\n\nThank you so much for extending the offer for the ${targetRole} position at [Company]. I am thrilled about the prospect of joining the team and contributing to [Key Company Initiative].\n\nBased on my extensive background in [Key Skill 1] and [Key Skill 2], alongside recent market benchmark data for senior roles in this location, I would like to discuss whether there is flexibility to adjust the base compensation closer to [Target Number, e.g., $120,000].\n\nI am extremely excited about this opportunity and confident in the immediate impact I will bring.\n\nWarm regards,\n${profile?.name || "Candidate"}`,
+        responseToHrQuestions: [
+          {
+            question: "Is this compensation negotiable?",
+            answer: "Express enthusiasm for the role first, then reference market benchmarks for your experience level and specific achievements."
+          },
+          {
+            question: "What are your salary expectations?",
+            answer: "Provide a targeted salary range based on verified market data rather than a single fixed number."
+          }
+        ]
+      };
+    }
+
+    if (endpoint.includes("communication-tips")) {
+      return [
+        {
+          title: "Use the STAR Method for Behavioral Questions",
+          description: "Structure your answers into Situation, Task, Action, and Result to deliver concise, compelling, and structured responses.",
+          example: "Situation: Our API hit latency spikes during peak traffic. Task: I needed to reduce response time under 100ms. Action: Implemented Redis caching and query indexing. Result: Latency dropped by 45%."
+        },
+        {
+          title: "Quantify Your Achievements",
+          description: "Replace vague statements with concrete metrics (percentages, revenue, team size, time saved).",
+          example: "Instead of 'Improved system speed', say 'Optimized database queries, reducing API response latency by 35% across 50k daily active users'."
+        }
+      ];
     }
 
     return {
@@ -973,10 +1120,13 @@ export default function App() {
     setIsGeneratingJobStrategy(true);
     try {
       const data = await callServerEndpoint("/api/placement/job-search", profile);
-      setJobStrategy(data);
-      localStorage.setItem("placement_job_strategy", JSON.stringify(data));
+      const validStrategy = (data && data.strategy) ? data : buildClientFallbackResponse("/api/placement/job-search", { profile });
+      setJobStrategy(validStrategy);
+      localStorage.setItem("placement_job_strategy", JSON.stringify(validStrategy));
     } catch (err) {
-      // Handled globally
+      const fallback = buildClientFallbackResponse("/api/placement/job-search", { profile });
+      setJobStrategy(fallback);
+      localStorage.setItem("placement_job_strategy", JSON.stringify(fallback));
     } finally {
       setIsGeneratingJobStrategy(false);
     }
@@ -1032,21 +1182,38 @@ export default function App() {
         performanceTrends,
         seed: Math.floor(Math.random() * 1000000)
       });
-      const questionsList = Array.isArray(data) ? data : (Array.isArray(data?.questions) ? data.questions : []);
+      let questionsList = Array.isArray(data) ? data : (Array.isArray(data?.questions) ? data.questions : []);
+      if (!questionsList || questionsList.length === 0) {
+        const fallback = buildClientFallbackResponse("/api/placement/interview/questions", { role, questionCount, interviewType, experienceLevel, domain });
+        questionsList = Array.isArray(fallback) ? fallback : [];
+      }
       setActiveInterviewRole(role);
       localStorage.setItem("placement_active_interview_role", role);
       setInterviewSession({
         questions: questionsList,
         currentQuestionIndex: 0,
         chatHistory: [],
-        status: questionsList.length > 0 ? "ongoing" : "idle",
+        status: "ongoing",
         category: interviewType,
         experienceLevel,
         domain,
         role,
       });
     } catch (err) {
-      // Handled globally
+      const fallback = buildClientFallbackResponse("/api/placement/interview/questions", { role, questionCount, interviewType, experienceLevel, domain });
+      const questionsList = Array.isArray(fallback) ? fallback : [];
+      setActiveInterviewRole(role);
+      localStorage.setItem("placement_active_interview_role", role);
+      setInterviewSession({
+        questions: questionsList,
+        currentQuestionIndex: 0,
+        chatHistory: [],
+        status: "ongoing",
+        category: interviewType,
+        experienceLevel,
+        domain,
+        role,
+      });
     } finally {
       setIsGeneratingInterview(false);
     }
@@ -1289,10 +1456,13 @@ export default function App() {
         targetCompany: company,
         expectations,
       });
-      setNegotiationAdvice(data);
-      localStorage.setItem("placement_negotiation", JSON.stringify(data));
+      const valid = (data && data.strategy) ? data : buildClientFallbackResponse("/api/placement/negotiate", { profile, offer, company, expectations });
+      setNegotiationAdvice(valid);
+      localStorage.setItem("placement_negotiation", JSON.stringify(valid));
     } catch (err) {
-      // Handled globally
+      const fallback = buildClientFallbackResponse("/api/placement/negotiate", { profile, offer, company, expectations });
+      setNegotiationAdvice(fallback);
+      localStorage.setItem("placement_negotiation", JSON.stringify(fallback));
     } finally {
       setIsGeneratingNegotiation(false);
     }
@@ -1303,10 +1473,13 @@ export default function App() {
     setIsGeneratingCommTips(true);
     try {
       const data = await callServerEndpoint("/api/placement/communication-tips", profile);
-      setCommunicationTips(data);
-      localStorage.setItem("placement_comm_tips", JSON.stringify(data));
+      const valid = Array.isArray(data) && data.length > 0 ? data : buildClientFallbackResponse("/api/placement/communication-tips", { profile });
+      setCommunicationTips(valid);
+      localStorage.setItem("placement_comm_tips", JSON.stringify(valid));
     } catch (err) {
-      // Handled globally
+      const fallback = buildClientFallbackResponse("/api/placement/communication-tips", { profile });
+      setCommunicationTips(fallback);
+      localStorage.setItem("placement_comm_tips", JSON.stringify(fallback));
     } finally {
       setIsGeneratingCommTips(false);
     }

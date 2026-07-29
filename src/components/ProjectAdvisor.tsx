@@ -113,7 +113,7 @@ export default function ProjectAdvisor({
                 <div className="space-y-1.5">
                   <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest font-mono">Suggested Tools & Stack</span>
                   <div className="flex flex-wrap gap-1.5">
-                    {project.tools?.map((tool, tIdx) => (
+                    {(Array.isArray(project.tools) ? project.tools : []).map((tool, tIdx) => (
                       <span key={tIdx} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-mono font-medium">
                         {tool}
                       </span>
@@ -125,7 +125,7 @@ export default function ProjectAdvisor({
                 <div className="space-y-1.5">
                   <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest font-mono">Key Project Deliverables</span>
                   <ul className="space-y-1">
-                    {project.deliverables?.map((item, dIdx) => (
+                    {(Array.isArray(project.deliverables) ? project.deliverables : []).map((item, dIdx) => (
                       <li key={dIdx} className="text-xs text-white/70 leading-snug flex items-start gap-1.5">
                         <span className="text-emerald-500/60 mt-0.5">•</span>
                         <span>{item}</span>
