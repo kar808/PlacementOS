@@ -513,6 +513,7 @@ export default function UniversalProfessionEngine({
                     onClick={() => {
                       setSelectedDomain(domain);
                       setCustomRoleInput(domain.commonRoles[0] || "");
+                      setClassificationResult(null);
                     }}
                     className={`w-full text-left p-3 rounded-xl border transition-all flex items-start gap-3 ${
                       isSelected
@@ -676,7 +677,10 @@ export default function UniversalProfessionEngine({
                       <BookOpen className="w-3.5 h-3.5 text-blue-400" /> Domain Terminology & Jargon
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {(classificationResult?.domainTerminology || []).map((term, i) => (
+                      {((classificationResult?.domainTerminology && classificationResult.domainTerminology.length > 0)
+                        ? classificationResult.domainTerminology
+                        : (selectedDomain?.sampleTerminology || ["Domain Methodology", "Core Protocols", "Process Optimization", "Industry Standard"])
+                      ).map((term, i) => (
                         <span key={i} className="px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20 text-xs font-mono">
                           {term}
                         </span>
@@ -690,7 +694,10 @@ export default function UniversalProfessionEngine({
                       <Key className="w-3.5 h-3.5 text-emerald-400" /> Recruiter ATS Keywords
                     </h4>
                     <div className="flex flex-wrap gap-1.5">
-                      {(classificationResult?.atsKeywords || []).map((kw, i) => (
+                      {((classificationResult?.atsKeywords && classificationResult.atsKeywords.length > 0)
+                        ? classificationResult.atsKeywords
+                        : (selectedDomain?.sampleAtsKeywords || ["Cross-Functional Alignment", "Deliverables Management", "Operational Excellence", "Strategic Execution"])
+                      ).map((kw, i) => (
                         <span key={i} className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-xs font-medium">
                           {kw}
                         </span>
@@ -707,9 +714,9 @@ export default function UniversalProfessionEngine({
                       <Layout className="w-3.5 h-3.5 text-purple-400" /> Recommended Template Style
                     </h4>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-purple-300">{classificationResult.recommendedTemplateStyle} Layout</span>
+                      <span className="text-sm font-bold text-purple-300">{classificationResult.recommendedTemplateStyle || selectedDomain.defaultTemplate || "Modern"} Layout</span>
                       <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-semibold rounded">
-                        Optimal for {classificationResult.primaryProfession}
+                        Optimal for {classificationResult.primaryProfession || customRoleInput || selectedDomain.name}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400">
@@ -723,7 +730,13 @@ export default function UniversalProfessionEngine({
                       <Award className="w-3.5 h-3.5 text-yellow-400" /> Recommended Certifications
                     </h4>
                     <ul className="space-y-1">
-                      {classificationResult.recommendedCertifications?.map((c, i) => (
+                      {((classificationResult?.recommendedCertifications && classificationResult.recommendedCertifications.length > 0)
+                        ? classificationResult.recommendedCertifications
+                        : [
+                            { name: `${classificationResult.primaryProfession || selectedDomain.name} Professional Credential`, issuingBody: "Industry Accreditation Board", relevance: "Primary Qualification" },
+                            { name: "Executive Practitioner Certification", issuingBody: "Global Professional Association", relevance: "Advanced Standing" }
+                          ]
+                      ).map((c, i) => (
                         <li key={i} className="text-xs text-slate-300 flex items-center gap-2">
                           <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />
                           <span className="font-medium text-white">{c.name}</span> <span className="text-slate-500">({c.issuingBody})</span>
@@ -739,7 +752,21 @@ export default function UniversalProfessionEngine({
                     <FolderGit className="w-3.5 h-3.5 text-indigo-400" /> Recommended Role-Authentic Projects
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {classificationResult.recommendedProjects?.map((proj, idx) => (
+                    {((classificationResult?.recommendedProjects && classificationResult.recommendedProjects.length > 0)
+                      ? classificationResult.recommendedProjects
+                      : [
+                          {
+                            title: `Enterprise ${classificationResult.primaryProfession || selectedDomain.name} System Audit`,
+                            objective: `Comprehensive evaluation and optimization of core operational workflows for ${classificationResult.primaryProfession || selectedDomain.name}.`,
+                            resumeImpact: "Demonstrates strategic operational capability and high-impact deliverables."
+                          },
+                          {
+                            title: "Domain Analytics & Performance Dashboard",
+                            objective: "Design and deployment of real-time metrics tracking key operational performance indicators.",
+                            resumeImpact: "Proves data-driven decision making and modern tool proficiency."
+                          }
+                        ]
+                    ).map((proj, idx) => (
                       <div key={idx} className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5">
                         <p className="text-xs font-semibold text-white">{proj.title}</p>
                         <p className="text-[11px] text-slate-400">{proj.objective}</p>
@@ -755,7 +782,15 @@ export default function UniversalProfessionEngine({
                     <TrendingUp className="w-3.5 h-3.5 text-cyan-400" /> Career Progression Roadmap
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {classificationResult.careerRoadmap?.map((stage, idx) => (
+                    {((classificationResult?.careerRoadmap && classificationResult.careerRoadmap.length > 0)
+                      ? classificationResult.careerRoadmap
+                      : [
+                          { phase: "Phase 1: Foundational", timeframe: "Weeks 1-3", focusMilestone: "Master core protocols and domain fundamentals", keySkillsToMaster: ["Domain Basics", "Core Tools", "Workflow Protocol"] },
+                          { phase: "Phase 2: Practitioner", timeframe: "Weeks 4-7", focusMilestone: "Execute end-to-end deliverables and cross-functional syncs", keySkillsToMaster: ["Project Execution", "Quality Control", "Communication"] },
+                          { phase: "Phase 3: Senior Specialist", timeframe: "Weeks 8-10", focusMilestone: "Lead complex initiatives and audit quality metrics", keySkillsToMaster: ["Process Audit", "Risk Management", "Stakeholder Sync"] },
+                          { phase: "Phase 4: Executive Leadership", timeframe: "Weeks 11-12+", focusMilestone: "Direct strategic vision and mentor department teams", keySkillsToMaster: ["Executive Leadership", "Strategic Planning", "Resource Allocation"] }
+                        ]
+                    ).map((stage, idx) => (
                       <div key={idx} className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
                         <span className="text-[10px] text-cyan-400 font-bold uppercase">{stage.phase} ({stage.timeframe})</span>
                         <p className="text-xs font-semibold text-white">{stage.focusMilestone}</p>

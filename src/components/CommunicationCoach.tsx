@@ -50,43 +50,49 @@ export default function CommunicationCoach({
         </button>
       </div>
 
-      {tips ? (
+      {(tips && tips.length > 0) ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(tips || []).map((item, idx) => (
-            <div key={idx} className="bg-[#111] border border-white/10 rounded-xl p-5 shadow-lg flex flex-col justify-between space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-emerald-500/20">
-              <div className="space-y-3">
-                <div className="flex justify-between items-start border-b border-white/10 pb-2">
-                  <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-                    {item.category} Drill
-                  </span>
-                  <button
-                    onClick={() => handleCopy(`${item.tip}\n\nExercise:\n${item.howToPractice}`, idx)}
-                    className="text-[10px] text-white/40 hover:text-white/80 font-mono cursor-pointer"
-                  >
-                    {copiedIndex === idx ? "Copied" : "Copy Drill"}
-                  </button>
-                </div>
+          {(tips || []).map((item, idx) => {
+            const category = item.category || (item as any).type || "Fluency";
+            const tipText = item.tip || (item as any).title || (item as any).heading || "Master the STAR Elevator Pitch";
+            const practiceText = item.howToPractice || (item as any).description || (item as any).example || (item as any).exercise || "Practice speaking your key achievements out loud with a 30-second timer.";
 
-                <div className="space-y-1">
-                  <h4 className="text-sm font-extrabold text-white leading-snug">{item.tip}</h4>
-                </div>
-
-                <div className="bg-black/30 p-3.5 rounded-lg border border-white/5 space-y-1.5">
-                  <div className="flex items-center gap-1">
-                    <Mic className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-[9px] font-bold text-emerald-400 font-mono uppercase tracking-widest">Practice Exercise</span>
+            return (
+              <div key={idx} className="bg-[#111] border border-white/10 rounded-xl p-5 shadow-lg flex flex-col justify-between space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-emerald-500/20">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start border-b border-white/10 pb-2">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                      {category} Drill
+                    </span>
+                    <button
+                      onClick={() => handleCopy(`${tipText}\n\nExercise:\n${practiceText}`, idx)}
+                      className="text-[10px] text-white/40 hover:text-white/80 font-mono cursor-pointer"
+                    >
+                      {copiedIndex === idx ? "Copied" : "Copy Drill"}
+                    </button>
                   </div>
-                  <p className="text-xs text-white/90 leading-relaxed whitespace-pre-line">
-                    {item.howToPractice}
-                  </p>
+
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-extrabold text-white leading-snug">{tipText}</h4>
+                  </div>
+
+                  <div className="bg-black/30 p-3.5 rounded-lg border border-white/5 space-y-1.5">
+                    <div className="flex items-center gap-1">
+                      <Mic className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-[9px] font-bold text-emerald-400 font-mono uppercase tracking-widest">Practice Exercise</span>
+                    </div>
+                    <p className="text-xs text-white/90 leading-relaxed whitespace-pre-line">
+                      {practiceText}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-white/40 italic pt-2 border-t border-white/10 font-mono">
+                  💡 Dedicate just 2 minutes every morning before interviews to run this speech framework out loud.
                 </div>
               </div>
-
-              <div className="text-[10px] text-white/40 italic pt-2 border-t border-white/10 font-mono">
-                💡 Dedicate just 2 minutes every morning before interviews to run this speech framework out loud.
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 bg-[#111] border border-white/10 rounded-xl">

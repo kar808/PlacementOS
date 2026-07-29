@@ -993,20 +993,153 @@ function buildFallbackResumeOptimize(body: any) {
 }
 
 function buildFallbackProfessionClassify(body: any) {
-  const role = body.targetRole || body.profile?.targetRoles?.[0] || body.domainHint || "Software Engineer";
-  const branch = body.profile?.branch || "Computer Science & Engineering";
+  const role = (body.targetRole || body.profile?.targetRoles?.[0] || body.domainHint || "Software Engineer");
+  const r = role.toLowerCase();
+  const branch = body.profile?.branch || "Specialized Domain Studies";
+  const hint = (body.domainHint || "").toLowerCase();
 
+  // 1. Healthcare / Medical / Nursing
+  if (r.includes("nurse") || r.includes("doctor") || r.includes("health") || r.includes("medical") || r.includes("clinic") || r.includes("pharma") || hint.includes("health")) {
+    return {
+      industry: "Healthcare & Life Sciences",
+      primaryProfession: role,
+      specialization: "Clinical Care & Patient Operations",
+      careerStage: "Clinical Practitioner",
+      confidenceScore: 94,
+      needsClarification: false,
+      clarificationQuestions: [],
+      domainTerminology: ["Epic Systems EHR", "HIPAA Compliance", "Patient Triage", "Aseptic Protocol", "Pharmacology", "Vital Signs Monitoring"],
+      atsKeywords: ["Clinical Assessment", "Patient Advocacy", "EMR Documentation", "Infection Control", "ACLS/BLS", "Patient Care"],
+      recommendedTemplateStyle: "Corporate",
+      recommendedSkills: {
+        hardSkills: ["Clinical Patient Assessment", "EMR/EHR Documentation", "Medication Administration", "HIPAA Regulatory Compliance"],
+        toolsAndSoftware: ["Epic PowerChart", "Cerner Millennium", "UpToDate", "3M Medical Coding", "Pyxis Dispensing"],
+        domainKnowledge: ["Pharmacology Dosage", "Diagnostic Pathology", "Interprofessional Care", "Emergency Care"],
+        softSkills: ["Patient Empathy", "Stress Composure", "Interdisciplinary Communication", "Crisis Management"]
+      },
+      recommendedProjects: [
+        {
+          title: "Clinical Triage & Discharge Workflow Audit",
+          objective: "Optimize patient intake protocols and reduce discharge processing wait times.",
+          toolsOrMethods: ["Epic Systems", "Clinical Care Protocols", "HIPAA Auditing"],
+          deliverables: ["Patient Intake Checklist", "EMR Audit Report", "Discharge Safety Protocol"],
+          resumeImpact: "Demonstrates clinical compliance and operational efficiency."
+        },
+        {
+          title: "Inpatient Medication Safety Double-Check System",
+          objective: "Design verification protocol reducing drug administration errors in high-volume wards.",
+          toolsOrMethods: ["Pyxis Automated Dispensing", "Cerner PowerChart", "Safety Matrix"],
+          deliverables: ["Medication Admin Flowchart", "Staff Verification Checklist"],
+          resumeImpact: "Proves commitment to zero-defect patient care and clinical safety."
+        }
+      ],
+      recommendedCertifications: [
+        { name: "BLS / ACLS Certification", issuingBody: "American Heart Association", relevance: "Core Clinical Standard" },
+        { name: "NCLEX-RN / State Licensing Board Credential", issuingBody: "NCSBN / State Licensing", relevance: "Mandatory Healthcare Practice License" }
+      ],
+      careerRoadmap: [
+        { phase: "Phase 1: Clinical Orientation", timeframe: "Weeks 1-3", focusMilestone: "Master patient assessment, EMR entry, and infection control", keySkillsToMaster: ["Vitals Assessment", "EMR Logging", "HIPAA Rules"] },
+        { phase: "Phase 2: Independent Rotations", timeframe: "Weeks 4-7", focusMilestone: "Manage multi-patient care plans and medication reconciliation", keySkillsToMaster: ["Dosage Prep", "Triage Care", "Patient Advocacy"] },
+        { phase: "Phase 3: Specialized Unit Mastery", timeframe: "Weeks 8-10", focusMilestone: "Lead critical care unit shifts and audit patient safety metrics", keySkillsToMaster: ["Emergency Care", "Unit Leadership", "Safety Auditing"] },
+        { phase: "Phase 4: Clinical Nurse/Doctor Leadership", timeframe: "Weeks 11-12+", focusMilestone: "Direct unit protocols, oversee residency teams, and drive HCAHPS scores", keySkillsToMaster: ["Hospital Administration", "Clinical Governance", "Quality Metrics"] }
+      ]
+    };
+  }
+
+  // 2. Legal / Law / Compliance
+  if (r.includes("law") || r.includes("legal") || r.includes("attorney") || r.includes("paralegal") || r.includes("counsel") || hint.includes("legal")) {
+    return {
+      industry: "Legal Services & Corporate Compliance",
+      primaryProfession: role,
+      specialization: "Corporate Law & Litigation",
+      careerStage: "Legal Specialist",
+      confidenceScore: 93,
+      needsClarification: false,
+      clarificationQuestions: [],
+      domainTerminology: ["IRAC Method", "Shepardizing", "E-Discovery Protocols", "Commercial Indemnity", "Statutory Interpretation", "M&A Due Diligence"],
+      atsKeywords: ["Brief Writing", "Westlaw Research", "Contract Redlining", "Corporate Governance", "Litigation Support", "Regulatory Audit"],
+      recommendedTemplateStyle: "Corporate",
+      recommendedSkills: {
+        hardSkills: ["Legal Research & Case Citation", "Contract Drafting & Redlining", "Statutory Interpretation", "Litigation Discovery"],
+        toolsAndSoftware: ["Westlaw Precision", "LexisNexis Advance", "Clio Practice Management", "Relativity E-Discovery", "Ironclad CLM"],
+        domainKnowledge: ["Civil Procedure", "Corporate Governance", "Commercial Torts", "Regulatory Compliance"],
+        softSkills: ["Analytical Rigor", "Persuasive Brief Writing", "Client Advocacy", "Ethical Discretion"]
+      },
+      recommendedProjects: [
+        {
+          title: "Commercial Contract Risk & Due Diligence Matrix",
+          objective: "Audit 40 commercial vendor agreements for liability exposure and change of control clauses.",
+          toolsOrMethods: ["Ironclad CLM", "Practical Law", "Redline Marking"],
+          deliverables: ["Due Diligence Summary", "Redlined Contracts", "Liability Risk Assessment"],
+          resumeImpact: "Demonstrates corporate transactional competence and risk mitigation skills."
+        }
+      ],
+      recommendedCertifications: [
+        { name: "Certified Paralegal (CP)", issuingBody: "NALA", relevance: "Industry Benchmark Credential" },
+        { name: "CIPP/US Information Privacy Professional", issuingBody: "IAPP", relevance: "Top Corporate Privacy Credential" }
+      ],
+      careerRoadmap: [
+        { phase: "Phase 1: Legal Method Mastery", timeframe: "Weeks 1-3", focusMilestone: "Master precedent research on Westlaw and IRAC memo writing", keySkillsToMaster: ["Legal Citation", "Case Research", "Memo Drafting"] },
+        { phase: "Phase 2: Transactional Drafting", timeframe: "Weeks 4-7", focusMilestone: "Draft non-disclosure agreements and commercial contracts", keySkillsToMaster: ["Contract Redlining", "E-Discovery", "Client Intake"] },
+        { phase: "Phase 3: Senior Advocacy", timeframe: "Weeks 8-10", focusMilestone: "Manage litigation discovery and execute corporate compliance audits", keySkillsToMaster: ["Litigation Strategy", "Regulatory Compliance", "Settlement Prep"] },
+        { phase: "Phase 4: Counsel & Partnership", timeframe: "Weeks 11-12+", focusMilestone: "Advise executive boards and manage outside counsel budgets", keySkillsToMaster: ["General Counsel Strategy", "Board Governance", "Crisis Management"] }
+      ]
+    };
+  }
+
+  // 3. Finance / Accounting / Banking
+  if (r.includes("account") || r.includes("finance") || r.includes("bank") || r.includes("audit") || r.includes("tax") || r.includes("investment") || hint.includes("finance")) {
+    return {
+      industry: "Financial Services & Accounting",
+      primaryProfession: role,
+      specialization: "Corporate Valuation & Financial Modeling",
+      careerStage: "Financial Specialist",
+      confidenceScore: 95,
+      needsClarification: false,
+      clarificationQuestions: [],
+      domainTerminology: ["3-Statement DCF Model", "GAAP / IFRS Compliance", "Variance Analysis", "Working Capital Optimization", "Capital Expenditure (CapEx)"],
+      atsKeywords: ["Financial Statement Analysis", "Excel Valuation", "Audit Trail", "Financial Forecasting", "Cost Accounting", "Corporate Finance"],
+      recommendedTemplateStyle: "Corporate",
+      recommendedSkills: {
+        hardSkills: ["3-Statement Financial Modeling", "GAAP/IFRS Audit Rules", "DCF Valuation & Sensitivity Analysis", "Corporate Tax Planning"],
+        toolsAndSoftware: ["Microsoft Excel (Advanced)", "QuickBooks Online", "Bloomberg Terminal", "CapIQ", "Tableau Financials"],
+        domainKnowledge: ["Corporate Finance", "Portfolio Management", "Cost Accounting", "Regulatory Compliance"],
+        softSkills: ["Numerical Rigor", "Executive Reporting", "Analytical Precision", "Stakeholder Presentation"]
+      },
+      recommendedProjects: [
+        {
+          title: "Integrated 3-Statement Financial Valuation Model",
+          objective: "Construct dynamic DCF model projecting 5-year revenue, EBITDA, cash flows, and sensitivity scenarios.",
+          toolsOrMethods: ["Advanced Excel", "CapIQ Benchmarks", "DCF Valuation"],
+          deliverables: ["Dynamic Financial Model", "Valuation Pitchbook", "Scenario Sensitivity Table"],
+          resumeImpact: "Proves mastery of core corporate finance valuation and Excel precision."
+        }
+      ],
+      recommendedCertifications: [
+        { name: "Certified Public Accountant (CPA) / Candidate", issuingBody: "AICPA / NASBA", relevance: "Gold Standard Accounting License" },
+        { name: "CFA Level 1 Candidate", issuingBody: "CFA Institute", relevance: "Premier Investment Credential" }
+      ],
+      careerRoadmap: [
+        { phase: "Phase 1: Accounting Fundamentals", timeframe: "Weeks 1-3", focusMilestone: "Master 3-statement accounting linkages and Excel formulas", keySkillsToMaster: ["Financial Accounting", "Excel Shortcuts", "Journal Entries"] },
+        { phase: "Phase 2: Financial Modeling", timeframe: "Weeks 4-7", focusMilestone: "Build dynamic DCF and LBO valuation models", keySkillsToMaster: ["DCF Valuation", "Variance Analysis", "CapEx Planning"] },
+        { phase: "Phase 3: Senior Analytics", timeframe: "Weeks 8-10", focusMilestone: "Lead audit engagements and optimize corporate capital allocation", keySkillsToMaster: ["Audit Lead", "Corporate Tax", "Risk Management"] },
+        { phase: "Phase 4: CFO & Financial Directorship", timeframe: "Weeks 11-12+", focusMilestone: "Direct enterprise financial strategy, treasury, and investor relations", keySkillsToMaster: ["CFO Strategy", "Capital Raising", "Treasury Operations"] }
+      ]
+    };
+  }
+
+  // Default: Software / Technology / Digital
   return {
     industry: body.domainHint || "Technology & Software",
     primaryProfession: role,
     specialization: branch,
-    careerStage: "Early Career Specialist",
+    careerStage: "Professional Specialist",
     confidenceScore: 92,
     needsClarification: false,
     clarificationQuestions: [],
     domainTerminology: ["System Architecture", "API Endpoints", "CI/CD Pipeline", "Microservices", "Unit Testing", "Code Review", "Agile Scrum"],
     atsKeywords: ["TypeScript", "React", "Node.js", "REST API", "PostgreSQL", "Git", "Docker", "Agile", "System Design"],
-    recommendedTemplate: "Modern",
+    recommendedTemplateStyle: "Modern",
     recommendedSkills: {
       hardSkills: body.profile?.technicalSkills || ["Data Structures", "Algorithms", "System Design", "Database Management"],
       toolsAndSoftware: ["Git", "Docker", "VS Code", "Postman", "GitHub Actions"],
@@ -1015,20 +1148,22 @@ function buildFallbackProfessionClassify(body: any) {
     },
     recommendedProjects: [
       {
-        title: "Scalable Full-Stack Platform",
-        description: "Cloud-native web platform featuring role-based access control, real-time sync, and automated CI/CD deployment.",
-        techStack: ["TypeScript", "React", "Node.js", "PostgreSQL"],
-        impact: "Demonstrates production readiness to senior technical recruiters."
+        title: `Scalable ${role} Architecture Platform`,
+        objective: "Cloud-native web platform featuring role-based access control, real-time sync, and automated CI/CD deployment.",
+        toolsOrMethods: ["TypeScript", "React", "Node.js", "PostgreSQL", "Docker"],
+        deliverables: ["RESTful API Server", "Database Schema & Indexing", "CI/CD Pipeline"],
+        resumeImpact: "Demonstrates production readiness to senior technical recruiters."
       }
     ],
     recommendedCertifications: [
-      { name: "AWS Certified Developer - Associate", provider: "Amazon Web Services" },
-      { name: "Meta Professional Certificate", provider: "Meta / Coursera" }
+      { name: "AWS Certified Developer - Associate", issuingBody: "Amazon Web Services", relevance: "Industry Cloud Standard" },
+      { name: "Meta Professional Certificate", issuingBody: "Meta / Coursera", relevance: "Full-Stack Development Credential" }
     ],
     careerRoadmap: [
-      { phase: "Phase 1: Foundational Practitioner", timeline: "0 - 1 Year", focus: "Master core technical stack and contribute cleanly to production codebases." },
-      { phase: "Phase 2: Core Specialist", timeline: "1 - 3 Years", focus: "Own end-to-end features, optimize performance, and participate in architecture reviews." },
-      { phase: "Phase 3: Senior Architect", timeline: "3 - 5 Years", focus: "Drive technical strategy, lead complex integrations, and mentor engineers." }
+      { phase: "Phase 1: Foundational Practitioner", timeframe: "Weeks 1-3", focusMilestone: "Master core technical stack and contribute cleanly to production codebases.", keySkillsToMaster: ["Core Syntax", "Git Workflow", "Data Modeling"] },
+      { phase: "Phase 2: Core Specialist", timeframe: "Weeks 4-7", focusMilestone: "Own end-to-end features, optimize performance, and participate in architecture reviews.", keySkillsToMaster: ["API Design", "Database Indexing", "Unit Testing"] },
+      { phase: "Phase 3: Senior Architect", timeframe: "Weeks 8-10", focusMilestone: "Drive technical strategy, lead complex integrations, and mentor engineers.", keySkillsToMaster: ["System Design", "CI/CD Automation", "Cloud Infrastructure"] },
+      { phase: "Phase 4: Executive Engineering Director", timeframe: "Weeks 11-12+", focusMilestone: "Direct enterprise technology roadmap and foster team execution excellence.", keySkillsToMaster: ["Technical Leadership", "System Security", "Strategic Planning"] }
     ]
   };
 }

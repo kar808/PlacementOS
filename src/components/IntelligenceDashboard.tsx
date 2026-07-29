@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { IntelligenceMap, ReadinessScores, RecommendedRole } from "../types";
 import CareerIntelligenceView from "./CareerIntelligenceView";
 import { 
@@ -12,6 +12,7 @@ interface IntelligenceDashboardProps {
   recommendedRoles: RecommendedRole[] | null;
   onNavigateToSection: (section: string) => void;
   isAnalyzing?: boolean;
+  onRunAudit?: () => void;
 }
 
 interface BadgeItem {
@@ -29,11 +30,20 @@ export default function IntelligenceDashboard({
   scores,
   recommendedRoles,
   onNavigateToSection,
-  isAnalyzing
+  isAnalyzing,
+  onRunAudit
 }: IntelligenceDashboardProps) {
   const [viewMode, setViewMode] = useState<"index" | "career_intelligence">(
     intelligenceMap?.careerIntelligence ? "career_intelligence" : "index"
   );
+
+  // Automatically trigger audit generation if cache is empty on mount
+  useEffect(() => {
+    if ((!intelligenceMap || !scores || !recommendedRoles) && onRunAudit && !isAnalyzing) {
+      onRunAudit();
+    }
+  }, []);
+
   if (isAnalyzing) {
     return (
       <div className="space-y-8 animate-pulse">
@@ -76,44 +86,32 @@ export default function IntelligenceDashboard({
             </div>
           </div>
         </div>
-
-        {/* Row 3 Skeletons */}
-        <div className="bg-[#111]/40 backdrop-blur-md border border-white/5 p-6 rounded-2xl h-[160px] space-y-4">
-          <div className="h-4 bg-white/10 rounded w-1/4"></div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
-            {[...Array(7)].map((_, i) => (
-              <div key={i} className="h-16 bg-black/30 border border-white/5 rounded-xl"></div>
-            ))}
-          </div>
-        </div>
-
-        {/* Row 4 Skeletons */}
-        <div className="space-y-4">
-          <div className="h-4 bg-white/10 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-[#111]/40 backdrop-blur-md border border-white/5 p-6 rounded-2xl h-64 flex flex-col justify-between">
-                <div className="space-y-2">
-                  <div className="h-4 bg-white/10 rounded w-1/2"></div>
-                  <div className="h-3 bg-white/5 rounded w-3/4"></div>
-                </div>
-                <div className="h-8 bg-white/5 rounded-xl w-full"></div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     );
   }
 
   if (!intelligenceMap || !scores || !recommendedRoles) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 bg-[#111]/50 border border-white/10 rounded-2xl backdrop-blur-md">
-        <AlertCircle className="w-10 h-10 text-emerald-400 mb-3 animate-pulse" />
-        <h3 className="font-extrabold text-white text-lg font-mono">No Analysis Cache Found</h3>
-        <p className="text-xs text-white/50 max-w-md text-center mt-1 leading-relaxed px-4">
-          Click the "Update Co-Pilot" button on your Profile Blueprint or click below to launch the VORYNEXA Intelligence Map.
-        </p>
+      <div className="flex flex-col items-center justify-center py-20 bg-[#111]/50 border border-white/10 rounded-2xl backdrop-blur-md space-y-5">
+        <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <Sparkles className="w-8 h-8 animate-pulse" />
+        </div>
+        <div className="text-center space-y-2 max-w-md px-4">
+          <h3 className="font-extrabold text-white text-xl font-mono">No Placement Audit Cache Found</h3>
+          <p className="text-xs text-white/60 leading-relaxed">
+            Click below to generate your complete VORYNEXA Intelligence Map, benchmark readiness scores, and AI candidate audit report.
+          </p>
+        </div>
+        {onRunAudit && (
+          <button
+            onClick={onRunAudit}
+            disabled={isAnalyzing}
+            className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-black font-extrabold text-xs tracking-wider uppercase rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <Zap className="w-4 h-4 fill-black" />
+            <span>Launch VORYNEXA Intelligence Audit</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -152,7 +150,7 @@ export default function IntelligenceDashboard({
       requirement: "Resume score >= 80%",
       icon: FileText,
       color: "from-emerald-500 to-teal-600",
-      unlocked: scores.resume.score >= 80
+      unlocked: (scores?.resume?.score ?? 0) >= 80
     },
     {
       id: "linkedin_auth",
@@ -161,7 +159,7 @@ export default function IntelligenceDashboard({
       requirement: "LinkedIn score >= 80%",
       icon: Sparkles,
       color: "from-sky-500 to-blue-600",
-      unlocked: scores.linkedIn.score >= 80
+      unlocked: (scores?.linkedIn?.score ?? 0) >= 80
     },
     {
       id: "domain_scholar",
@@ -170,7 +168,7 @@ export default function IntelligenceDashboard({
       requirement: "Domain score >= 80%",
       icon: BookOpen,
       color: "from-amber-500 to-orange-600",
-      unlocked: scores.skills.score >= 80
+      unlocked: (scores?.skills?.score ?? 0) >= 80
     },
     {
       id: "interview_gladiator",
@@ -179,7 +177,7 @@ export default function IntelligenceDashboard({
       requirement: "Interview score >= 80%",
       icon: MessageSquare,
       color: "from-indigo-500 to-purple-600",
-      unlocked: scores.interview.score >= 80
+      unlocked: (scores?.interview?.score ?? 0) >= 80
     },
     {
       id: "aptitude_elite",
@@ -188,7 +186,7 @@ export default function IntelligenceDashboard({
       requirement: "Aptitude score >= 80%",
       icon: TrendingUp,
       color: "from-fuchsia-500 to-pink-600",
-      unlocked: scores.aptitude.score >= 80
+      unlocked: (scores?.aptitude?.score ?? 0) >= 80
     },
     {
       id: "expressive_orator",
@@ -197,7 +195,7 @@ export default function IntelligenceDashboard({
       requirement: "Communication score >= 80%",
       icon: Volume2,
       color: "from-rose-500 to-red-600",
-      unlocked: scores.communication.score >= 80
+      unlocked: (scores?.communication?.score ?? 0) >= 80
     },
     {
       id: "elite_pathfinder",
@@ -206,7 +204,7 @@ export default function IntelligenceDashboard({
       requirement: "Overall index >= 75%",
       icon: Compass,
       color: "from-yellow-400 to-emerald-500",
-      unlocked: scores.overall >= 75
+      unlocked: (scores?.overall ?? 0) >= 75
     }
   ];
 

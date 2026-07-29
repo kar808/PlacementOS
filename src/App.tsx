@@ -814,17 +814,129 @@ export default function App() {
       };
     }
 
+    if (endpoint.includes("analyze-socials")) {
+      return {
+        linkedinUrl: body?.linkedinUrl || "Not specified",
+        githubUrl: body?.githubUrl || "Not specified",
+        ratings: {
+          linkedinCompleteness: 85,
+          githubActivity: 82,
+          hrAppeal: 86,
+          professionalism: 88
+        },
+        pros: [
+          "Strong alignment between headline title and target role expectations",
+          "Public profile shows active contributions and clean organization",
+          "Comprehensive inclusion of core industry skills and academic background"
+        ],
+        cons: [
+          "LinkedIn summary section could incorporate more recruiter keyword triggers",
+          "Top project repositories need detailed READMEs with setup instructions and architecture diagrams"
+        ],
+        hrVerdict: "High recruiter appeal profile. Adding live project preview links and optimizing your LinkedIn summary keywords will boost recruiter interview conversion rates by 40%.",
+        criticalFixes: [
+          "Optimize LinkedIn headline to: '[Target Role] | [Top 3 Technical/Domain Skills] | [Key Value Proposition]'",
+          "Add structured README documentation with setup guides to top 3 public repositories",
+          "Feature 2 high-impact project links in your LinkedIn Featured section"
+        ]
+      };
+    }
+
+    if (endpoint.includes("profession-classify")) {
+      const target = body?.targetRole || "Software Engineer";
+      return {
+        industry: body?.domainHint || "Technology & Software",
+        primaryProfession: target,
+        specialization: "Full-Stack Development & System Architecture",
+        careerStage: "Professional",
+        confidenceScore: 92,
+        needsClarification: false,
+        domainTerminology: [
+          "RESTful APIs", "Microservices Architecture", "CI/CD Pipeline", "Agile/Scrum Sprint", "Database Indexing"
+        ],
+        atsKeywords: [
+          "System Design", "Cloud Infrastructure", "Full-Stack Development", "TypeScript", "Performance Optimization"
+        ],
+        recommendedTemplateStyle: "Modern",
+        recommendedSkills: {
+          hardSkills: ["TypeScript", "React", "Node.js", "PostgreSQL", "Docker"],
+          toolsAndSoftware: ["VS Code", "Git", "Postman", "AWS", "Jira"],
+          domainKnowledge: ["Data Structures", "System Architecture", "API Security", "Agile Methodologies"],
+          softSkills: ["Cross-functional Collaboration", "Technical Communication", "Problem Solving"]
+        },
+        recommendedProjects: [
+          {
+            title: `High-Scalability ${target} Engine`,
+            objective: "Build an end-to-end system with automated tests and CI/CD deployment",
+            toolsOrMethods: ["TypeScript", "Node.js", "Docker", "PostgreSQL"],
+            deliverables: ["REST API", "Database schema", "Unit tests", "Deployment pipeline"],
+            resumeImpact: "Demonstrates enterprise-level engineering maturity and production readiness"
+          },
+          {
+            title: "Real-time Analytics Dashboard",
+            objective: "Develop a live data processing pipeline with responsive UI filters",
+            toolsOrMethods: ["React", "Tailwind CSS", "WebSockets", "Chart.js"],
+            deliverables: ["Interactive frontend", "Live socket stream", "Filterable charts"],
+            resumeImpact: "Highlights frontend mastery and real-time state management"
+          }
+        ],
+        recommendedCertifications: [
+          {
+            name: "AWS Certified Solutions Architect / Developer",
+            issuingBody: "Amazon Web Services",
+            relevance: "Industry standard cloud qualification"
+          },
+          {
+            name: "Meta Professional Certification",
+            issuingBody: "Coursera / Meta",
+            relevance: "Highly regarded full-stack development credential"
+          }
+        ],
+        careerRoadmap: [
+          {
+            phase: "Phase 1: Foundational Mastery",
+            timeframe: "Weeks 1-3",
+            focusMilestone: "Master core tools, syntax, and baseline architectural patterns",
+            keySkillsToMaster: ["Core Syntax", "Git Workflow", "Data Modeling"]
+          },
+          {
+            phase: "Phase 2: Practitioner Execution",
+            timeframe: "Weeks 4-7",
+            focusMilestone: "Deliver production features and optimize database queries",
+            keySkillsToMaster: ["API Design", "Query Optimization", "Testing"]
+          },
+          {
+            phase: "Phase 3: Senior Scalability",
+            timeframe: "Weeks 8-10",
+            focusMilestone: "Architect distributed systems and deploy automated cloud pipelines",
+            keySkillsToMaster: ["System Architecture", "CI/CD", "Cloud Infrastructure"]
+          },
+          {
+            phase: "Phase 4: Executive Leadership",
+            timeframe: "Weeks 11-12+",
+            focusMilestone: "Lead technical strategy, mentor team members, and drive business impact",
+            keySkillsToMaster: ["Technical Leadership", "System Security", "Strategic Planning"]
+          }
+        ]
+      };
+    }
+
     if (endpoint.includes("communication-tips")) {
       return [
         {
-          title: "Use the STAR Method for Behavioral Questions",
-          description: "Structure your answers into Situation, Task, Action, and Result to deliver concise, compelling, and structured responses.",
-          example: "Situation: Our API hit latency spikes during peak traffic. Task: I needed to reduce response time under 100ms. Action: Implemented Redis caching and query indexing. Result: Latency dropped by 45%."
+          tip: "Master the STAR Elevator Pitch Method",
+          category: "Fluency",
+          howToPractice: "Practice speaking out loud: 'I am a [Target Role] specializing in [Key Skills]. Recently I built [Project] where I improved [Metric] by [X]%. I excel at solving complex challenges.'"
         },
         {
-          title: "Quantify Your Achievements",
-          description: "Replace vague statements with concrete metrics (percentages, revenue, team size, time saved).",
-          example: "Instead of 'Improved system speed', say 'Optimized database queries, reducing API response latency by 35% across 50k daily active users'."
+          tip: "Eliminate Hesitation Fillers ('Um', 'Ah', 'Like')",
+          category: "Confidence",
+          howToPractice: "Pause for 2 silent seconds before answering complex questions rather than filling silence with 'um'. Practice answering 5 domain questions with a 30-second timer."
+        },
+        {
+          tip: "Maintain Direct Video & Eye Contact Posture",
+          category: "Body Language",
+          howToPractice: "Position your camera at eye level, keep posture upright with hands visible, and look directly into the camera lens when emphasizing your main achievements."
         }
       ];
     }
@@ -1925,6 +2037,7 @@ export default function App() {
                 recommendedRoles={recommendedRoles}
                 onNavigateToSection={handleNavigateToSection}
                 isAnalyzing={isAnalyzing}
+                onRunAudit={() => runCoreAudit()}
               />
             )}
 
