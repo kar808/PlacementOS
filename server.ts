@@ -907,10 +907,55 @@ function buildFallbackAnalyzeResponse(profile: any) {
           loweringFactors: [`Networking outreach to industry leads`],
           fastestFix: `Connect with alumni and engineering leads at ${targetCompany}.`
         },
-        recommendedCertifications: [
-          { name: "AWS Certified Developer / Cloud Practitioner", provider: "Amazon Web Services", relevance: "High industry demand" },
-          { name: "Professional Domain Specialist Certification", provider: "Industry Standard", relevance: "Validates practical domain mastery" }
-        ],
+        recommendedCertifications: (function() {
+          const r = (targetRole + " " + (profile?.preferredIndustry || "")).toLowerCase();
+          if (/market|growth|seo|sales|brand/i.test(r)) {
+            return [
+              { name: "Google Analytics 4 (GA4) Individual Qualification", provider: "Google", relevance: "Core Marketing Analytics Standard" },
+              { name: "HubSpot Inbound & Growth Marketing Certification", provider: "HubSpot Academy", relevance: "High Industry Demand" }
+            ];
+          }
+          if (/nurse|doctor|health|medical|clinic/i.test(r)) {
+            return [
+              { name: "BLS / ACLS Certification", provider: "American Heart Association", relevance: "Mandatory Clinical Care Standard" },
+              { name: "NCLEX-RN / State Licensing Board License", provider: "State Board of Nursing", relevance: "Essential Professional Licensure" }
+            ];
+          }
+          if (/law|legal|attorney|paralegal/i.test(r)) {
+            return [
+              { name: "Certified Paralegal (CP) Credential", provider: "NALA", relevance: "Industry Recognized Legal Standard" },
+              { name: "Certified Information Privacy Professional (CIPP/US)", provider: "IAPP", relevance: "High Regulatory & Privacy Demand" }
+            ];
+          }
+          if (/finance|account|audit|tax|bank/i.test(r)) {
+            return [
+              { name: "Certified Public Accountant (CPA) / CFA Level 1", provider: "AICPA / CFA Institute", relevance: "Gold Standard Financial Credential" },
+              { name: "Financial Modeling & Valuation Analyst (FMVA)", provider: "CFI", relevance: "High Corporate Finance Demand" }
+            ];
+          }
+          if (/teach|educat|pedagogy|school/i.test(r)) {
+            return [
+              { name: "State Teaching License / Certification", provider: "Department of Education", relevance: "Mandatory Professional Requirement" },
+              { name: "Google Certified Educator Level 2", provider: "Google for Education", relevance: "EdTech & Classroom Leadership" }
+            ];
+          }
+          if (/trade|electric|hvac|plumb|machin|mechanic/i.test(r)) {
+            return [
+              { name: "Journeyman Electrician / HVAC Excellence Certification", provider: "State Licensing / EPA", relevance: "Mandatory Trade Licensure" },
+              { name: "OSHA 30-Hour General Industry Certification", provider: "OSHA", relevance: "Essential Workplace Safety Standard" }
+            ];
+          }
+          if (/design|ux|ui|graphic/i.test(r)) {
+            return [
+              { name: "Google UX Design Professional Certificate", provider: "Google / Coursera", relevance: "Industry Standard UX Qualification" },
+              { name: "Figma Design Systems & Prototyping Specialist", provider: "Figma Academy", relevance: "High Product Design Demand" }
+            ];
+          }
+          return [
+            { name: "AWS Certified Developer / Cloud Practitioner", provider: "Amazon Web Services", relevance: "High Industry Demand" },
+            { name: "Meta Professional Full-Stack Developer", provider: "Meta / Coursera", relevance: "Validates Practical Software Mastery" }
+          ];
+        })(),
         recommendedProjects: [
           {
             title: `Production-Grade ${targetRole} Application`,
@@ -1015,6 +1060,70 @@ function buildFallbackResumeOptimize(body: any) {
     weakPhrasesDetected: ["Responsible for", "Worked on", "Team player", "Hard worker"],
     suggestedHeadline: `${role} | ${skills.join(" • ")} | Driving Measurable Business Impact`,
     suggestedAboutSection: `Results-oriented ${role} specializing in ${skills.slice(0, 3).join(", ")}. Proven track record of building reliable systems, collaborating across functions, and delivering measurable outcomes.`
+  };
+}
+
+function buildFallbackInterviewClarify(body: any) {
+  const q = body?.question || "Walk me through a key project or experience in your career.";
+  const role = body?.role || body?.profile?.targetRoles?.[0] || "Professional";
+  const domain = body?.domain || body?.domainCategory || "Domain";
+  const expectedFocus = body?.expectedFocus || "";
+
+  const r = (role + " " + domain).toLowerCase();
+
+  let hints = [
+    "Focus on giving a real example from your direct experience or projects.",
+    "Structure your answer: Situation -> Task -> Action -> Quantifiable Result (STAR method).",
+    `Highlight key competencies expected for a ${role} in ${domain}.`
+  ];
+
+  if (/market|growth|seo|sales|business|brand/i.test(r)) {
+    hints = [
+      "Detail your target audience, acquisition channels (CAC/LTV), and marketing funnel strategy.",
+      "Quantify your results with key metrics like conversion rate, ROAS, leads generated, or revenue growth.",
+      "Explain A/B test experiments, tools used (GA4, HubSpot, Meta Ads), and how you iterated based on data."
+    ];
+  } else if (/nurse|doctor|health|clinic|pharma|medical/i.test(r)) {
+    hints = [
+      "Emphasize patient safety protocols, HIPAA compliance, and evidence-based clinical practices.",
+      "Use the SBAR framework (Situation, Background, Assessment, Recommendation) if describing clinical communication.",
+      "Highlight how you collaborated with interdisciplinary healthcare teams under high pressure."
+    ];
+  } else if (/law|legal|attorney|paralegal|counsel/i.test(r)) {
+    hints = [
+      "Frame your response using the IRAC method (Issue, Rule, Analysis, Conclusion).",
+      "Detail statutory research tools used (Westlaw, LexisNexis) and risk mitigation strategies.",
+      "Emphasize attention to detail, ethical discretion, and contract redlining accuracy."
+    ];
+  } else if (/finance|account|audit|tax|bank|investment/i.test(r)) {
+    hints = [
+      "Reference GAAP/IFRS standards, financial modeling techniques (DCF, variance analysis), or audit trails.",
+      "Quantify monetary impact: budget size saved, cost reductions, revenue growth, or ROI.",
+      "Explain tools used like Advanced Excel, Bloomberg Terminal, NetSuite, or QuickBooks."
+    ];
+  } else if (/teach|educat|pedagogy|lesson|school/i.test(r)) {
+    hints = [
+      "Highlight student engagement, differentiated learning strategies, and Bloom's Taxonomy.",
+      "Explain how you use formative assessments, LMS tools (Canvas, Google Classroom), and parent communication.",
+      "Quantify outcomes through student progress metrics, test score improvements, or program retention."
+    ];
+  } else if (/trade|electric|hvac|plumb|machin|mechanic/i.test(r)) {
+    hints = [
+      "Focus on safety protocols (OSHA), code compliance (NEC/EPA), and blueprint/schematic accuracy.",
+      "Explain diagnostic step-by-step troubleshooting techniques and preventive maintenance routines.",
+      "Highlight hands-on tools, equipment, multimeters, and zero-defect completion."
+    ];
+  } else if (/design|ux|ui|graphic|product design/i.test(r)) {
+    hints = [
+      "Walk through your user research, wireframing, high-fidelity Figma prototyping, and usability testing.",
+      "Explain design trade-offs between aesthetic appeal, accessibility (WCAG AA), and business constraints.",
+      "Highlight user feedback loops, design system integration, and conversion funnel impact."
+    ];
+  }
+
+  return {
+    clarifiedQuestion: `In simpler terms: "How have you successfully handled core ${role} responsibilities and technical/operational challenges in your previous work?"`,
+    helpfulHints: hints
   };
 }
 
@@ -3522,7 +3631,7 @@ Generate an executive interview report containing:
 app.post(["/api/placement/interview/clarify", "/placement/interview/clarify"], async (req, res) => {
   res.setHeader("Content-Type", "application/json");
   try {
-    const { question, type, expectedFocus } = req.body;
+    const { question, type, expectedFocus, role, interviewType, experienceLevel, domain } = req.body;
     if (!question) {
       return res.status(400).json({
         error: true,
@@ -3530,17 +3639,25 @@ app.post(["/api/placement/interview/clarify", "/placement/interview/clarify"], a
       });
     }
 
-    const ai = getAI();
-    const prompt = `You are a helpful, empathetic Mock Interview Coach.
-The user is struggling to understand the following interview question during their simulation:
-QUESTION: "${question}"
-TYPE: "${type || "technical"}"
-EXPECTED MARKERS: "${expectedFocus || "Core concepts and clear structure"}"
+    const targetRole = role || "Professional";
+    const targetDomain = domain || "General Field";
 
-Your goal is to:
-1. Rephrase the question into a simpler, more approachable, and conversational version that is easier to grasp immediately, while keeping its core technical or behavioral intent identical.
-2. Break down what the interviewer is actually asking for into 2 or 3 highly friendly, actionable hints.
-3. Guide the user on how to structure their thoughts (such as using the STAR method or step-by-step breakdown).
+    const ai = getAI();
+    const prompt = `You are an expert Executive Interview Coach specializing in candidate preparation across diverse fields.
+The candidate is undergoing a mock interview for the role of "${targetRole}" in the industry/domain "${targetDomain}".
+Target Experience Level: "${experienceLevel || "Mid Level"}".
+Interview Type: "${interviewType || "Technical & Behavioral"}".
+
+QUESTION TO CLARIFY: "${question}"
+QUESTION TYPE: "${type || "Domain Scenario"}"
+ASSESSOR EXPECTED FOCUS: "${expectedFocus || "Domain proficiency, structured thinking, and actionable results"}"
+
+CRITICAL INSTRUCTIONS:
+1. Rephrase the question into a simpler, plain-language version ("clarifiedQuestion") that directly addresses what a ${targetRole} should focus on.
+2. Provide 3 highly specific, actionable "helpfulHints" tailored strictly to the profession of "${targetRole}".
+   - IF the role is NON-SOFTWARE (e.g. Nurse, Lawyer, Growth Marketer, Accountant, Teacher, Electrician, Graphic Designer), YOU MUST NOT give software coding or IT infrastructure hints! Instead, give hints specific to their field (e.g. clinical protocols/SBAR for nursing, CAC/ROAS/funnels for marketing, GAAP/DCF for accounting, IRAC/statutes for legal, OSHA/code compliance for trades).
+   - IF the role is SOFTWARE/TECH, provide relevant engineering/system architecture hints.
+3. Structure guidance to help the candidate structure their answer with maximum impact.
 
 Return a clean JSON object with keys "clarifiedQuestion" and "helpfulHints".`;
 
@@ -3564,32 +3681,18 @@ Return a clean JSON object with keys "clarifiedQuestion" and "helpfulHints".`;
       });
 
       const parsed = parseGeminiJson(response.text || "{}");
-      if (parsed && parsed.clarifiedQuestion) {
+      if (parsed && parsed.clarifiedQuestion && Array.isArray(parsed.helpfulHints) && parsed.helpfulHints.length > 0) {
         return res.json(parsed);
       }
     } catch (aiErr) {
-      console.warn("AI clarification call failed, using graceful fallback:", aiErr);
+      console.warn("AI clarification call failed, using domain-tailored fallback:", aiErr);
     }
 
-    // High-availability fallback if AI model is unreachable or returns malformed text
-    return res.json({
-      clarifiedQuestion: `In simpler terms: ${question}`,
-      helpfulHints: [
-        "Focus on giving a real example from your projects or experience.",
-        "Structure your response: Problem statement -> Your approach -> Results achieved.",
-        `Key area the interviewer is checking: ${expectedFocus || "Logical problem solving and clear communication"}`
-      ]
-    });
+    // High-availability domain-tailored fallback
+    return res.json(buildFallbackInterviewClarify(req.body));
   } catch (error) {
     console.warn("[/api/placement/interview/clarify Error] Using resilient fallback:", error instanceof Error ? error.message : error);
-    res.json({
-      clarifiedQuestion: `In simpler terms: ${req.body?.question || "Can you elaborate on your experience?"}`,
-      helpfulHints: [
-        "Focus on giving a real example from your projects or experience.",
-        "Structure your response: Problem statement -> Your approach -> Results achieved.",
-        `Key area the interviewer is checking: ${req.body?.expectedFocus || "Logical problem solving and clear communication"}`
-      ]
-    });
+    res.json(buildFallbackInterviewClarify(req.body));
   }
 });
 

@@ -867,14 +867,20 @@ export function InterviewSimulator({
     try {
       const res = await callServerEndpoint("/api/placement/interview/clarify", {
         question: currentQuestion.question,
+        type: currentQuestion.type,
+        expectedFocus: currentQuestion.expectedFocus,
         role: selectedRole,
         interviewType: selectedCategory,
         experienceLevel: selectedLevel,
         domain: effectiveDomain,
       });
-      setClarificationData(res);
+      if (res && (res.clarifiedQuestion || (Array.isArray(res.helpfulHints) && res.helpfulHints.length > 0))) {
+        setClarificationData(res);
+      } else {
+        setClarifyError("Could not generate question hints. Please proceed with your answer based on the Assessor Focus.");
+      }
     } catch (e) {
-      setClarifyError("Could not generate question hint. Please proceed with your response.");
+      setClarifyError("Could not generate question hints. Please proceed with your answer based on the Assessor Focus.");
     } finally {
       setIsClarifying(false);
     }
@@ -1387,18 +1393,53 @@ export function InterviewSimulator({
                   )}
 
                   {/* Clarification Box */}
-                  {clarificationData && (
-                    <div className="p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/30 space-y-2 text-xs">
-                      <strong className="text-indigo-300 font-mono block">AI Coach Clarification:</strong>
-                      <p className="text-slate-200">{clarificationData.clarifiedQuestion}</p>
-                      <div className="space-y-1 pt-2">
-                        <span className="text-slate-400 font-mono text-[11px] block">Key Response Hints:</span>
-                        <ul className="list-disc list-inside space-y-1 text-slate-300 pl-1">
-                          {(clarificationData?.helpfulHints || []).map((hint, idx) => (
-                            <li key={idx}>{hint}</li>
-                          ))}
-                        </ul>
+                  {clarificationData && (clarificationData.clarifiedQuestion || (clarificationData.helpfulHints && clarificationData.helpfulHints.length > 0)) && (
+                    <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/40 space-y-2.5 text-xs relative shadow-lg animate-fadeIn">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                          <strong className="text-indigo-300 font-mono text-xs uppercase tracking-wider">AI Coach Clarification & Guidance</strong>
+                        </div>
+                        <button
+                          onClick={() => setClarificationData(null)}
+                          className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                          title="Dismiss guidance"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
+
+                      {clarificationData.clarifiedQuestion && (
+                        <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-slate-200 leading-relaxed font-medium">
+                          <span className="text-indigo-400 font-mono text-[10px] uppercase block mb-1">In Simpler Terms</span>
+                          "{clarificationData.clarifiedQuestion}"
+                        </div>
+                      )}
+
+                      {clarificationData.helpfulHints && clarificationData.helpfulHints.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-indigo-300/90 font-mono text-[11px] font-semibold block">Key Response Hints:</span>
+                          <ul className="space-y-1.5 text-slate-200">
+                            {clarificationData.helpfulHints.map((hint, idx) => (
+                              <li key={idx} className="flex items-start gap-2.5 bg-slate-900/40 p-2 rounded-lg border border-slate-800/80">
+                                <span className="w-4 h-4 rounded-full bg-indigo-900/80 text-indigo-300 font-mono text-[10px] flex items-center justify-center shrink-0 mt-0.5 border border-indigo-700/60">
+                                  {idx + 1}
+                                </span>
+                                <span className="leading-relaxed">{hint}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {clarifyError && (
+                    <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+                      <span>{clarifyError}</span>
+                      <button onClick={() => setClarifyError(null)} className="text-amber-400 hover:text-white text-xs font-mono underline ml-2 cursor-pointer">
+                        Dismiss
+                      </button>
                     </div>
                   )}
                 </div>

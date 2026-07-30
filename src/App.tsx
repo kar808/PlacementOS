@@ -828,8 +828,154 @@ export default function App() {
       };
     }
 
+    if (endpoint.includes("interview/clarify")) {
+      const q = body?.question || "Walk me through a key project or experience in your career.";
+      const role = body?.role || targetRole;
+      const domain = body?.domain || "Professional Field";
+
+      let hints = [
+        "Focus on giving a real example from your direct experience or projects.",
+        "Structure your answer: Situation -> Task -> Action -> Quantifiable Result (STAR method).",
+        `Highlight key competencies expected for a ${role} in ${domain}.`
+      ];
+
+      if (/market|growth|seo|sales|business|brand/i.test(role + domain)) {
+        hints = [
+          "Detail your target audience, acquisition channels (CAC/LTV), and marketing funnel strategy.",
+          "Quantify your results with key metrics like conversion rate, ROAS, leads generated, or revenue growth.",
+          "Explain A/B test experiments, tools used (GA4, HubSpot, Meta Ads), and how you iterated based on data."
+        ];
+      } else if (/nurse|doctor|health|clinic|pharma|medical/i.test(role + domain)) {
+        hints = [
+          "Emphasize patient safety protocols, HIPAA compliance, and evidence-based clinical practices.",
+          "Use the SBAR framework (Situation, Background, Assessment, Recommendation) if describing clinical communication.",
+          "Highlight how you collaborated with interdisciplinary healthcare teams under high pressure."
+        ];
+      } else if (/law|legal|attorney|paralegal|counsel/i.test(role + domain)) {
+        hints = [
+          "Frame your response using the IRAC method (Issue, Rule, Analysis, Conclusion).",
+          "Detail statutory research tools used (Westlaw, LexisNexis) and risk mitigation strategies.",
+          "Emphasize attention to detail, ethical discretion, and contract redlining accuracy."
+        ];
+      } else if (/finance|account|audit|tax|bank|investment/i.test(role + domain)) {
+        hints = [
+          "Reference GAAP/IFRS standards, financial modeling techniques (DCF, variance analysis), or audit trails.",
+          "Quantify monetary impact: budget size saved, cost reductions, revenue growth, or ROI.",
+          "Explain tools used like Advanced Excel, Bloomberg Terminal, NetSuite, or QuickBooks."
+        ];
+      } else if (/teach|educat|pedagogy|lesson|school/i.test(role + domain)) {
+        hints = [
+          "Highlight student engagement, differentiated learning strategies, and Bloom's Taxonomy.",
+          "Explain how you use formative assessments, LMS tools (Canvas, Google Classroom), and parent communication.",
+          "Quantify outcomes through student progress metrics, test score improvements, or program retention."
+        ];
+      } else if (/trade|electric|hvac|plumb|machin|mechanic/i.test(role + domain)) {
+        hints = [
+          "Focus on safety protocols (OSHA), code compliance (NEC/EPA), and blueprint/schematic accuracy.",
+          "Explain diagnostic step-by-step troubleshooting techniques and preventive maintenance routines.",
+          "Highlight hands-on tools, equipment, multimeters, and zero-defect completion."
+        ];
+      } else if (/design|ux|ui|graphic|product design/i.test(role + domain)) {
+        hints = [
+          "Walk through your user research, wireframing, high-fidelity Figma prototyping, and usability testing.",
+          "Explain design trade-offs between aesthetic appeal, accessibility (WCAG AA), and business constraints.",
+          "Highlight user feedback loops, design system integration, and conversion funnel impact."
+        ];
+      }
+
+      return {
+        clarifiedQuestion: `In simpler terms: "How have you successfully handled core ${role} responsibilities and technical/operational challenges in your previous work?"`,
+        helpfulHints: hints
+      };
+    }
+
     if (endpoint.includes("profession-classify")) {
       const target = body?.targetRole || "Software Engineer";
+      const t = target.toLowerCase();
+      const hint = (body?.domainHint || "").toLowerCase();
+
+      // 1. Marketing / Growth / Sales
+      if (t.includes("market") || t.includes("growth") || t.includes("seo") || t.includes("sales") || t.includes("brand") || hint.includes("market")) {
+        return {
+          industry: "Marketing, Growth & Sales",
+          primaryProfession: target,
+          specialization: "Growth Marketing & Digital Acquisition",
+          careerStage: "Professional",
+          confidenceScore: 94,
+          needsClarification: false,
+          domainTerminology: ["CAC/LTV Ratio", "Conversion Rate Optimization (CRO)", "A/B Experimentation", "ROAS", "Google Analytics 4 (GA4)", "Multi-Touch Attribution"],
+          atsKeywords: ["Growth Marketing", "Paid Search (SEM)", "SEO Strategy", "Funnel Optimization", "HubSpot CRM", "Campaign Analytics"],
+          recommendedTemplateStyle: "Creative",
+          recommendedSkills: {
+            hardSkills: ["CAC/LTV Optimization", "Google Analytics 4", "Multi-Channel A/B Testing", "Paid Ad Campaign Management", "SEO & Content Strategy"],
+            toolsAndSoftware: ["Google Analytics 4", "HubSpot CRM", "Meta Ads Manager", "Semrush", "Mixpanel", "Google Tag Manager"],
+            domainKnowledge: ["Conversion Funnels", "Customer Retention", "Growth Loops", "Performance Marketing"],
+            softSkills: ["Data-Driven Storytelling", "Campaign Strategy", "Cross-Functional Collaboration"]
+          },
+          recommendedProjects: [
+            {
+              title: "Omnichannel Growth & Conversion Funnel Optimization",
+              objective: "Design and execute multi-channel paid & organic campaign, boosting conversion rate by 28%.",
+              toolsOrMethods: ["Google Analytics 4", "Meta Ads Manager", "A/B Testing"],
+              deliverables: ["A/B Experiment Matrix", "GA4 Funnel Dashboard", "Campaign Performance Brief"],
+              resumeImpact: "Demonstrates data-driven marketing ownership and measurable growth impact."
+            }
+          ],
+          recommendedCertifications: [
+            { name: "Google Analytics 4 (GA4) Individual Qualification", issuingBody: "Google", relevance: "Industry Standard Analytics Credential" },
+            { name: "HubSpot Inbound & Growth Marketing Certification", issuingBody: "HubSpot Academy", relevance: "Premier Inbound Strategy Credential" },
+            { name: "Meta Certified Digital Marketing Associate", issuingBody: "Meta", relevance: "Paid Social Media Advertising Credential" }
+          ],
+          careerRoadmap: [
+            { phase: "Phase 1: Acquisition Foundations", timeframe: "Weeks 1-3", focusMilestone: "Master GA4 tracking, ad platform campaign setups, and copywriting", keySkillsToMaster: ["GA4 Event Setup", "Ad Creative Writing", "Funnel Mapping"] },
+            { phase: "Phase 2: Experimentation & CRO", timeframe: "Weeks 4-7", focusMilestone: "Run multi-variable A/B tests and optimize landing page conversions", keySkillsToMaster: ["A/B Testing", "CRO", "CAC Optimization"] },
+            { phase: "Phase 3: Scale & Retention", timeframe: "Weeks 8-10", focusMilestone: "Build multi-channel attribution models and email/CRM retention loops", keySkillsToMaster: ["Attribution Modeling", "CRM Automation", "LTV Expansion"] },
+            { phase: "Phase 4: VP/Head of Growth", timeframe: "Weeks 11-12+", focusMilestone: "Direct full acquisition budget, manage marketing teams, and drive ARR", keySkillsToMaster: ["Growth Strategy", "Budget Allocation", "Executive Leadership"] }
+          ]
+        };
+      }
+
+      // 2. Healthcare / Nursing / Medical
+      if (t.includes("nurse") || t.includes("doctor") || t.includes("health") || t.includes("medical") || t.includes("pharma") || hint.includes("health")) {
+        return {
+          industry: "Healthcare & Life Sciences",
+          primaryProfession: target,
+          specialization: "Clinical Care & Patient Operations",
+          careerStage: "Clinical Practitioner",
+          confidenceScore: 95,
+          needsClarification: false,
+          domainTerminology: ["Epic EHR Systems", "HIPAA Compliance", "Patient Triage", "Pharmacology Dosage", "Vital Signs Assessment"],
+          atsKeywords: ["Clinical Assessment", "EMR Documentation", "Infection Control", "ACLS/BLS", "Patient Care Protocols"],
+          recommendedTemplateStyle: "Corporate",
+          recommendedSkills: {
+            hardSkills: ["Clinical Patient Assessment", "EMR/EHR Documentation", "Medication Administration", "HIPAA Compliance"],
+            toolsAndSoftware: ["Epic PowerChart", "Cerner Millennium", "Pyxis Dispensing", "3M Medical Coding"],
+            domainKnowledge: ["Pharmacology Dosage", "Diagnostic Pathology", "Emergency Care", "Interprofessional Care"],
+            softSkills: ["Patient Empathy", "Crisis Management", "Interdisciplinary Communication"]
+          },
+          recommendedProjects: [
+            {
+              title: "Clinical Patient Triage & Discharge Safety Audit",
+              objective: "Overhaul intake checklist reducing patient wait times and discharge errors.",
+              toolsOrMethods: ["Epic Systems", "Clinical Care Protocols", "HIPAA Auditing"],
+              deliverables: ["Triage Protocol Matrix", "EMR Audit Report", "Discharge Safety Checklist"],
+              resumeImpact: "Demonstrates clinical compliance and patient care excellence."
+            }
+          ],
+          recommendedCertifications: [
+            { name: "BLS / ACLS Certification", issuingBody: "American Heart Association", relevance: "Core Healthcare Standard" },
+            { name: "NCLEX-RN / State Licensing Board License", issuingBody: "State Licensing Board", relevance: "Mandatory Clinical Practice Credential" }
+          ],
+          careerRoadmap: [
+            { phase: "Phase 1: Clinical Orientation", timeframe: "Weeks 1-3", focusMilestone: "Master patient assessment, vitals logging, and HIPAA rules", keySkillsToMaster: ["Vitals Assessment", "EMR Logging", "HIPAA Rules"] },
+            { phase: "Phase 2: Clinical Execution", timeframe: "Weeks 4-7", focusMilestone: "Manage multi-patient care plans and medication reconciliation", keySkillsToMaster: ["Medication Admin", "Triage Care", "Patient Advocacy"] },
+            { phase: "Phase 3: Specialized Care", timeframe: "Weeks 8-10", focusMilestone: "Lead critical care unit shifts and audit patient safety metrics", keySkillsToMaster: ["Emergency Care", "Unit Leadership", "Safety Auditing"] },
+            { phase: "Phase 4: Clinical Directorship", timeframe: "Weeks 11-12+", focusMilestone: "Direct hospital unit protocols and oversee residency teams", keySkillsToMaster: ["Hospital Administration", "Clinical Governance", "Quality Metrics"] }
+          ]
+        };
+      }
+
+      // Default Software / Tech
       return {
         industry: body?.domainHint || "Technology & Software",
         primaryProfession: target,
@@ -857,13 +1003,6 @@ export default function App() {
             toolsOrMethods: ["TypeScript", "Node.js", "Docker", "PostgreSQL"],
             deliverables: ["REST API", "Database schema", "Unit tests", "Deployment pipeline"],
             resumeImpact: "Demonstrates enterprise-level engineering maturity and production readiness"
-          },
-          {
-            title: "Real-time Analytics Dashboard",
-            objective: "Develop a live data processing pipeline with responsive UI filters",
-            toolsOrMethods: ["React", "Tailwind CSS", "WebSockets", "Chart.js"],
-            deliverables: ["Interactive frontend", "Live socket stream", "Filterable charts"],
-            resumeImpact: "Highlights frontend mastery and real-time state management"
           }
         ],
         recommendedCertifications: [
