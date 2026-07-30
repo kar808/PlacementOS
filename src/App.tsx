@@ -74,7 +74,7 @@ import {
 // Client-side rate-limiting rolling window tracking
 const clientRequestHistory: { [userId: string]: number[] } = {};
 
-import { getCanonicalString, computeRequestIntegrity } from "./lib/apiUtils";
+import { getCanonicalString, computeRequestIntegrity, safeStorageGet, safeStorageSet, safeJsonParse } from "./lib/apiUtils";
 import { startCall, endCall } from "./lib/apiMonitoring";
 
 const GUEST_USER: AdaptedUser = {
@@ -123,15 +123,14 @@ export default function App() {
 
   // Core profile & cache states (persisted via localStorage)
   const [profile, setProfile] = useState<StudentProfile>(() => {
-    const saved = localStorage.getItem("placement_profile");
-    return saved ? JSON.parse(saved) : DEFAULT_STUDENT_PROFILE;
+    return safeStorageGet<StudentProfile>("placement_profile", DEFAULT_STUDENT_PROFILE);
   });
 
   // Navigation Tabs: land directly on home if profile completed, otherwise landing
   const [activeTab, setActiveTab] = useState<string>(() => {
     const isCompleted = localStorage.getItem("placement_profile_completed") === "true";
-    const savedProfile = localStorage.getItem("placement_profile");
-    if (isCompleted || (savedProfile && JSON.parse(savedProfile).name?.trim() && JSON.parse(savedProfile).name !== "Student Candidate")) {
+    const savedProfile = safeStorageGet<StudentProfile | null>("placement_profile", null);
+    if (isCompleted || (savedProfile && savedProfile.name?.trim() && savedProfile.name !== "Student Candidate")) {
       return "home";
     }
     return "landing";
@@ -146,53 +145,43 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   const [intelligenceMap, setIntelligenceMap] = useState<IntelligenceMap | null>(() => {
-    const saved = localStorage.getItem("placement_intelligence");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<IntelligenceMap | null>("placement_intelligence", null);
   });
 
   const [scores, setScores] = useState<ReadinessScores | null>(() => {
-    const saved = localStorage.getItem("placement_scores");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<ReadinessScores | null>("placement_scores", null);
   });
 
   const [recommendedRoles, setRecommendedRoles] = useState<RecommendedRole[] | null>(() => {
-    const saved = localStorage.getItem("placement_roles");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<RecommendedRole[] | null>("placement_roles", null);
   });
 
   const [resumeSuggestions, setResumeSuggestions] = useState<ResumeLinkedInSuggestion | null>(() => {
-    const saved = localStorage.getItem("placement_resume");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<ResumeLinkedInSuggestion | null>("placement_resume", null);
   });
 
   const [roadmapPlan, setRoadmapPlan] = useState<RoadmapPlan | null>(() => {
-    const saved = localStorage.getItem("placement_roadmap");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<RoadmapPlan | null>("placement_roadmap", null);
   });
 
   const [recommendedProjects, setRecommendedProjects] = useState<ProjectIdea[] | null>(() => {
-    const saved = localStorage.getItem("placement_projects");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<ProjectIdea[] | null>("placement_projects", null);
   });
 
   const [jobStrategy, setJobStrategy] = useState<JobSearchStrategy | null>(() => {
-    const saved = localStorage.getItem("placement_job_strategy");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<JobSearchStrategy | null>("placement_job_strategy", null);
   });
 
   const [negotiationAdvice, setNegotiationAdvice] = useState<NegotiationAdvisorResponse | null>(() => {
-    const saved = localStorage.getItem("placement_negotiation");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<NegotiationAdvisorResponse | null>("placement_negotiation", null);
   });
 
   const [communicationTips, setCommunicationTips] = useState<CommunicationTip[] | null>(() => {
-    const saved = localStorage.getItem("placement_comm_tips");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<CommunicationTip[] | null>("placement_comm_tips", null);
   });
 
   const [hrAnalysis, setHrAnalysis] = useState<HRProfileAnalysis | null>(() => {
-    const saved = localStorage.getItem("placement_hr_analysis");
-    return saved ? JSON.parse(saved) : null;
+    return safeStorageGet<HRProfileAnalysis | null>("placement_hr_analysis", null);
   });
 
   // Interactive Mock Interview session (local state)
@@ -208,8 +197,7 @@ export default function App() {
   });
 
   const [interviewHistory, setInterviewHistory] = useState<PastInterviewSession[]>(() => {
-    const saved = localStorage.getItem("placement_interview_history");
-    return saved ? JSON.parse(saved) : [];
+    return safeStorageGet<PastInterviewSession[]>("placement_interview_history", []);
   });
 
   // Network operational states
@@ -231,14 +219,11 @@ export default function App() {
 
   // Product Analytics Logging and Notifications state
   const [activities, setActivities] = useState<any[]>(() => {
-    const saved = localStorage.getItem("placement_activities");
-    return saved ? JSON.parse(saved) : [];
+    return safeStorageGet<any[]>("placement_activities", []);
   });
 
   const [notifications, setNotifications] = useState<any[]>(() => {
-    const saved = localStorage.getItem("placement_notifications");
-    if (saved) return JSON.parse(saved);
-    return [
+    const defaultNotifs = [
       {
         id: "notif_1",
         title: "Welcome to VORYNEXA Core!",
@@ -254,6 +239,7 @@ export default function App() {
         read: true
       }
     ];
+    return safeStorageGet<any[]>("placement_notifications", defaultNotifs);
   });
 
   const addNotification = (title: string, body: string) => {
@@ -266,7 +252,7 @@ export default function App() {
     };
     setNotifications(prev => {
       const updated = [newNotif, ...prev];
-      localStorage.setItem("placement_notifications", JSON.stringify(updated));
+      safeStorageSet("placement_notifications", updated);
       return updated;
     });
   };
@@ -285,7 +271,7 @@ export default function App() {
 
     setActivities(prev => {
       const updated = [newActivity, ...prev];
-      localStorage.setItem("placement_activities", JSON.stringify(updated));
+      safeStorageSet("placement_activities", updated);
       return updated;
     });
 
@@ -471,7 +457,7 @@ export default function App() {
   // Sync profile edits with local cache and Supabase
   const saveProfileUpdate = async (updated: StudentProfile) => {
     setProfile(updated);
-    localStorage.setItem("placement_profile", JSON.stringify(updated));
+    safeStorageSet("placement_profile", updated);
     if (user) {
       try {
         const success = await supabaseDb.saveProfile(user.uid, updated);
@@ -539,7 +525,7 @@ export default function App() {
   const handleOnboardingComplete = async (completedProfile: StudentProfile) => {
     setProfile(completedProfile);
     setHasProfile(true);
-    localStorage.setItem("placement_profile", JSON.stringify(completedProfile));
+    safeStorageSet("placement_profile", completedProfile);
     
     if (user && user.uid !== "local_sandbox_user") {
       try {
@@ -566,7 +552,7 @@ export default function App() {
     };
 
     setProfile(updatedProfile);
-    localStorage.setItem("placement_profile", JSON.stringify(updatedProfile));
+    safeStorageSet("placement_profile", updatedProfile);
 
     if (user && user.uid !== "local_sandbox_user") {
       try {
@@ -1134,9 +1120,9 @@ export default function App() {
       setScores(data.scores);
       setRecommendedRoles(data.recommendedRoles);
 
-      localStorage.setItem("placement_intelligence", JSON.stringify(data.intelligenceMap));
-      localStorage.setItem("placement_scores", JSON.stringify(data.scores));
-      localStorage.setItem("placement_roles", JSON.stringify(data.recommendedRoles));
+      safeStorageSet("placement_intelligence", data.intelligenceMap);
+      safeStorageSet("placement_scores", data.scores);
+      safeStorageSet("placement_roles", data.recommendedRoles);
 
       if (user && user.uid !== "local_sandbox_user") {
         try {
@@ -1176,7 +1162,7 @@ export default function App() {
         jobDescription,
       });
       setResumeSuggestions(data);
-      localStorage.setItem("placement_resume", JSON.stringify(data));
+      safeStorageSet("placement_resume", data);
     } catch (err) {
       // Handled globally
     } finally {
@@ -1191,7 +1177,7 @@ export default function App() {
       const payload = customParams ? { profile, ...customParams } : profile;
       const data = await callServerEndpoint("/api/placement/roadmap", payload);
       setRoadmapPlan(data);
-      localStorage.setItem("placement_roadmap", JSON.stringify(data));
+      safeStorageSet("placement_roadmap", data);
       logActivity("Enterprise AI Career Roadmap Generated", `Computed 4-stage execution matrix for ${customParams?.targetRole || profile.targetRoles?.[0] || "Target Role"}.`, "career_plan");
       addNotification("Enterprise Career Roadmap Ready", "Your personalized 4-stage execution matrix and diagnostic skill gaps have been computed.");
     } catch (err) {
@@ -1204,7 +1190,7 @@ export default function App() {
         enterpriseRoadmap: generateDefaultEnterpriseRoadmap(profile, customParams)
       };
       setRoadmapPlan(fallbackRoadmap);
-      localStorage.setItem("placement_roadmap", JSON.stringify(fallbackRoadmap));
+      safeStorageSet("placement_roadmap", fallbackRoadmap);
     } finally {
       setIsGeneratingRoadmap(false);
     }
@@ -1219,7 +1205,7 @@ export default function App() {
         targetRole,
       });
       setRecommendedProjects(data);
-      localStorage.setItem("placement_projects", JSON.stringify(data));
+      safeStorageSet("placement_projects", data);
     } catch (err) {
       // Handled globally
     } finally {
@@ -1234,11 +1220,11 @@ export default function App() {
       const data = await callServerEndpoint("/api/placement/job-search", profile);
       const validStrategy = (data && data.strategy) ? data : buildClientFallbackResponse("/api/placement/job-search", { profile });
       setJobStrategy(validStrategy);
-      localStorage.setItem("placement_job_strategy", JSON.stringify(validStrategy));
+      safeStorageSet("placement_job_strategy", validStrategy);
     } catch (err) {
       const fallback = buildClientFallbackResponse("/api/placement/job-search", { profile });
       setJobStrategy(fallback);
-      localStorage.setItem("placement_job_strategy", JSON.stringify(fallback));
+      safeStorageSet("placement_job_strategy", fallback);
     } finally {
       setIsGeneratingJobStrategy(false);
     }
@@ -1513,7 +1499,7 @@ export default function App() {
 
     const newHistory = [pastSession, ...interviewHistory];
     setInterviewHistory(newHistory);
-    localStorage.setItem("placement_interview_history", JSON.stringify(newHistory));
+    safeStorageSet("placement_interview_history", newHistory);
 
     if (user && user.uid !== "local_sandbox_user") {
       try {
@@ -1570,11 +1556,11 @@ export default function App() {
       });
       const valid = (data && data.strategy) ? data : buildClientFallbackResponse("/api/placement/negotiate", { profile, offer, company, expectations });
       setNegotiationAdvice(valid);
-      localStorage.setItem("placement_negotiation", JSON.stringify(valid));
+      safeStorageSet("placement_negotiation", valid);
     } catch (err) {
       const fallback = buildClientFallbackResponse("/api/placement/negotiate", { profile, offer, company, expectations });
       setNegotiationAdvice(fallback);
-      localStorage.setItem("placement_negotiation", JSON.stringify(fallback));
+      safeStorageSet("placement_negotiation", fallback);
     } finally {
       setIsGeneratingNegotiation(false);
     }
@@ -1587,11 +1573,11 @@ export default function App() {
       const data = await callServerEndpoint("/api/placement/communication-tips", profile);
       const valid = Array.isArray(data) && data.length > 0 ? data : buildClientFallbackResponse("/api/placement/communication-tips", { profile });
       setCommunicationTips(valid);
-      localStorage.setItem("placement_comm_tips", JSON.stringify(valid));
+      safeStorageSet("placement_comm_tips", valid);
     } catch (err) {
       const fallback = buildClientFallbackResponse("/api/placement/communication-tips", { profile });
       setCommunicationTips(fallback);
-      localStorage.setItem("placement_comm_tips", JSON.stringify(fallback));
+      safeStorageSet("placement_comm_tips", fallback);
     } finally {
       setIsGeneratingCommTips(false);
     }
@@ -1963,14 +1949,14 @@ export default function App() {
                 onMarkNotificationRead={(id) => {
                   setNotifications(prev => {
                     const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
-                    localStorage.setItem("placement_notifications", JSON.stringify(updated));
+                    safeStorageSet("placement_notifications", updated);
                     return updated;
                   });
                 }}
                 onMarkAllNotificationsRead={() => {
                   setNotifications(prev => {
                     const updated = prev.map(n => ({ ...n, read: true }));
-                    localStorage.setItem("placement_notifications", JSON.stringify(updated));
+                    safeStorageSet("placement_notifications", updated);
                     return updated;
                   });
                 }}

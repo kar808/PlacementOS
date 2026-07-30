@@ -52,14 +52,32 @@ export default class AppErrorBoundary extends Component<Props, State> {
     });
   }
 
+  clearCorruptedStorage = () => {
+    try {
+      const keys = Object.keys(localStorage);
+      for (const key of keys) {
+        const val = localStorage.getItem(key);
+        if (!val || val === "undefined" || val === "null" || val === "NaN") {
+          localStorage.removeItem(key);
+        } else {
+          try {
+            JSON.parse(val);
+          } catch (_) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    } catch (_) {}
+  };
+
   handleReset = () => {
     logger.info("system", "User initiated recovery from Error Boundary reset button.");
+    this.clearCorruptedStorage();
     this.setState({
       hasError: false,
       error: null,
       errorInfo: null,
     });
-    // Attempt state recovery by forcing a reload or clearing potentially corrupted state
     window.location.href = "/";
   };
 
@@ -120,6 +138,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
                 <button
                   id="btn-error-home"
                   onClick={() => {
+                    this.clearCorruptedStorage();
                     window.location.href = "/";
                   }}
                   className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-sm transition-all active:scale-[0.98]"

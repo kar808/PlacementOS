@@ -35,3 +35,44 @@ export function computeRequestIntegrity(endpoint: string, body: any, timestamp: 
   }
   return hash.toString(16);
 }
+
+export function safeJsonParse<T>(val: string | null | undefined, fallback: T): T {
+  if (!val || val === "undefined" || val === "null" || val === "NaN") {
+    return fallback;
+  }
+  try {
+    const parsed = JSON.parse(val);
+    return parsed !== undefined && parsed !== null ? parsed : fallback;
+  } catch (e) {
+    console.warn("[safeJsonParse] Caught JSON parse error, returning fallback:", e);
+    return fallback;
+  }
+}
+
+export function safeStorageGet<T>(key: string, fallback: T): T {
+  try {
+    const item = localStorage.getItem(key);
+    return safeJsonParse<T>(item, fallback);
+  } catch (e) {
+    console.warn(`[safeStorageGet] Error reading key '${key}' from localStorage:`, e);
+    return fallback;
+  }
+}
+
+export function safeStorageSet(key: string, value: any): void {
+  try {
+    if (value === undefined) {
+      localStorage.removeItem(key);
+      return;
+    }
+    const serialized = JSON.stringify(value);
+    if (serialized === "undefined" || serialized === "null") {
+      localStorage.removeItem(key);
+      return;
+    }
+    localStorage.setItem(key, serialized);
+  } catch (e) {
+    console.warn(`[safeStorageSet] Failed setting '${key}' in localStorage:`, e);
+  }
+}
+
